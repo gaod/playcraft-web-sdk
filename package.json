@@ -1,0 +1,243 @@
+{
+  "name": "playcraft",
+  "version": "1.2.0",
+  "module": "build/index.module.js",
+  "main": "build/bundle.js",
+  "types": "./index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.kkinternal.com/playback/web-playcraft"
+  },
+  "scripts": {
+    "develop": "webpack-dev-server --env.ENV=develop",
+    "start": "superstatic --port 3000",
+    "test": "jest --coverage",
+    "watch:test": "jest --watch",
+    "build": "rollup -c",
+    "release": "standard-version -a",
+    "build-lib": "webpack --env.ENV=build-lib",
+    "build-sample": "webpack --env.ENV=build-sample",
+    "dev-ssr": "next -p 5566",
+    "start-next": "next start",
+    "build-sample-ssr": "rollup -c && next build",
+    "now-build": "mv next-build .next || echo 'Not a next build, skip moving'"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.10",
+    "@babel/eslint-parser": "^7.12.1",
+    "@babel/eslint-plugin": "^7.12.1",
+    "@babel/plugin-proposal-class-properties": "^7.10.4",
+    "@babel/plugin-transform-runtime": "^7.12.10",
+    "@babel/preset-env": "^7.12.11",
+    "@babel/preset-react": "^7.12.10",
+    "@babel/register": "^7.12.10",
+    "@babel/runtime": "^7.12.5",
+    "@commitlint/cli": "^12.0.1",
+    "@commitlint/config-conventional": "^12.0.1",
+    "@emotion/babel-plugin": "^11.1.2",
+    "@emotion/eslint-plugin": "^11.0.0",
+    "@rollup/plugin-babel": "^5.2.2",
+    "@rollup/plugin-commonjs": "^17.0.0",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^11.0.1",
+    "@rollup/plugin-replace": "^2.3.4",
+    "amplitude-js": "^5.8.0",
+    "babel-jest": "^26.6.3",
+    "babel-loader": "^8.2.2",
+    "eslint": "^7.16.0",
+    "eslint-config-airbnb": "^18.2.1",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-config-prettier": "^7.1.0",
+    "eslint-plugin-compat": "^3.9.0",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-jest": "^24.1.3",
+    "eslint-plugin-jsx-a11y": "^6.4.1",
+    "eslint-plugin-prettier": "^3.3.0",
+    "eslint-plugin-react": "^7.21.5",
+    "eslint-plugin-react-hooks": "^4.2.0",
+    "husky": "^5.1.3",
+    "jest": "^26.6.3",
+    "lint-staged": ">=10",
+    "msw": "^0.24.2",
+    "next": "10.0.4",
+    "node-fetch": "^2.6.1",
+    "prettier": "^2.2.1",
+    "prop-types": "^15.7.2",
+    "react": "17.0.1",
+    "react-dom": "17.0.1",
+    "react-hot-loader": "^3.1.1",
+    "rollup": "^2.35.1",
+    "rollup-plugin-includepaths": "^0.2.4",
+    "standard-version": "^9.1.1",
+    "superstatic": "^6.0.4",
+    "webpack": "^4.44.2",
+    "webpack-cli": "^3.3.12",
+    "webpack-dev-server": "^3.1.14",
+    "xmldom": "^0.4.0"
+  },
+  "dependencies": {
+    "@emotion/css": "^11.1.3",
+    "@emotion/react": "^11.1.4",
+    "@juggle/resize-observer": "^3.2.0",
+    "axios": "^0.20.0",
+    "bitmovin-player": "^8.51.0",
+    "classnames": "^2.2.6",
+    "clipboard-polyfill": "^3.0.1",
+    "core-js": "^3.3.2",
+    "dlv": "^1.1.3",
+    "mitt": "^2.1.0",
+    "raf": "^3.4.1",
+    "react-cool-dimensions": "^1.1.11",
+    "react-cool-onclickoutside": "1.5.9",
+    "ua-parser-js": "^0.7.19",
+    "zustand": "^3.2.0"
+  },
+  "peerDependencies": {
+    "@babel/runtime": "^7.0.0",
+    "react": ">=16.14.0",
+    "react-dom": ">=16.14.0"
+  },
+  "browserslist": [
+    "IE 11"
+  ],
+  "babel": {
+    "presets": [
+      [
+        "@babel/react",
+        {
+          "runtime": "automatic"
+        }
+      ]
+    ],
+    "plugins": [
+      "@emotion/babel-plugin",
+      "@babel/proposal-class-properties"
+    ],
+    "env": {
+      "test": {
+        "plugins": [
+          "@babel/proposal-optional-chaining",
+          "@babel/proposal-nullish-coalescing-operator",
+          "@babel/transform-modules-commonjs"
+        ]
+      }
+    }
+  },
+  "eslintConfig": {
+    "ignorePatterns": [
+      "/build/**",
+      "/demo/**/*.bundle.*",
+      "/plugins.js",
+      "/modules.js"
+    ],
+    "parser": "@babel/eslint-parser",
+    "parserOptions": {
+      "sourceType": "module"
+    },
+    "plugins": [
+      "@babel",
+      "@emotion/eslint-plugin",
+      "prettier"
+    ],
+    "extends": [
+      "airbnb",
+      "airbnb/hooks",
+      "plugin:compat/recommended",
+      "prettier",
+      "prettier/react"
+    ],
+    "env": {
+      "browser": true,
+      "es6": true,
+      "node": true
+    },
+    "rules": {
+      "no-unused-expressions": "warn",
+      "no-nested-ternary": "warn",
+      "consistent-return": "warn",
+      "import/no-extraneous-dependencies": "warn",
+      "import/prefer-default-export": "warn",
+      "jsx-a11y/click-events-have-key-events": "warn",
+      "react/no-array-index-key": "warn",
+      "react/forbid-prop-types": "warn",
+      "react/jsx-filename-extension": [
+        "error",
+        {
+          "extensions": [
+            ".js",
+            ".jsx"
+          ]
+        }
+      ],
+      "react/react-in-jsx-scope": "off",
+      "react/jsx-uses-react": "off",
+      "react/jsx-props-no-spreading": "warn",
+      "react/require-default-props": "off",
+      "react-hooks/exhaustive-deps": "warn"
+    },
+    "settings": {
+      "polyfills": [
+        "Promise",
+        "fetch",
+        "URL"
+      ],
+      "import/resolver": {
+        "node": {
+          "paths": [
+            "src"
+          ]
+        }
+      },
+      "react": {
+        "version": "detect"
+      }
+    }
+  },
+  "prettier": {
+    "semi": false,
+    "singleQuote": true,
+    "bracketSpacing": false,
+    "arrowParens": "avoid"
+  },
+  "lint-staged": {
+    "*.{js,jsx}": [
+      "eslint --cache --fix",
+      "prettier --write"
+    ]
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "jest": {
+    "verbose": true,
+    "modulePaths": [
+      "src/"
+    ],
+    "testMatch": [
+      "<rootDir>/test/**/*.js"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/mocks/"
+    ],
+    "watchPathIgnorePatterns": [
+      "<rootDir>/node_modules/",
+      "<rootDir>/sample/node_modules/"
+    ],
+    "testEnvironment": "node",
+    "coverageReporters": [
+      "json",
+      "lcov",
+      "text",
+      "clover",
+      "cobertura"
+    ]
+  },
+  "standard-version": {
+    "scripts": {
+      "postbump": "yarn build && git add build plugins.js modules.js"
+    }
+  }
+}
