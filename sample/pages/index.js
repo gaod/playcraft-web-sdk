@@ -22,6 +22,7 @@ const Sample = () => (
       // licenseKey is not used in local development
       // please set this when deploying to some environment
       licenseKey='<license key is not used in local development>'
+      // In current version, player try to use onLogging and will crash if not specified, this should not be required, we will fix it in the future
       onLogging={() => {}}
     />
   </div>
