@@ -13,7 +13,7 @@ Currently, web player is based on [Bitmovin Player](https://bitmovin.com/docs/pl
 Install this package from git repository:
 
 ```
-yarn add git+ssh://git@github.com:KKStream/playcraft-web-sdk#v1.2.0
+yarn add https://github.com:KKStream/playcraft-web-sdk#v1.2.0
 ```
 
 Import, and compose `<Player>` component to your app:
@@ -28,7 +28,7 @@ const MyApp = () => {
       <Player
         host={playbackServerUrl}
         content={{
-          contentType: 'live',
+          contentType: 'videos',
           contentId: '1',
         }}
         licenseKey={bitmovinLicenseKey}
