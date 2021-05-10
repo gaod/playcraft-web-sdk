@@ -1,8 +1,8 @@
 {
   "name": "playcraft",
-  "version": "1.2.0",
-  "module": "build/index.module.js",
-  "main": "build/bundle.js",
+  "version": "1.3.0",
+  "module": "dist/playcraft.module.js",
+  "main": "dist/playcraft.js",
   "types": "./index.d.ts",
   "repository": {
     "type": "git",
@@ -111,7 +111,8 @@
     ],
     "plugins": [
       "@emotion/babel-plugin",
-      "@babel/proposal-class-properties"
+      "@babel/proposal-class-properties",
+      "@babel/proposal-optional-chaining"
     ],
     "env": {
       "test": {
@@ -126,6 +127,7 @@
   "eslintConfig": {
     "ignorePatterns": [
       "/build/**",
+      "/dist/**",
       "/demo/**/*.bundle.*",
       "/plugins.js",
       "/modules.js"
@@ -237,7 +239,7 @@
   },
   "standard-version": {
     "scripts": {
-      "postbump": "yarn build && git add build plugins.js modules.js"
+      "postbump": "yarn build && git add dist plugins.js modules.js"
     }
   }
 }
