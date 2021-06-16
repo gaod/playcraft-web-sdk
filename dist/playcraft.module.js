@@ -240,7 +240,7 @@ function isInScope(min, value, max) {
 function getVersion() {
   try {
     // eslint-disable-next-line no-undef
-    return "1.3.0";
+    return "1.3.1";
   } catch (e) {
     return undefined;
   }
@@ -1324,6 +1324,7 @@ var en = {
 	"KKS.QUALITY": "Quality",
 	"KKS.SUBTITLES": "Subtitles",
 	"KKS.AUDIO": "Audio",
+	"KKS.SETTING.OFF": "off",
 	"KKS.SETTING": "Setting",
 	"KKS.SETTING.CONFLICT": "Setting conflict",
 	"KKS.CONFLICT.MESSAGE": "The video quality is higher than auto quality default setting",
@@ -1388,7 +1389,8 @@ var ja = {
 	"KKS.DELETE": "削除",
 	"KKS.PLAY.WITH.QUALITY": "この画質で再生されます",
 	"KKS.QUALITY": "映像品質",
-	"KKS.AUDIO": "音声再生",
+	"KKS.AUDIO": "音声",
+	"KKS.SETTING.OFF": "オフ",
 	"KKS.SUBTITLES": "字幕",
 	"KKS.SETTING": "再生設定",
 	"KKS.SETTING.CONFLICT": "ご視聴する動画は、デフォルト画質設定に一致しません。",
@@ -1456,6 +1458,7 @@ var zhTW = {
 	"KKS.QUALITY": "畫質",
 	"KKS.SUBTITLES": "字幕",
 	"KKS.AUDIO": "音訊",
+	"KKS.SETTING.OFF": "關閉",
 	"KKS.SETTING": "設定",
 	"KKS.SETTING.CONFLICT": "找不到此播放畫質",
 	"KKS.CONFLICT.MESSAGE": "這部影片可選擇高於事先設定之畫質",
@@ -2289,7 +2292,7 @@ const PlayerProvider = ({
     const logTarget = mapLogEvents({
       session: instance.current.session,
       playerName: 'bitmovin',
-      version: "1.3.0",
+      version: "1.3.1",
       video: videoRef.current,
       getPlaybackStatus: () => getPlaybackStatus$1(videoRef.current, options.plugins)
     });
@@ -7270,7 +7273,7 @@ const getSettingSections = ({
   title: 'KKS.SUBTITLES',
   selectedValue: selectedSubtitleName,
   items: [...subtitleItems, {
-    label: 'off',
+    label: 'OFF',
     value: 'off'
   }]
 }, shouldShowAudio(audioItems) && {
@@ -7302,13 +7305,14 @@ const useSettings = () => {
   } = useContext(Context.UI).state;
   const player = usePlayer();
   const selectedQualityName = (_ref = qualityItems.find(item => item.value === defaultQuality) || qualityItems[0]) === null || _ref === void 0 ? void 0 : _ref.value;
-  const subtitleItems = player === null || player === void 0 ? void 0 : (_player$subtitles = player.subtitles) === null || _player$subtitles === void 0 ? void 0 : _player$subtitles.list().map(track => ({
+  const subtitleItems = player === null || player === void 0 ? void 0 : (_player$subtitles = player.subtitles) === null || _player$subtitles === void 0 ? void 0 : _player$subtitles.list() // For missing tag CLOSED-CAPTIONS=NONE in .m3u8
+  .filter(track => track.lang !== 'unknown').map(track => ({
     label: track.label,
     value: track.lang
   }));
   let selectedSubtitleName = player === null || player === void 0 ? void 0 : (_player$subtitles2 = player.subtitles) === null || _player$subtitles2 === void 0 ? void 0 : (_player$subtitles2$li = _player$subtitles2.list().find(track => track.enabled === true)) === null || _player$subtitles2$li === void 0 ? void 0 : _player$subtitles2$li.lang;
   if (!selectedSubtitleName) selectedSubtitleName = 'off';
-  const audioItems = player === null || player === void 0 ? void 0 : player.getAvailableAudio().map(track => ({
+  const audioItems = player === null || player === void 0 ? void 0 : player.getAvailableAudio().filter(track => track.lang && track.lang !== 'und').map(track => ({
     label: track.label,
     value: track.lang
   }));
@@ -7357,7 +7361,9 @@ const useChangeSettings = () => {
       const subtitles = player.subtitles;
       subtitles.list().forEach(track => {
         const setter = value !== track.lang ? subtitles.disable : subtitles.enable;
-        setter(track.id);
+        setter(track.id); // Safari need to fire cueExit manually.
+
+        if (value === 'off') subtitles.cueExit();
       });
     }
 
