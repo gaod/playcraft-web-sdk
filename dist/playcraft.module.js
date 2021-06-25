@@ -240,7 +240,7 @@ function isInScope(min, value, max) {
 function getVersion() {
   try {
     // eslint-disable-next-line no-undef
-    return "1.3.1";
+    return "1.3.2";
   } catch (e) {
     return undefined;
   }
@@ -1311,6 +1311,76 @@ if (process.env.NODE_ENV !== 'production') {
 }
 });
 
+const getTargetQuality = (items, suggested) => {
+  const sorted = items.sort((a, b) => b - a);
+
+  if (!suggested) {
+    return sorted[0];
+  }
+
+  return sorted.find(value => value <= suggested) || sorted.slice(-1)[0];
+};
+
+const matchAll = (input, pattern) => {
+  const flags = [pattern.global && 'g', pattern.ignoreCase && 'i', pattern.multiline && 'm'].filter(Boolean).join('');
+  const clone = new RegExp(pattern, flags);
+  return Array.from(function* () {
+    let matched = true;
+
+    while (1) {
+      matched = clone.exec(input);
+
+      if (!matched) {
+        return;
+      }
+
+      yield matched;
+    }
+  }());
+};
+
+const rewriteHlsUrls = (manifest, sourceUrl) => manifest.replace(/((#EXT-X-MEDIA:.*URI=")([^"]*))|((#EXT-X-STREAM-INF.*\n)(.*)(?=\n))/g, (...matches) => [matches[2], matches[5], new URL(matches[3] || matches[6], sourceUrl)].filter(Boolean).join(''));
+
+const rewriteHlsQualities = (manifest, {
+  sourceUrl,
+  filter
+}) => {
+  if (!filter) {
+    return;
+  }
+
+  const files = matchAll(manifest, /RESOLUTION=(\d+)x(\d+)/g).map(([, width, height]) => ({
+    width: +width,
+    height: +height
+  }));
+  const profiles = filter(files) || files;
+
+  if (profiles.length === 0) {
+    return;
+  }
+
+  const filtered = manifest.replace(/#EXT-X-STREAM-INF.*RESOLUTION=(\d+)x(\d+).*\n.*\n/g, (item, width, height) => profiles.some(p => p.width === +width && p.height === +height) ? item : '');
+
+  if (filtered === manifest) {
+    return;
+  }
+
+  return rewriteHlsUrls(filtered, sourceUrl);
+};
+
+const compareQuality = (a, b) => a.height - b.height;
+
+const filterHigherQualites = ({
+  qualities,
+  targetQuality
+}) => {
+  if (qualities.some(quality => compareQuality(quality, targetQuality) <= 0)) {
+    return qualities.filter(quality => compareQuality(quality, targetQuality) <= 0);
+  }
+
+  return [qualities.reduce((a, b) => compareQuality(a, b) <= 0 ? a : b)];
+};
+
 var en = {
 	"KKS.YES": "Yes",
 	"KKS.NO": "No",
@@ -1328,6 +1398,7 @@ var en = {
 	"KKS.SETTING": "Setting",
 	"KKS.SETTING.CONFLICT": "Setting conflict",
 	"KKS.CONFLICT.MESSAGE": "The video quality is higher than auto quality default setting",
+	"KKS.SETTING.AUTO": "Auto",
 	"KKS.SETTING.AUTOPLAY": "Autoplay",
 	"KKS.SETTING.VERSION": "Version",
 	"KKS.SETTING.SUBTITLE": "Subtitle",
@@ -1395,6 +1466,7 @@ var ja = {
 	"KKS.SETTING": "再生設定",
 	"KKS.SETTING.CONFLICT": "ご視聴する動画は、デフォルト画質設定に一致しません。",
 	"KKS.CONFLICT.MESSAGE": "このビデオの画質がデフォルト設定より高いです。",
+	"KKS.SETTING.AUTO": "自動",
 	"KKS.SETTING.AUTOPLAY": "自動再生",
 	"KKS.SETTING.VERSION": "字幕・吹替",
 	"KKS.SETTING.SUBTITLE": "字幕",
@@ -1462,6 +1534,7 @@ var zhTW = {
 	"KKS.SETTING": "設定",
 	"KKS.SETTING.CONFLICT": "找不到此播放畫質",
 	"KKS.CONFLICT.MESSAGE": "這部影片可選擇高於事先設定之畫質",
+	"KKS.SETTING.AUTO": "自動",
 	"KKS.SETTING.AUTOPLAY": "自動播放",
 	"KKS.SETTING.VERSION": "Version",
 	"KKS.SETTING.SUBTITLE": "字幕",
@@ -2292,7 +2365,7 @@ const PlayerProvider = ({
     const logTarget = mapLogEvents({
       session: instance.current.session,
       playerName: 'bitmovin',
-      version: "1.3.1",
+      version: "1.3.2",
       video: videoRef.current,
       getPlaybackStatus: () => getPlaybackStatus$1(videoRef.current, options.plugins)
     });
@@ -4139,7 +4212,6 @@ const Event = ({
   onBack,
   onReplay,
   onError,
-  onVideoQualityChanged,
   onMediaSourceChanged,
   onChangeVideo,
   onChangeToNextVideo,
@@ -4169,9 +4241,6 @@ const Event = ({
           content: _get(state, 'API.content')
         });
 
-      case type$3.SELECT_QUALITY:
-        return onVideoQualityChanged(action.to, action.from);
-
       case type$3.SELECT_MEDIA_SOURCE:
         return onMediaSourceChanged(action.mediaSource);
 
@@ -4197,7 +4266,6 @@ Event.propTypes = {
   onBack: propTypes.func,
   onReplay: propTypes.func,
   onError: propTypes.func,
-  onVideoQualityChanged: propTypes.func,
   onChangeVideo: propTypes.func,
   onChangeToNextVideo: propTypes.func,
   onChangeToPreviousVideo: propTypes.func,
@@ -4207,7 +4275,6 @@ Event.defaultProps = {
   onBack: () => {},
   onReplay: () => {},
   onError: () => {},
-  onVideoQualityChanged: () => {},
   onMediaSourceChanged: () => {},
   onChangeVideo: () => {},
   onChangeToNextVideo: () => {},
@@ -4688,25 +4755,6 @@ const button = {
   }
 };
 
-const getTargetQuality = (items, suggested) => {
-  const sorted = items.sort((a, b) => b - a);
-
-  if (!suggested) {
-    return sorted[0];
-  }
-
-  return sorted.find(value => value <= suggested) || sorted.slice(-1)[0];
-};
-
-const filterHlsManifestQualities = (data, {
-  sourceUrl,
-  maxHeight
-}) => {
-  if (RegExp(`RESOLUTION=\\d+x${maxHeight}\\W`).test(data)) {
-    return data.replace(/(#EXT-X-STREAM-INF:.*RESOLUTION=\d+x)(\d+)(.*\n)(.*)(\n)/g, (match, part1, height, part2, fileName, line) => height <= maxHeight ? [part1, height, part2, new URL(fileName, sourceUrl), line].join('') : '').replace(/(#EXT-X-MEDIA:.*URI=")(.*)(")/g, (match, part, fileName, line) => [part, new URL(fileName, sourceUrl), line].join(''));
-  }
-};
-
 /* eslint-disable consistent-return */
 
 /* eslint-disable no-use-before-define */
@@ -4807,6 +4855,8 @@ const getMaxQuality = (state, {
   manifestType = 'hls',
   quality = ''
 }) => {
+  var _quality$getQualityOp;
+
   const {
     UI: {
       selectedQualityName,
@@ -4820,8 +4870,11 @@ const getMaxQuality = (state, {
   const {
     resolutions = []
   } = manifests[manifestType];
-  const height = qualityPrecedence === 'application' ? parseInt(quality.default || quality) : (qualityItems.find(item => item.value === selectedQualityName) || qualityItems[0]).height;
-  return resolutions.find(item => item.height === height) || resolutions[0];
+  const allQualities = (quality === null || quality === void 0 ? void 0 : (_quality$getQualityOp = quality.getQualityOptions) === null || _quality$getQualityOp === void 0 ? void 0 : _quality$getQualityOp.call(quality, resolutions)) || qualityItems;
+  const selected = qualityPrecedence === 'application' ? {
+    height: quality.default || quality
+  } : allQualities.find(item => item.height === selectedQualityName) || qualityItems.find(item => item.value === selectedQualityName) || qualityItems[0];
+  return allQualities.find(item => item.height === selected.height || item.height === parseInt(selected.height, 10)) || resolutions[0];
 };
 
 const getLoadOptions = (state, {
@@ -4928,9 +4981,12 @@ const loadStream = async (player, store, props, self) => {
       const maxQuality = getMaxQuality(store.getState(), {
         quality: props.quality
       });
-      const filtered = filterHlsManifestQualities(manifest, {
+      const filtered = rewriteHlsQualities(manifest, {
         sourceUrl: manifestUrl,
-        maxHeight: maxQuality.height
+        filter: qualities => props.onVideoQualityChanged({
+          targetQuality: maxQuality,
+          qualities
+        })
       });
       return filtered ? URL.createObjectURL(new Blob([filtered], {
         type: 'application/x-mpegURL'
@@ -4973,6 +5029,19 @@ const handleSafariStalledTooLong = (player, store, PlayerAction) => {
       });
     }
   }, 10000);
+};
+
+const handleSelectQuality = ({
+  player,
+  targetQuality,
+  onVideoQualityChanged
+}) => {
+  const availableQualities = player.getAvailableVideoQualities();
+  const selected = (onVideoQualityChanged === null || onVideoQualityChanged === void 0 ? void 0 : onVideoQualityChanged({
+    qualities: availableQualities,
+    targetQuality
+  })) || availableQualities;
+  return availableQualities.length <= 1 ? availableQualities : selected;
 };
 
 class BitmovinPlayer extends Component {
@@ -5074,6 +5143,13 @@ class BitmovinPlayer extends Component {
               (_this$changeQuality = this.changeQuality) === null || _this$changeQuality === void 0 ? void 0 : _this$changeQuality.call(this);
             }
 
+            this.selectedQualities = handleSelectQuality({
+              player: this.player,
+              targetQuality: getMaxQuality(store.getState(), {
+                quality: this.props.quality
+              }),
+              onVideoQualityChanged: this.props.onVideoQualityChanged
+            });
             return;
         }
       } catch (error) {
@@ -5121,26 +5197,14 @@ class BitmovinPlayer extends Component {
         },
         adaptation: {
           onVideoAdaptation: data => {
-            const maxQuality = getMaxQuality(store.getState(), {
-              quality: this.props.quality
-            });
-
-            if (maxQuality) {
-              const qualities = this.player.getAvailableVideoQualities(); // when playing a MediaTailor stream, suggested id doesn't match quality items
-
-              const currentQuality = qualities.find(quality => quality.id === data.suggested) || qualities[0];
-              const qualityBoundary = [qualities.filter(quality => maxQuality.height >= quality.height).reduce((res, cur) => {
-                return !res || cur.height > res.height || cur.bitrate > res.bitrate ? cur : res;
-              }, undefined), qualities.filter(quality => maxQuality.height < quality.height).reduce((res, cur) => {
-                return !res || cur.height < res.height || cur.bitrate < res.bitrate ? cur : res;
-              }, undefined)];
-
-              if (maxQuality.height < currentQuality.height) {
-                return (qualityBoundary[0] || qualityBoundary[1]).id;
-              }
+            if (!this.selectedQualities || this.selectedQualities.length < 1 || this.selectedQualities.some(quality => quality.id === data.suggested)) {
+              return data;
             }
 
-            return data;
+            const targetBitrate = this.player.getAvailableVideoQualities().find(quality => quality.id === data.suggested);
+            return this.selectedQualities.reduce((a, b) => {
+              Math.abs(a.bitrate - targetBitrate) <= Math.abs(b.bitrate - targetBitrate) ? a : b;
+            }).id;
           }
         }
       };
@@ -5165,6 +5229,13 @@ class BitmovinPlayer extends Component {
         this.workaround_ST_4489({
           PlayerEvent,
           player
+        });
+        this.selectedQualities = handleSelectQuality({
+          player: this.player,
+          targetQuality: getMaxQuality(store.getState(), {
+            quality: this.props.quality
+          }),
+          onVideoQualityChanged: this.props.onVideoQualityChanged
         });
         store.dispatch(PlayerAction.setState(this.convertToPlayerState(this.player)));
         store.dispatch(PlayerAction.loaded());
@@ -5455,6 +5526,7 @@ _defineProperty(BitmovinPlayer, "propTypes", {
   onViewModeChange: propTypes.func,
   onEnterFullscreen: propTypes.func,
   onExitFullscreen: propTypes.func,
+  onVideoQualityChanged: propTypes.func,
   onStallStarted: propTypes.func,
   onStallEnded: propTypes.func
 });
@@ -5496,9 +5568,9 @@ const PlayerVideo = props => {
   });
 };
 
-const useStore = selector => {
+const useStore = (...args) => {
   const store = useContext(Context.Adapter);
-  return store.useStore(selector);
+  return store.useStore(...args);
 };
 
 const formattedTime = sourceTime => {
@@ -5816,7 +5888,7 @@ IconButton$1.propTypes = {
 /* eslint-disable indent */
 
 const PlayButton$1 = () => {
-  const playbackState = useStore(getPlaybackState);
+  const playbackState = useStore(getPlaybackState, shallow);
   const disabled = !isDesktop() && playbackState.loading;
   const status = useDebounce({
     delay: 200,
@@ -6599,10 +6671,14 @@ const convertDRMToNameMap = drm => {
 };
 
 const convertManifestToNameMap = manifests => {
+  const placeholder = {
+    dash: {},
+    hls: {}
+  };
   return manifests.reduce((res, item) => {
     res[item.protocol] = item;
     return res;
-  }, {});
+  }, placeholder);
 };
 
 var API = ((state = initState$4, action) => {
@@ -7236,6 +7312,12 @@ const shouldShowAudio = audioMenu => audioMenu.length > 1 || audioMenu[0];
 const defaultQualityName = (items, quality = '') => {
   var _items$find;
 
+  const valueMatch = items.find(it => it.value === quality || it.value === quality.default);
+
+  if (valueMatch) {
+    return valueMatch;
+  }
+
   const targetHeight = getTargetQuality(items.map(it => it.height), parseInt(quality.default || quality, 10));
   return (_items$find = items.find(it => it.height === targetHeight)) === null || _items$find === void 0 ? void 0 : _items$find.value;
 };
@@ -7289,7 +7371,7 @@ const getSettingSections = ({
 }].filter(Boolean);
 
 const useSettings = () => {
-  var _ref, _player$subtitles, _player$subtitles2, _player$subtitles2$li, _options$quality, _player$getAudio;
+  var _options$quality, _options$quality$getQ, _ref, _player$subtitles, _player$subtitles2, _player$subtitles2$li, _player$getAudio;
 
   const {
     options
@@ -7300,11 +7382,12 @@ const useSettings = () => {
   } = useContext(Context.API).state;
   const {
     qualityItems,
-    mediaSources,
-    selectedQualityName: defaultQuality = defaultQualityName(qualityItems, options.quality)
+    mediaSources
   } = useContext(Context.UI).state;
+  const allQualities = ((_options$quality = options.quality) === null || _options$quality === void 0 ? void 0 : (_options$quality$getQ = _options$quality.getQualityOptions) === null || _options$quality$getQ === void 0 ? void 0 : _options$quality$getQ.call(_options$quality, qualityItems)) || qualityItems;
+  const defaultQuality = useContext(Context.UI).state.selectedQualityName || defaultQualityName(allQualities, options.quality);
+  const selectedQualityName = (_ref = allQualities.find(item => item.value === defaultQuality) || allQualities[0]) === null || _ref === void 0 ? void 0 : _ref.value;
   const player = usePlayer();
-  const selectedQualityName = (_ref = qualityItems.find(item => item.value === defaultQuality) || qualityItems[0]) === null || _ref === void 0 ? void 0 : _ref.value;
   const subtitleItems = player === null || player === void 0 ? void 0 : (_player$subtitles = player.subtitles) === null || _player$subtitles === void 0 ? void 0 : _player$subtitles.list() // For missing tag CLOSED-CAPTIONS=NONE in .m3u8
   .filter(track => track.lang !== 'unknown').map(track => ({
     label: track.label,
@@ -7320,9 +7403,7 @@ const useSettings = () => {
     contentType: content === null || content === void 0 ? void 0 : content.contentType,
     mediaSources,
     playingSourceType,
-    qualityItems: (_options$quality = options.quality) !== null && _options$quality !== void 0 && _options$quality.getQualityText ? qualityItems.map(item => ({ ...item,
-      label: options.quality.getQualityText(item)
-    })) : qualityItems,
+    qualityItems: allQualities,
     selectedQualityName,
     subtitleItems,
     selectedSubtitleName,
@@ -8042,7 +8123,7 @@ SkipButton.propTypes = {
 const PlayPane = () => {
   const {
     status
-  } = useStore(getPlaybackState);
+  } = useStore(getPlaybackState, shallow);
   const type = useStore(({
     UI: state
   }) => state.activePanel === 'recommendation' ? 'dismiss' : state.autoplayDialogOpening || state.autoplayDialogOpening ? 'none' : 'play');
@@ -9272,7 +9353,7 @@ const PlayerUi = ({
     url: coverImageUrl,
     children: [jsx$1(PlayerUi$1, {
       type: isDesktop() ? 'desktop' : 'mobile',
-      ...useStore(getPlaybackInfo),
+      ...useStore(getPlaybackInfo, shallow),
       backRef: backRef,
       toolPanels: toolPanels,
       recommendation: recommendation,
@@ -9428,7 +9509,6 @@ const PlaybackHooks = ({
   containerRef,
   onError,
   onBack,
-  onVideoQualityChanged,
   onMediaSourceChanged,
   onViewModeChange,
   onEnterFullscreen,
@@ -9482,7 +9562,6 @@ const PlaybackHooks = ({
       onError: onError,
       onBack: onBack,
       onReplay: onReplay,
-      onVideoQualityChanged: onVideoQualityChanged,
       onMediaSourceChanged: onMediaSourceChanged,
       onChangeVideo: onChangeVideo,
       onChangeToNextVideo: onChangeToNextVideo,
@@ -9560,7 +9639,7 @@ const Player = /*#__PURE__*/forwardRef(({
   onVolumeChanged,
   onMuted,
   onUnmuted,
-  onVideoQualityChanged,
+  onVideoQualityChanged = filterHigherQualites,
   onMediaSourceChanged,
   onViewModeChange,
   onEnterFullscreen,
@@ -9637,6 +9716,7 @@ const Player = /*#__PURE__*/forwardRef(({
           onViewModeChange: onViewModeChange,
           onEnterFullscreen: onEnterFullscreen,
           onExitFullscreen: onExitFullscreen,
+          onVideoQualityChanged: onVideoQualityChanged,
           onStallStarted: onStallStarted,
           onStallEnded: onStallEnded,
           adContainerRef: adContainerRef
@@ -9652,7 +9732,6 @@ const Player = /*#__PURE__*/forwardRef(({
           containerRef,
           onError,
           onBack,
-          onVideoQualityChanged,
           onMediaSourceChanged,
           onViewModeChange,
           onEnterFullscreen,
