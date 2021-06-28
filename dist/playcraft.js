@@ -281,7 +281,7 @@ function isInScope(min, value, max) {
 function getVersion() {
   try {
     // eslint-disable-next-line no-undef
-    return "1.3.2";
+    return "1.3.3";
   } catch (e) {
     return undefined;
   }
@@ -2406,7 +2406,7 @@ const PlayerProvider = ({
     const logTarget = mapLogEvents({
       session: instance.current.session,
       playerName: 'bitmovin',
-      version: "1.3.2",
+      version: "1.3.3",
       video: videoRef.current,
       getPlaybackStatus: () => getPlaybackStatus$1(videoRef.current, options.plugins)
     });
@@ -4915,7 +4915,7 @@ const getMaxQuality = (state, {
   const selected = qualityPrecedence === 'application' ? {
     height: quality.default || quality
   } : allQualities.find(item => item.height === selectedQualityName) || qualityItems.find(item => item.value === selectedQualityName) || qualityItems[0];
-  return allQualities.find(item => item.height === selected.height || item.height === parseInt(selected.height, 10)) || resolutions[0];
+  return allQualities.find(item => item.height === selected.height || item.height === parseInt(selected.height, 10)) || resolutions[0] || {};
 };
 
 const getLoadOptions = (state, {
@@ -5245,7 +5245,7 @@ class BitmovinPlayer extends React.Component {
             const targetBitrate = this.player.getAvailableVideoQualities().find(quality => quality.id === data.suggested);
             return this.selectedQualities.reduce((a, b) => {
               Math.abs(a.bitrate - targetBitrate) <= Math.abs(b.bitrate - targetBitrate) ? a : b;
-            }).id;
+            }).id || data;
           }
         }
       };
@@ -7427,7 +7427,7 @@ const useSettings = () => {
   } = React.useContext(Context.UI).state;
   const allQualities = ((_options$quality = options.quality) === null || _options$quality === void 0 ? void 0 : (_options$quality$getQ = _options$quality.getQualityOptions) === null || _options$quality$getQ === void 0 ? void 0 : _options$quality$getQ.call(_options$quality, qualityItems)) || qualityItems;
   const defaultQuality = React.useContext(Context.UI).state.selectedQualityName || defaultQualityName(allQualities, options.quality);
-  const selectedQualityName = (_ref = allQualities.find(item => item.value === defaultQuality) || allQualities[0]) === null || _ref === void 0 ? void 0 : _ref.value;
+  const selectedQualityName = (_ref = allQualities.find(item => item.value === defaultQuality) || allQualities[0] || {}) === null || _ref === void 0 ? void 0 : _ref.value;
   const player = usePlayer();
   const subtitleItems = player === null || player === void 0 ? void 0 : (_player$subtitles = player.subtitles) === null || _player$subtitles === void 0 ? void 0 : _player$subtitles.list() // For missing tag CLOSED-CAPTIONS=NONE in .m3u8
   .filter(track => track.lang !== 'unknown').map(track => ({
