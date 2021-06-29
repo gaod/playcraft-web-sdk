@@ -1,247 +1,38 @@
-'use strict'
-
-Object.defineProperty(exports, '__esModule', {value: true})
-
-var React = require('react')
-var ReactIs = require('react-is')
-var shallow = require('zustand/shallow')
-var mitt = require('mitt')
-var jsxRuntime = require('react/jsx-runtime')
-var _get = require('dlv')
-var axios = require('axios')
-var UAParser = require('ua-parser-js')
-var _defineProperty = require('@babel/runtime/helpers/defineProperty')
-var useDimensions = require('react-cool-dimensions')
-var resizeObserver = require('@juggle/resize-observer')
-var jsxRuntime$1 = require('@emotion/react/jsx-runtime')
-var react = require('@emotion/react')
-var css = require('@emotion/css')
-var reactDom = require('react-dom')
-var classnames = require('classnames')
-var create = require('zustand/vanilla')
-var createHook = require('zustand')
-var middleware = require('zustand/middleware')
-var useOnclickOutside = require('react-cool-onclickoutside')
-
-function _interopDefaultLegacy(e) {
-  return e && typeof e === 'object' && 'default' in e ? e : {default: e}
-}
-
-function _interopNamespace(e) {
-  if (e && e.__esModule) return e
-  var n = Object.create(null)
-  if (e) {
-    Object.keys(e).forEach(function (k) {
-      if (k !== 'default') {
-        var d = Object.getOwnPropertyDescriptor(e, k)
-        Object.defineProperty(
-          n,
-          k,
-          d.get
-            ? d
-            : {
-                enumerable: true,
-                get: function () {
-                  return e[k]
-                },
-              }
-        )
-      }
-    })
-  }
-  n['default'] = e
-  return Object.freeze(n)
-}
-
-var React__default = /*#__PURE__*/ _interopDefaultLegacy(React)
-var ReactIs__default = /*#__PURE__*/ _interopDefaultLegacy(ReactIs)
-var shallow__default = /*#__PURE__*/ _interopDefaultLegacy(shallow)
-var mitt__default = /*#__PURE__*/ _interopDefaultLegacy(mitt)
-var _get__default = /*#__PURE__*/ _interopDefaultLegacy(_get)
-var axios__default = /*#__PURE__*/ _interopDefaultLegacy(axios)
-var UAParser__default = /*#__PURE__*/ _interopDefaultLegacy(UAParser)
-var _defineProperty__default = /*#__PURE__*/ _interopDefaultLegacy(
-  _defineProperty
-)
-var useDimensions__default = /*#__PURE__*/ _interopDefaultLegacy(useDimensions)
-var classnames__default = /*#__PURE__*/ _interopDefaultLegacy(classnames)
-var create__default = /*#__PURE__*/ _interopDefaultLegacy(create)
-var createHook__default = /*#__PURE__*/ _interopDefaultLegacy(createHook)
-var useOnclickOutside__default = /*#__PURE__*/ _interopDefaultLegacy(
-  useOnclickOutside
-)
-
-var logs = {
-  bitmovin: false,
-  level: 'error',
-}
-var style$c = {
-  width: '100%',
-  height: '100%',
-}
-var ui = false
-var BitmovinConfig = {
-  logs: logs,
-  style: style$c,
-  ui: ui,
-}
-
-var desktop = [
-  {
-    device: {
-      type: 'desktop',
-    },
-    os: {
-      name: '*',
-      version: '*',
-    },
-    browser: {
-      name: 'Chrome',
-      version: '60',
-    },
-  },
-  {
-    device: {
-      type: 'desktop',
-    },
-    os: {
-      name: '*',
-      version: '*',
-    },
-    browser: {
-      name: 'Safari',
-      version: '11',
-    },
-  },
-  {
-    device: {
-      type: 'desktop',
-    },
-    os: {
-      name: '*',
-      version: '*',
-    },
-    browser: {
-      name: 'Firefox',
-      version: '60',
-    },
-  },
-  {
-    device: {
-      type: 'desktop',
-    },
-    os: {
-      name: '*',
-      version: '*',
-    },
-    browser: {
-      name: 'Edge',
-      version: '15',
-    },
-  },
-  {
-    device: {
-      type: 'desktop',
-    },
-    os: {
-      name: 'Windows',
-      version: '8.1',
-    },
-    browser: {
-      name: 'IE',
-      version: '11',
-    },
-  },
-]
-
-var mobile = [
-  {
-    device: {
-      type: 'mobile',
-    },
-    os: {
-      name: 'Android',
-      version: '5',
-    },
-    browser: {
-      name: 'Chrome',
-      version: '60',
-    },
-  },
-  {
-    device: {
-      type: 'mobile',
-    },
-    os: {
-      name: 'Android',
-      version: '5',
-    },
-    browser: {
-      name: 'Chrome WebView',
-      version: '60',
-    },
-  },
-  {
-    device: {
-      type: 'mobile',
-    },
-    os: {
-      name: 'iOS',
-      version: '11',
-    },
-    browser: {
-      name: 'Mobile Safari',
-      version: '11',
-    },
-  },
-  {
-    device: {
-      type: 'tablet',
-    },
-    os: {
-      name: 'Android',
-      version: '5',
-    },
-    browser: {
-      name: 'Chrome',
-      version: '60',
-    },
-  },
-  {
-    device: {
-      type: 'tablet',
-    },
-    os: {
-      name: 'Android',
-      version: '5',
-    },
-    browser: {
-      name: 'Chrome WebView',
-      version: '60',
-    },
-  },
-  {
-    device: {
-      type: 'tablet',
-    },
-    os: {
-      name: 'iOS',
-      version: '11',
-    },
-    browser: {
-      name: 'Mobile Safari',
-      version: '11',
-    },
-  },
-]
-
-var config = {
-  BitmovinConfig,
-  SupportEnvironment: {
-    desktop,
-    mobile,
-  },
-}
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useContext,
+  createContext,
+  useImperativeHandle,
+  Component,
+  createRef,
+  useReducer,
+  cloneElement,
+  Fragment as Fragment$2,
+  memo,
+  useMemo,
+  forwardRef,
+} from 'react'
+import ReactIs from 'react-is'
+import shallow from 'zustand/shallow'
+import mitt from 'mitt'
+import {jsx, jsxs as jsxs$1, Fragment as Fragment$1} from 'react/jsx-runtime'
+import _get from 'dlv'
+import axios from 'axios'
+import UAParser from 'ua-parser-js'
+import _defineProperty from '@babel/runtime/helpers/defineProperty'
+import useDimensions from 'react-cool-dimensions'
+import {ResizeObserver} from '@juggle/resize-observer'
+import {jsxs, jsx as jsx$1, Fragment} from '@emotion/react/jsx-runtime'
+import {css, ClassNames, keyframes} from '@emotion/react'
+import {cx} from '@emotion/css'
+import {createPortal} from 'react-dom'
+import classnames from 'classnames'
+import create from 'zustand/vanilla'
+import createHook from 'zustand'
+import {devtools, redux} from 'zustand/middleware'
+import useOnclickOutside from 'react-cool-onclickoutside'
 
 const combineReducer = structure => {
   const props = Object.keys(structure)
@@ -288,14 +79,6 @@ function convertToSeconds(timeString) {
 }
 function isInScope(min, value, max) {
   return min <= value && value <= max
-}
-function getVersion() {
-  try {
-    // eslint-disable-next-line no-undef
-    return '1.4.0-canary.0'
-  } catch (e) {
-    return undefined
-  }
 }
 function getPopoverPosition(rect, target, boundary) {
   const rectX = rect.x || rect.left
@@ -1110,7 +893,7 @@ var factoryWithTypeCheckers = function (isValidElement, throwOnDirectAccess) {
   function createElementTypeTypeChecker() {
     function validate(props, propName, componentName, location, propFullName) {
       var propValue = props[propName]
-      if (!ReactIs__default['default'].isValidElementType(propValue)) {
+      if (!ReactIs.isValidElementType(propValue)) {
         var propType = getPropType(propValue)
         return new PropTypeError(
           'Invalid ' +
@@ -1633,13 +1416,13 @@ var factoryWithThrowingShims = function () {
 
 var propTypes = createCommonjsModule(function (module) {
   if (process.env.NODE_ENV !== 'production') {
-    var ReactIs = ReactIs__default['default']
+    var ReactIs$1 = ReactIs
 
     // By explicitly using `prop-types` you are opting into new development behavior.
     // http://fb.me/prop-types-in-prod
     var throwOnDirectAccess = true
     module.exports = factoryWithTypeCheckers(
-      ReactIs.isElement,
+      ReactIs$1.isElement,
       throwOnDirectAccess
     )
   } else {
@@ -1947,10 +1730,6 @@ const EnvironmentErrorName = {
   NOT_SUPPORT_BROWSER: 'KKS.ERROR.BROWSER_IS_NOT_SUPPORTED',
   NOT_SUPPORT_BROWSER_VERSION: 'KKS.ERROR.PLEASE_UPGRADE_BROWSER',
 }
-const SeekOrigin = {
-  START: 'START',
-  CURRENT: 'CURRENT',
-}
 const CastState = {
   NO_DEVICES_AVAILABLE: 'NO_DEVICES_AVAILABLE',
   CONNECTED: 'CONNECTED',
@@ -2004,6 +1783,178 @@ var Types = {
   TextCode,
   AgentCommand,
   ItemType,
+}
+
+var logs = {
+  bitmovin: false,
+  level: 'error',
+}
+var style$b = {
+  width: '100%',
+  height: '100%',
+}
+var ui = false
+var BitmovinConfig = {
+  logs: logs,
+  style: style$b,
+  ui: ui,
+}
+
+var desktop = [
+  {
+    device: {
+      type: 'desktop',
+    },
+    os: {
+      name: '*',
+      version: '*',
+    },
+    browser: {
+      name: 'Chrome',
+      version: '60',
+    },
+  },
+  {
+    device: {
+      type: 'desktop',
+    },
+    os: {
+      name: '*',
+      version: '*',
+    },
+    browser: {
+      name: 'Safari',
+      version: '11',
+    },
+  },
+  {
+    device: {
+      type: 'desktop',
+    },
+    os: {
+      name: '*',
+      version: '*',
+    },
+    browser: {
+      name: 'Firefox',
+      version: '60',
+    },
+  },
+  {
+    device: {
+      type: 'desktop',
+    },
+    os: {
+      name: '*',
+      version: '*',
+    },
+    browser: {
+      name: 'Edge',
+      version: '15',
+    },
+  },
+  {
+    device: {
+      type: 'desktop',
+    },
+    os: {
+      name: 'Windows',
+      version: '8.1',
+    },
+    browser: {
+      name: 'IE',
+      version: '11',
+    },
+  },
+]
+
+var mobile = [
+  {
+    device: {
+      type: 'mobile',
+    },
+    os: {
+      name: 'Android',
+      version: '5',
+    },
+    browser: {
+      name: 'Chrome',
+      version: '60',
+    },
+  },
+  {
+    device: {
+      type: 'mobile',
+    },
+    os: {
+      name: 'Android',
+      version: '5',
+    },
+    browser: {
+      name: 'Chrome WebView',
+      version: '60',
+    },
+  },
+  {
+    device: {
+      type: 'mobile',
+    },
+    os: {
+      name: 'iOS',
+      version: '11',
+    },
+    browser: {
+      name: 'Mobile Safari',
+      version: '11',
+    },
+  },
+  {
+    device: {
+      type: 'tablet',
+    },
+    os: {
+      name: 'Android',
+      version: '5',
+    },
+    browser: {
+      name: 'Chrome',
+      version: '60',
+    },
+  },
+  {
+    device: {
+      type: 'tablet',
+    },
+    os: {
+      name: 'Android',
+      version: '5',
+    },
+    browser: {
+      name: 'Chrome WebView',
+      version: '60',
+    },
+  },
+  {
+    device: {
+      type: 'tablet',
+    },
+    os: {
+      name: 'iOS',
+      version: '11',
+    },
+    browser: {
+      name: 'Mobile Safari',
+      version: '11',
+    },
+  },
+]
+
+var defaultConfig = {
+  BitmovinConfig,
+  SupportEnvironment: {
+    desktop,
+    mobile,
+  },
 }
 
 const linkPluginEvents = (plugins, handlers) => {
@@ -2339,8 +2290,8 @@ var UiAction = {
 }
 
 const useTimeout = () => {
-  const timer = React.useRef({})
-  React.useEffect(() => () => clearTimeout(timer.current.id), [])
+  const timer = useRef({})
+  useEffect(() => () => clearTimeout(timer.current.id), [])
   return [
     (callback, ms) => {
       clearTimeout(timer.current.id)
@@ -2350,8 +2301,8 @@ const useTimeout = () => {
   ]
 }
 const useInterval = () => {
-  const timer = React.useRef({})
-  React.useEffect(() => () => clearInterval(timer.current.id), [])
+  const timer = useRef({})
+  useEffect(() => () => clearInterval(timer.current.id), [])
   return [
     (callback, ms) => {
       clearInterval(timer.current.id)
@@ -2361,17 +2312,17 @@ const useInterval = () => {
   ]
 }
 const useCache = newState => {
-  const [state, setState] = React.useState()
-  React.useEffect(() => {
-    if (!shallow__default['default'](state, newState)) setState(newState)
+  const [state, setState] = useState()
+  useEffect(() => {
+    if (!shallow(state, newState)) setState(newState)
   })
-  return shallow__default['default'](state, newState) ? state : newState
+  return shallow(state, newState) ? state : newState
 }
 
 const useDebounce = ({value, delay}) => {
-  const [state, dispatch] = React.useState(value)
-  const waiting = React.useRef()
-  React.useEffect(() => {
+  const [state, dispatch] = useState(value)
+  const waiting = useRef()
+  useEffect(() => {
     if (waiting.current) {
       waiting.current.value = value
     } else {
@@ -2390,8 +2341,8 @@ const useDebounce = ({value, delay}) => {
 }
 
 const useAutoHide = ({hideTimeMs = 3000, pinned, tapToHide, onHide} = {}) => {
-  const timer = React.useRef()
-  const [mode, setMode] = React.useState('hidden')
+  const timer = useRef()
+  const [mode, setMode] = useState('hidden')
 
   const interact = () => {
     if (mode !== 'shown') {
@@ -2408,19 +2359,19 @@ const useAutoHide = ({hideTimeMs = 3000, pinned, tapToHide, onHide} = {}) => {
     onHide === null || onHide === void 0 ? void 0 : onHide()
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (mode === 'shown') {
       interact()
     }
   }, [hideTimeMs])
-  React.useEffect(() => {
+  useEffect(() => {
     if (pinned) {
       clearTimeout(timer.current)
     } else {
       interact()
     }
   }, [pinned])
-  React.useEffect(() => () => clearTimeout(timer.current), [])
+  useEffect(() => () => clearTimeout(timer.current), [])
   return {
     mode: pinned ? 'shown' : mode,
     show: interact,
@@ -2442,12 +2393,12 @@ const useAutoHide = ({hideTimeMs = 3000, pinned, tapToHide, onHide} = {}) => {
   }
 }
 
-const on$1 = (target, name, handler) => {
+const on = (target, name, handler) => {
   target.addEventListener(name, handler)
   return () => target.removeEventListener(name, handler)
 }
 
-const once$1 = (target, name, handler) => {
+const once = (target, name, handler) => {
   const oneTime = (...args) => {
     handler(...args)
     target.removeEventListener(name, oneTime)
@@ -2480,7 +2431,7 @@ const mapLogEvents = ({
   playerName,
   getPlaybackStatus = () => video,
 }) => {
-  const emitter = mitt__default['default']()
+  const emitter = mitt()
   const state = {
     status: 'init',
     seeking: false,
@@ -2546,16 +2497,16 @@ const mapLogEvents = ({
   }
 
   const registered = [
-    on$1(session, 'error', error => {
+    on(session, 'error', error => {
       emitter.emit('playbackError', {
         module_error_code: error.code,
         ...commonPropties(),
       })
     }),
-    once$1(session, 'playerStarted', () => {
+    once(session, 'playerStarted', () => {
       state.playerStartTime = Date.now()
     }),
-    once$1(session, 'playbackBegan', event => {
+    once(session, 'playbackBegan', event => {
       var _event$data
 
       state.sessionId = uuidv4()
@@ -2567,13 +2518,13 @@ const mapLogEvents = ({
           : _event$data.ssaiProvider
       state.adPlayedDuration = 0
     }),
-    on$1(video, 'durationchange', () => {
+    on(video, 'durationchange', () => {
       // duration may change when playing an ad stitched stream, take only initial value
       if (!state.duration) {
         state.duration = getPlaybackStatus().duration
       }
     }),
-    once$1(video, 'canplay', () => {
+    once(video, 'canplay', () => {
       state.status = 'began'
       emitter.emit('playbackBegan', {
         player_startup_time:
@@ -2582,18 +2533,18 @@ const mapLogEvents = ({
         ...commonPropties(),
       })
     }),
-    on$1(video, 'playing', dispatchStart),
-    on$1(video, 'timeupdate', () => {
+    on(video, 'playing', dispatchStart),
+    on(video, 'timeupdate', () => {
       state.currentTime = getPlaybackStatus().currentTime
     }),
-    on$1(video, 'pause', dispatchStop),
-    on$1(video, 'seeking', () => {
+    on(video, 'pause', dispatchStop),
+    on(video, 'seeking', () => {
       state.seekingFrom = state.currentTime
     }),
-    on$1(session, 'userSeeking', () => {
+    on(session, 'userSeeking', () => {
       state.seeking = true
     }),
-    on$1(video, 'seeked', () => {
+    on(video, 'seeked', () => {
       if (state.seeking) {
         emitter.emit('seeked', {
           seeking_from: state.seekingFrom,
@@ -2604,12 +2555,12 @@ const mapLogEvents = ({
 
       state.seeking = false
     }),
-    on$1(session, 'sectionChange', () => {
+    on(session, 'sectionChange', () => {
       dispatchStop()
       state.content = session.getContent()
       dispatchStart()
     }),
-    once$1(session, 'playbackEnded', () => {
+    once(session, 'playbackEnded', () => {
       if (state.status === 'started') {
         dispatchStop()
       }
@@ -2624,7 +2575,7 @@ const mapLogEvents = ({
         ...commonPropties(),
       })
     }),
-    on$1(session, 'adBreakStarted', () => {
+    on(session, 'adBreakStarted', () => {
       dispatchStop()
       state.isPlayingAd = true
 
@@ -2632,7 +2583,7 @@ const mapLogEvents = ({
         dispatchStart()
       }
     }),
-    on$1(session, 'adBreakEnded', () => {
+    on(session, 'adBreakEnded', () => {
       dispatchStop()
       state.isPlayingAd = false
 
@@ -2652,7 +2603,7 @@ const createSession = () => {
   const state = {
     content: {},
   }
-  const emitter = mitt__default['default']()
+  const emitter = mitt()
   return {
     addEventListener: (name, handler) => emitter.on(name, handler),
     removeEventListener: (name, handler) => emitter.off(name, handler),
@@ -2680,7 +2631,7 @@ const createSession = () => {
   }
 }
 
-const playerContext = /*#__PURE__*/ React.createContext({})
+const playerContext = /*#__PURE__*/ createContext({})
 
 const getPlaybackStatus$1 = (video, plugins) =>
   Object.assign(
@@ -2717,11 +2668,11 @@ const PlayerProvider = ({
   children,
   sendLog,
 }) => {
-  const instance = React.useRef({})
+  const instance = useRef({})
   instance.current.videoRef = videoRef
   instance.current.uiRef = uiRef
   instance.current.options = options
-  React.useEffect(() => {
+  useEffect(() => {
     instance.current.session = createSession()
     const logTarget = mapLogEvents({
       session: instance.current.session,
@@ -2741,7 +2692,7 @@ const PlayerProvider = ({
       logTarget.reset()
     }
   }, [content.contentType, content.contentId])
-  return /*#__PURE__*/ jsxRuntime.jsx(playerContext.Provider, {
+  return /*#__PURE__*/ jsx(playerContext.Provider, {
     value: instance.current,
     children: children,
   })
@@ -2757,40 +2708,40 @@ PlayerProvider.propTypes = {
 }
 
 const useSetPlayer = () => {
-  const ref = React.useContext(playerContext)
+  const ref = useContext(playerContext)
   return player => {
     ref.player = player
   }
 }
 
 const usePlayer = () => {
-  const ref = React.useContext(playerContext)
+  const ref = useContext(playerContext)
   return ref.player
 }
 
 const useUiContainer = () => {
   var _ref$uiRef
 
-  const ref = React.useContext(playerContext)
+  const ref = useContext(playerContext)
   return (_ref$uiRef = ref.uiRef) === null || _ref$uiRef === void 0
     ? void 0
     : _ref$uiRef.current
 }
 
 const useUiRef = () => {
-  const ref = React.useContext(playerContext)
+  const ref = useContext(playerContext)
   return ref.uiRef
 }
 
 const useVideoRef = () => {
-  const ref = React.useContext(playerContext)
+  const ref = useContext(playerContext)
   return ref.videoRef
 }
 
-const useOptions = () => React.useContext(playerContext).options
+const useOptions = () => useContext(playerContext).options
 
 const useDispatchSessionEvent = () => {
-  const ref = React.useContext(playerContext)
+  const ref = useContext(playerContext)
   return (type, data) =>
     ref.session.dispatchEvent({
       type,
@@ -2799,27 +2750,27 @@ const useDispatchSessionEvent = () => {
 }
 
 const Context = {
-  Adapter: /*#__PURE__*/ React__default['default'].createContext(),
-  Full: /*#__PURE__*/ React__default['default'].createContext(),
-  Module: /*#__PURE__*/ React__default['default'].createContext(),
-  LocalStorage: /*#__PURE__*/ React__default['default'].createContext(),
-  Player: /*#__PURE__*/ React__default['default'].createContext(),
-  PlayerState: /*#__PURE__*/ React__default['default'].createContext(),
-  PlayerViewMode: /*#__PURE__*/ React__default['default'].createContext(),
-  PlayerProgress: /*#__PURE__*/ React__default['default'].createContext(),
-  PlayerVolume: /*#__PURE__*/ React__default['default'].createContext(),
-  API: /*#__PURE__*/ React__default['default'].createContext(),
-  UI: /*#__PURE__*/ React__default['default'].createContext(),
+  Adapter: /*#__PURE__*/ React.createContext(),
+  Full: /*#__PURE__*/ React.createContext(),
+  Module: /*#__PURE__*/ React.createContext(),
+  LocalStorage: /*#__PURE__*/ React.createContext(),
+  Player: /*#__PURE__*/ React.createContext(),
+  PlayerState: /*#__PURE__*/ React.createContext(),
+  PlayerViewMode: /*#__PURE__*/ React.createContext(),
+  PlayerProgress: /*#__PURE__*/ React.createContext(),
+  PlayerVolume: /*#__PURE__*/ React.createContext(),
+  API: /*#__PURE__*/ React.createContext(),
+  UI: /*#__PURE__*/ React.createContext(),
 }
 
 const StoreProvider = ({store, options = {}, children = ''}) => {
-  const [state, setState] = React.useState(() => {
+  const [state, setState] = useState(() => {
     store.addChangedListener(store => setState(store.getState()))
     return store.getState()
   })
   const dispatch = store.dispatch
   const dispatchSessionEvent = useDispatchSessionEvent()
-  React.useEffect(() => {
+  useEffect(() => {
     const handleStart = event => {
       var _event$getAd
 
@@ -2850,72 +2801,66 @@ const StoreProvider = ({store, options = {}, children = ''}) => {
       },
     })
   }, [])
-  return /*#__PURE__*/ jsxRuntime.jsx(React__default['default'].Fragment, {
-    children: /*#__PURE__*/ jsxRuntime.jsx(Context.Adapter.Provider, {
+  return /*#__PURE__*/ jsx(React.Fragment, {
+    children: /*#__PURE__*/ jsx(Context.Adapter.Provider, {
       value: store,
-      children: /*#__PURE__*/ jsxRuntime.jsx(Context.Full.Provider, {
+      children: /*#__PURE__*/ jsx(Context.Full.Provider, {
         value: useCache({
           state,
           dispatch,
         }),
-        children: /*#__PURE__*/ jsxRuntime.jsx(Context.Module.Provider, {
+        children: /*#__PURE__*/ jsx(Context.Module.Provider, {
           value: useCache({
             state: state.Module,
             options,
             dispatch,
           }),
-          children: /*#__PURE__*/ jsxRuntime.jsx(Context.UI.Provider, {
+          children: /*#__PURE__*/ jsx(Context.UI.Provider, {
             value: useCache({
               state: state.UI,
               dispatch,
             }),
-            children: /*#__PURE__*/ jsxRuntime.jsx(Context.API.Provider, {
+            children: /*#__PURE__*/ jsx(Context.API.Provider, {
               value: useCache({
                 state: state.API,
                 dispatch,
               }),
-              children: /*#__PURE__*/ jsxRuntime.jsx(Context.Player.Provider, {
+              children: /*#__PURE__*/ jsx(Context.Player.Provider, {
                 value: useCache({
                   state: state.Player,
                   dispatch,
                 }),
-                children: /*#__PURE__*/ jsxRuntime.jsx(
-                  Context.PlayerState.Provider,
-                  {
+                children: /*#__PURE__*/ jsx(Context.PlayerState.Provider, {
+                  value: useCache({
+                    state: state.Player.playerState,
+                    dispatch,
+                  }),
+                  children: /*#__PURE__*/ jsx(Context.PlayerViewMode.Provider, {
                     value: useCache({
-                      state: state.Player.playerState,
+                      state: state.Player.viewMode,
                       dispatch,
                     }),
-                    children: /*#__PURE__*/ jsxRuntime.jsx(
-                      Context.PlayerViewMode.Provider,
+                    children: /*#__PURE__*/ jsx(
+                      Context.PlayerProgress.Provider,
                       {
                         value: useCache({
-                          state: state.Player.viewMode,
+                          state: state.Player.progress,
                           dispatch,
                         }),
-                        children: /*#__PURE__*/ jsxRuntime.jsx(
-                          Context.PlayerProgress.Provider,
+                        children: /*#__PURE__*/ jsx(
+                          Context.PlayerVolume.Provider,
                           {
                             value: useCache({
-                              state: state.Player.progress,
+                              state: state.Player.volume,
                               dispatch,
                             }),
-                            children: /*#__PURE__*/ jsxRuntime.jsx(
-                              Context.PlayerVolume.Provider,
-                              {
-                                value: useCache({
-                                  state: state.Player.volume,
-                                  dispatch,
-                                }),
-                                children: children,
-                              }
-                            ),
+                            children: children,
                           }
                         ),
                       }
                     ),
-                  }
-                ),
+                  }),
+                }),
               }),
             }),
           }),
@@ -2932,82 +2877,7 @@ StoreProvider.propTypes = {
   children: propTypes.node,
 }
 
-const loadScript = url =>
-  new Promise(resolve => {
-    const script = Object.assign(document.createElement('script'), {
-      async: true,
-      src: url,
-    })
-    script.addEventListener('load', resolve)
-    document.body.appendChild(script)
-  })
-
-const SENDER_URL =
-  'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1'
-
-const getContext = () => cast.framework.CastContext.getInstance()
-/* global chrome, cast */
-
-const ensureSenderFramework = () =>
-  new Promise((resolve, reject) => {
-    if (window.cast && cast.framework && window.chrome && chrome.cast) {
-      resolve(getContext())
-    } else {
-      // eslint-disable-next-line no-underscore-dangle
-      window.__onGCastApiAvailable = isAvailable => {
-        isAvailable ? resolve(getContext()) : reject()
-      }
-
-      loadScript(SENDER_URL)
-    }
-  })
-
-const getMediaSession = () => {
-  const context = getContext()
-  const currentSession = context.getCurrentSession()
-  return currentSession && currentSession.getMediaSession()
-}
-
-const ensureSession = () => {
-  const context = getContext()
-  const currentSession = context.getCurrentSession()
-
-  if (currentSession) {
-    return Promise.resolve(currentSession)
-  }
-
-  return context.requestSession().then(() => context.getCurrentSession())
-}
-
-const requestLoad = (currentSession, {id, mediaInfo, currentTime}) => {
-  const request = new chrome.cast.media.LoadRequest(
-    Object.assign(new chrome.cast.media.MediaInfo(id), {
-      ...mediaInfo,
-      metadata: new chrome.cast.media.GenericMediaMetadata(),
-    })
-  )
-
-  if (typeof currentTime === 'number') {
-    request.currentTime = currentTime
-  }
-
-  return currentSession.loadMedia(request)
-}
-
-const castContext = /*#__PURE__*/ React.createContext()
-const initState$5 = {
-  castState: null,
-  playerState: null,
-  castingMedia: null,
-  deviceName: null,
-  mediaTitle: null,
-  duration: 0,
-  progressTime: 0,
-  customData: {},
-  volume: 100,
-  muted: false,
-  streamType: null,
-}
+const castContext = /*#__PURE__*/ createContext()
 const defaultCastContext = {
   state: {},
   actions: {
@@ -3015,259 +2885,8 @@ const defaultCastContext = {
     hasNext: () => false,
   },
 }
-/* global chrome, cast */
 
-const CastProvider = ({
-  appId,
-  host,
-  accessToken,
-  deviceId,
-  customHeader,
-  lang,
-  onConnected,
-  onCasting,
-  onError,
-  children,
-}) => {
-  const actions = React.useRef(defaultCastContext.actions)
-  const [state, setState] = React.useState(initState$5)
-  const config = React.useRef()
-  config.current = {
-    appId,
-    host,
-    accessToken,
-    deviceId,
-    customHeaders: customHeader,
-    lang,
-  }
-  React.useEffect(() => {
-    const setCastState = value => setState(current => ({...current, ...value}))
-
-    ensureSenderFramework()
-      .then(context => {
-        context.setOptions({
-          receiverApplicationId: appId,
-          resumeSavedSession: true,
-          autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
-        })
-        context.addEventListener(
-          cast.framework.CastContextEventType.CAST_STATE_CHANGED,
-          ({castState}) => {
-            const currentSession = context.getCurrentSession()
-            const current = {
-              castState,
-              deviceName:
-                castState === 'CONNECTED' &&
-                currentSession.getCastDevice().friendlyName,
-              ...(currentSession && {
-                volume: currentSession.getVolume(),
-                muted: currentSession.isMute(),
-              }),
-            }
-
-            if (castState === 'CONNECTED') {
-              if (typeof onConnected === 'function') onConnected(current)
-            }
-
-            setCastState(current)
-          }
-        )
-        const player = new cast.framework.RemotePlayer()
-        const controller = new cast.framework.RemotePlayerController(player)
-        controller.addEventListener(
-          cast.framework.RemotePlayerEventType.PLAYER_STATE_CHANGED,
-          ({value}) =>
-            setCastState({
-              playerState: value,
-              castingMedia: value !== 'IDLE' ? getMediaSession().media : null,
-            })
-        )
-        controller.addEventListener(
-          cast.framework.RemotePlayerEventType.TITLE_CHANGED,
-          ({value}) =>
-            setCastState({
-              mediaTitle: value,
-            })
-        )
-        controller.addEventListener(
-          cast.framework.RemotePlayerEventType.MEDIA_INFO_CHANGED,
-          ({value}) =>
-            setCastState({
-              castingMedia: value,
-              // After playing a while, media info is updated without customData
-              // It's likely receiver app bug
-              ...(value
-                ? value.customData && {
-                    customData: value.customData,
-                  }
-                : {
-                    customData: {},
-                  }),
-            })
-        )
-        controller.addEventListener(
-          cast.framework.RemotePlayerEventType.DURATION_CHANGED,
-          ({value}) =>
-            setCastState({
-              duration: value,
-            })
-        )
-        controller.addEventListener(
-          cast.framework.RemotePlayerEventType.CURRENT_TIME_CHANGED,
-          ({value}) =>
-            setCastState({
-              progressTime: value,
-            })
-        )
-        controller.addEventListener(
-          cast.framework.RemotePlayerEventType.VOLUME_LEVEL_CHANGED,
-          ({value}) =>
-            setCastState({
-              volume: value,
-            })
-        )
-        controller.addEventListener(
-          cast.framework.RemotePlayerEventType.IS_MUTED_CHANGED,
-          ({value}) =>
-            setCastState({
-              muted: value,
-            })
-        )
-        controller.addEventListener(
-          cast.framework.RemotePlayerEventType.MEDIA_INFO_CHANGED,
-          ({value}) =>
-            setCastState({
-              streamType: value && value.streamType,
-            })
-        )
-        controller.addEventListener(
-          cast.framework.RemotePlayerEventType.IS_PLAYING_BREAK_CHANGED,
-          ({value}) =>
-            setCastState({
-              isPlayingBreak: value,
-            })
-        )
-        controller.addEventListener(
-          cast.framework.RemotePlayerEventType.BREAK_CLIP_ID_CHANGED,
-          ({value}) => {
-            var _find, _getMediaSession$medi
-
-            return setCastState({
-              breakClipId: value,
-              clickThroughUrl:
-                (_find = (
-                  ((_getMediaSession$medi = getMediaSession().media) === null ||
-                  _getMediaSession$medi === void 0
-                    ? void 0
-                    : _getMediaSession$medi.breakClips) || []
-                ).find(item => item.id === value)) === null || _find === void 0
-                  ? void 0
-                  : _find.clickThroughUrl,
-            })
-          }
-        )
-        controller.addEventListener(
-          cast.framework.RemotePlayerEventType.CURRENT_BREAK_TIME_CHANGED,
-          ({value}) => {
-            setCastState({
-              currentBreakTime: value,
-              whenSkippable: player.whenSkippable,
-            })
-          }
-        )
-
-        const getItem = (media, index) => {
-          const items = media.items || []
-          return items[(items.length + index) % items.length] || {}
-        }
-
-        return {
-          connect: () => ensureSession(),
-          loadContent: ({
-            contentId,
-            contentType,
-            licenseId,
-            mediaSource,
-            customQuery,
-            startTime,
-          }) =>
-            ensureSession()
-              .then(currentSession =>
-                requestLoad(currentSession, {
-                  id: contentId,
-                  mediaInfo: {
-                    contentId,
-                    contentID: contentId,
-                    customData: {
-                      ...config.current,
-                      itemType: contentType,
-                      licenseId,
-                      mediaSource,
-                      customQuery,
-                    },
-                  },
-                  currentTime: startTime,
-                })
-              )
-              .then(() => {
-                typeof onCasting === 'function' && onCasting()
-              })
-              .catch(error => {
-                typeof onError === 'function' && onError(error)
-                return Promise.reject(error)
-              }),
-          stopCasting: () => context.endCurrentSession(true),
-          play: () =>
-            getMediaSession().play(new chrome.cast.media.PlayRequest()),
-          pause: () =>
-            getMediaSession().pause(new chrome.cast.media.PauseRequest()),
-          seek: ({origin, seconds}) => {
-            const media = getMediaSession()
-            const currentTime =
-              seconds +
-              (origin === SeekOrigin.CURRENT ? media.getEstimatedTime() : 0)
-            media.seek(
-              Object.assign(new chrome.cast.media.SeekRequest(), {
-                currentTime,
-              })
-            )
-          },
-          skipAd: () => controller.skipAd(),
-          hasPrevious: () => {
-            const media = getMediaSession() || {}
-            return media.currentItemId !== getItem(media, 0).itemId
-          },
-          hasNext: () => {
-            const media = getMediaSession() || {}
-            return media.currentItemId !== getItem(media, -1).itemId
-          },
-          changePreviousEpisode: () =>
-            new Promise((resolve, reject) =>
-              getMediaSession().queuePrev(resolve, reject)
-            ),
-          changeNextEpisode: () =>
-            new Promise((resolve, reject) =>
-              getMediaSession().queueNext(resolve, reject)
-            ),
-          setVolume: volume => context.getCurrentSession().setVolume(volume),
-          setMute: mute => context.getCurrentSession().setMute(mute),
-        }
-      })
-      .then(result => {
-        actions.current = result
-      })
-      .catch(error => typeof onError === 'function' && onError(error))
-  }, [])
-  return /*#__PURE__*/ jsxRuntime.jsx(castContext.Provider, {
-    value: {
-      state,
-      actions: actions.current,
-    },
-    children: children,
-  })
-}
-
-CastProvider.propTypes = {
+;({
   appId: propTypes.string,
   host: propTypes.string,
   accessToken: propTypes.string,
@@ -3278,24 +2897,11 @@ CastProvider.propTypes = {
   onConnected: propTypes.func,
   onCasting: propTypes.func,
   onError: propTypes.func,
-}
+})
 
-const useCastContext = () => React.useContext(castContext) || defaultCastContext
+const useCastContext = () => useContext(castContext) || defaultCastContext
 
-const CastConsumer = castContext.Consumer
-
-const useCastVolume = () => {
-  const {
-    state: {volume, muted},
-    actions: {setVolume, setMute},
-  } = useCastContext()
-  return {
-    volume,
-    muted,
-    changeVolume: setVolume,
-    toggleMuted: () => setMute(!muted),
-  }
-}
+castContext.Consumer
 
 const getMediaSource = (state, defaultMediaSource) => {
   const {
@@ -3682,7 +3288,7 @@ const operator = {
         return operator.unload(store)
       }
 
-      if (!_get__default['default'](getState(), 'API.content.end')) {
+      if (!_get(getState(), 'API.content.end')) {
         await waitChainReaction(
           () => dispatch(PlayerAction.load()),
           () => waitActionDispatch(store, ({type}) => type === type$2.READY)
@@ -3782,10 +3388,7 @@ const operator = {
     }
   },
   seek: time => async store => {
-    if (
-      _get__default['default'](store.getState(), 'Player.playerState') ===
-      PlayerState$1.ENDED
-    ) {
+    if (_get(store.getState(), 'Player.playerState') === PlayerState$1.ENDED) {
       await operator.replay(store)
     } else {
       store.dispatch(PlayerAction.play())
@@ -3802,15 +3405,15 @@ const contentEqual = (
   {contentType, contentId, licenseId, mediaSource},
   state
 ) =>
-  _get__default['default'](state, 'castingMedia.contentId') === contentId &&
-  _get__default['default'](state, 'customData.itemType') === contentType &&
-  _get__default['default'](state, 'customData.licenseId') === licenseId &&
-  _get__default['default'](state, 'customData.mediaSource') === mediaSource
+  _get(state, 'castingMedia.contentId') === contentId &&
+  _get(state, 'customData.itemType') === contentType &&
+  _get(state, 'customData.licenseId') === licenseId &&
+  _get(state, 'customData.mediaSource') === mediaSource
 
 const useDebounced = (value, {timeMs = 500} = {}) => {
-  const [state, setState] = React.useState(value)
-  const timer = React.useRef({})
-  React.useEffect(() => {
+  const [state, setState] = useState(value)
+  const timer = useRef({})
+  useEffect(() => {
     timer.current = setTimeout(() => setState(value), timeMs)
     return () => clearTimeout(timer.current)
   }, [value])
@@ -3822,12 +3425,12 @@ const CastAdapter = ({
   mediaSource: defaultMediaSource,
   customQuery,
 }) => {
-  const store = React.useContext(Context.Adapter)
+  const store = useContext(Context.Adapter)
   const {
     state,
     actions: {loadContent},
   } = useCastContext()
-  const lastState = React.useRef()
+  const lastState = useRef()
   const [
     castState,
     contentType,
@@ -3841,10 +3444,10 @@ const CastAdapter = ({
     getMediaSource(store.getState(), defaultMediaSource),
     content.licenseId,
   ])
-  React.useEffect(() => {
+  useEffect(() => {
     store.dispatch(Action.castStateChange(castState))
   }, [castState])
-  React.useEffect(() => {
+  useEffect(() => {
     const contentIsLoaded = contentEqual(
       {
         contentId,
@@ -3912,11 +3515,11 @@ const getSavedAuthId = state => {
 }
 
 const LimitOnePlayback = ({enabled}) => {
-  const authRef = React.useRef()
+  const authRef = useRef()
   const {
     state: {state: moduleState},
-  } = React.useContext(Context.Module)
-  const store = React.useContext(Context.Adapter)
+  } = useContext(Context.Module)
+  const store = useContext(Context.Adapter)
   const [startInterval, stopInterval] = useInterval()
 
   const checkOnePlayback = () => {
@@ -3955,7 +3558,7 @@ const LimitOnePlayback = ({enabled}) => {
     window.removeEventListener('unload', clearKey)
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     authRef.current = uuidv4()
 
     if (enabled && moduleState !== ModuleState.ERROR) {
@@ -3973,8 +3576,8 @@ const LimitOnePlayback = ({enabled}) => {
 }
 
 const LocalStorage$1 = () => {
-  const store = React.useContext(Context.Adapter)
-  React.useEffect(() => {
+  const store = useContext(Context.Adapter)
+  useEffect(() => {
     return store.addDispatchedListener((store, action$1) => {
       switch (action$1.type) {
         case type$2.UPDATE_VOLUME:
@@ -4052,7 +3655,7 @@ const parseThumbnails = (data, url) =>
               // replace commit a356628e with better preload approach
               [image]:
                 res[image] ||
-                axios__default['default'].get(image, {
+                axios.get(image, {
                   responseType: 'blob',
                 }),
             }),
@@ -4105,7 +3708,7 @@ var Resource = ({host, accessToken, deviceId, customHeader, customQuery}) => {
   const request = (method, url, query = {}) =>
     retry3(
       () =>
-        axios__default['default'](url, {
+        axios(url, {
           method,
           headers,
           params: {...customQuery, ...query},
@@ -4270,16 +3873,16 @@ const API$1 = ({
   customQuery,
   preferredConfig: {preferredMediaSource},
 }) => {
-  const session = React.useRef(null)
+  const session = useRef(null)
   const dispatchSessionEvent = useDispatchSessionEvent()
   const [setInterval, clearInterval] = useInterval()
-  const store = React.useContext(Context.Adapter)
+  const store = useContext(Context.Adapter)
   const isActivatable =
     host &&
     content &&
     content.contentId !== undefined &&
     content.contentType !== undefined
-  React.useEffect(() => {
+  useEffect(() => {
     if (isActivatable) {
       store.dispatch(APIAction.enable(content, customHeader))
     } else {
@@ -4293,7 +3896,7 @@ const API$1 = ({
 
     session.current = null
   }, [host, content.contentId, content.contentType])
-  React.useEffect(() => {
+  useEffect(() => {
     const {contentId, contentType, ...query} = content
     const resource = Resource({
       host,
@@ -4372,13 +3975,13 @@ const API$1 = ({
               }
 
               case type.PREPARE_THUMBNAIL: {
-                const thumbnailUrl = _get__default['default'](
+                const thumbnailUrl = _get(
                   store.getState(),
                   'API.content.thumbnailSeekingsURL'
                 )
 
                 if (thumbnailUrl) {
-                  await axios__default['default']
+                  await axios
                     .get(thumbnailUrl)
                     .then(result => parseThumbnails(result.data, thumbnailUrl))
                     .then(thumbnails =>
@@ -4394,11 +3997,7 @@ const API$1 = ({
               case type.READY: {
                 if (
                   accessToken &&
-                  _get__default['default'](
-                    store.getState(),
-                    'API.playback.heartbeat',
-                    false
-                  )
+                  _get(store.getState(), 'API.playback.heartbeat', false)
                 ) {
                   clearInterval()
                   setInterval(() => {
@@ -4450,7 +4049,7 @@ const API$1 = ({
               case type.REFRESH_CONTENT: {
                 const newContent = await fetchContent()
 
-                const oldSectionId = _get__default['default'](
+                const oldSectionId = _get(
                   store.getState(),
                   'API.content.section_id'
                 )
@@ -4471,9 +4070,7 @@ const API$1 = ({
                   store.dispatch(APIAction.setContent(newContent))
                 }
 
-                if (
-                  _get__default['default'](store.getState(), 'API.content.end')
-                ) {
+                if (_get(store.getState(), 'API.content.end')) {
                   store.dispatch(APIAction.endLiveType())
                 }
 
@@ -4534,33 +4131,28 @@ const Event$1 = ({
   onChangeToPreviousVideo,
   onSectionChange,
 }) => {
-  const store = React.useContext(Context.Adapter)
+  const store = useContext(Context.Adapter)
   const dispatchSessionEvent = useDispatchSessionEvent()
-  React.useEffect(() => {
+  useEffect(() => {
     if (content.contentId && content.contentType) {
       store.dispatch(APIAction.contentChange())
     }
   }, [content.contentId, content.contentType])
-  React.useEffect(
+  useEffect(
     () =>
       store.addDispatchedListener((store, action) => {
         const state = store.getState()
 
         switch (action.type) {
           case type$4.BACK:
-            return onBack(
-              _get__default['default'](state, 'API.content.contentId')
-            )
+            return onBack(_get(state, 'API.content.contentId'))
 
           case type$4.REPLAY:
             return onReplay()
 
           case type$4.ERROR:
             dispatchSessionEvent('error', action.error)
-            return onError({
-              ...action,
-              content: _get__default['default'](state, 'API.content'),
-            })
+            return onError({...action, content: _get(state, 'API.content')})
 
           case type$3.SELECT_QUALITY:
             return onVideoQualityChanged(action.to, action.from)
@@ -4611,11 +4203,11 @@ Event$1.defaultProps = {
 }
 
 const Agent = ({command, preload = 'auto', playerRef}) => {
-  const store = React.useContext(Context.Adapter)
-  React.useImperativeHandle(playerRef, () => ({
+  const store = useContext(Context.Adapter)
+  useImperativeHandle(playerRef, () => ({
     load: () => store.dispatch(operator.loadContent),
   }))
-  React.useEffect(() => {
+  useEffect(() => {
     if (command === AgentCommand$1.AUTO)
       return store.addDispatchedListener((store, action) => {
         switch (action.type) {
@@ -4658,7 +4250,7 @@ Agent.defaultProps = {
 }
 
 /* eslint-disable no-plusplus */
-const parser = new UAParser__default['default']()
+const parser = new UAParser()
 function getOS() {
   return parser.getOS()
 }
@@ -4770,8 +4362,8 @@ const EnvironmentValidator = ({supportEnvironmentList}) => {
   const {
     state: {state: moduleState},
     dispatch,
-  } = React.useContext(Context.Module)
-  React.useEffect(() => {
+  } = useContext(Context.Module)
+  useEffect(() => {
     if (moduleState !== ModuleState.ERROR) {
       try {
         checkEnvironment(supportEnvironmentList)
@@ -4795,9 +4387,9 @@ const MobileSafariPlugin = ({
   onEnterFullscreen,
   onExitFullscreen,
 }) => {
-  const store = React.useContext(Context.Adapter)
-  const {state: playerState, dispatch} = React.useContext(Context.PlayerState)
-  React.useEffect(() => {
+  const store = useContext(Context.Adapter)
+  const {state: playerState, dispatch} = useContext(Context.PlayerState)
+  useEffect(() => {
     if (playerState >= PlayerState$1.LOADED) {
       const videoEle = containerRef.current.querySelector('video')
 
@@ -4819,7 +4411,7 @@ const MobileSafariPlugin = ({
         )
     }
   }, [playerState >= PlayerState$1.LOADED])
-  React.useEffect(
+  useEffect(
     () =>
       store.addDispatchedListener((store, action) => {
         switch (action.type) {
@@ -4835,7 +4427,7 @@ const MobileSafariPlugin = ({
       }),
     []
   )
-  React.useEffect(() => {
+  useEffect(() => {
     const abortMultiTouch = debounce(() => {}, 300)
     containerRef.current.addEventListener('touchend', abortMultiTouch)
     return () =>
@@ -4860,14 +4452,10 @@ MobileSafariPlugin.defaultProps = {
 // eslint-disable-next-line no-unused-vars
 
 const OTP_1878 = () => {
-  const store = React.useContext(Context.Adapter)
-  React.useEffect(() => {
+  const store = useContext(Context.Adapter)
+  useEffect(() => {
     return store.addDispatchedListener((store, action) => {
-      const isMuted = _get__default['default'](
-        store.getState(),
-        'Player.volume.muted',
-        false
-      )
+      const isMuted = _get(store.getState(), 'Player.volume.muted', false)
 
       switch (action.type) {
         case type$2.SET_VOLUME:
@@ -4895,7 +4483,7 @@ const Provider = ({lang, langCustomCode, children}) => {
     return (
       translations[code] &&
       translations[code].replace(/{(\S+?)}/gi, (substring, name) => {
-        const res = _get__default['default'](property, name) || substring
+        const res = _get(property, name) || substring
         return res instanceof Array ? res.join(', ') : res
       })
     )
@@ -4905,7 +4493,7 @@ const Provider = ({lang, langCustomCode, children}) => {
     return translations[code] ? getMessage(code, property) : code
   }
 
-  return /*#__PURE__*/ jsxRuntime.jsx(context.Provider, {
+  return /*#__PURE__*/ jsx(context.Provider, {
     value: {
       translations,
       getMessage,
@@ -4926,10 +4514,10 @@ Provider.defaultProps = {
 }
 
 const Message = ({code, property, defaultValue, wrap: Wrap = 'span'}) => {
-  const {getMessage, translate} = React.useContext(context)
+  const {getMessage, translate} = useContext(context)
   const message = getMessage(code, property) || translate(defaultValue)
   return Wrap
-    ? /*#__PURE__*/ jsxRuntime.jsx(Wrap, {
+    ? /*#__PURE__*/ jsx(Wrap, {
         children: message,
       })
     : message
@@ -4942,9 +4530,9 @@ Message.propTypes = {
   wrap: propTypes.elementType,
 }
 
-const context = /*#__PURE__*/ React__default['default'].createContext()
+const context = /*#__PURE__*/ React.createContext()
 
-const useTranslations = () => React.useContext(context).translations
+const useTranslations = () => useContext(context).translations
 
 const translate = (translations, {id, values, getDefault}) => {
   if (id in translations) {
@@ -4975,8 +4563,8 @@ var I18n = {
 }
 
 const DeviceDetector = ({children}) => {
-  const [device, setDevice] = React.useState()
-  React.useEffect(() => {
+  const [device, setDevice] = useState()
+  useEffect(() => {
     setDevice({
       browser: getBrowser(),
       os: getOS(),
@@ -5170,7 +4758,7 @@ const handleSafariStalledTooLong = (player, store, PlayerAction) => {
   setTimeout(async () => {
     if (player.isStalled()) {
       const {url} = store.getState().API.manifests.hls
-      await axios__default['default']
+      await axios
         .get(url, {
           timeout: 5000,
         })
@@ -5181,23 +4769,19 @@ const handleSafariStalledTooLong = (player, store, PlayerAction) => {
   }, 10000)
 }
 
-class BitmovinPlayer extends React.Component {
+class BitmovinPlayer extends Component {
   constructor(...args) {
     super(...args)
 
-    _defineProperty__default['default'](this, 'player', null)
+    _defineProperty(this, 'player', null)
 
-    _defineProperty__default['default'](this, 'preferredStreaming', null)
+    _defineProperty(this, 'preferredStreaming', null)
 
-    _defineProperty__default['default'](this, 'playingQuality', null)
+    _defineProperty(this, 'playingQuality', null)
 
-    _defineProperty__default['default'](
-      this,
-      'videoRef',
-      /*#__PURE__*/ React.createRef()
-    )
+    _defineProperty(this, 'videoRef', /*#__PURE__*/ createRef())
 
-    _defineProperty__default['default'](this, 'removeListener', () => {})
+    _defineProperty(this, 'removeListener', () => {})
   }
 
   componentDidMount() {
@@ -5358,13 +4942,8 @@ class BitmovinPlayer extends React.Component {
     const withErrorHandling = catchBy(error =>
       store.dispatch(PlayerAction.error(error))
     )
-    Promise.resolve()
-      .then(function () {
-        return /*#__PURE__*/ _interopNamespace(
-          require('bitmovin-player/modules/bitmovinplayer-core')
-        )
-      })
-      .then(({PlayerEvent}) => {
+    import('bitmovin-player/modules/bitmovinplayer-core').then(
+      ({PlayerEvent}) => {
         player.on(
           PlayerEvent.SourceLoaded,
           withErrorHandling(() => {
@@ -5538,7 +5117,8 @@ class BitmovinPlayer extends React.Component {
         player.on(PlayerEvent.Error, error =>
           store.dispatch(PlayerAction.error(error))
         )
-      })
+      }
+    )
     this.props.dispatchSessionEvent('playerStarted')
     return (this.player = player)
   }
@@ -5665,7 +5245,7 @@ class BitmovinPlayer extends React.Component {
   }
 }
 
-_defineProperty__default['default'](BitmovinPlayer, 'propTypes', {
+_defineProperty(BitmovinPlayer, 'propTypes', {
   playerRef: propTypes.object,
   store: propTypes.object.isRequired,
   dispatchSessionEvent: propTypes.func,
@@ -5692,7 +5272,7 @@ _defineProperty__default['default'](BitmovinPlayer, 'propTypes', {
   onStallEnded: propTypes.func,
 })
 
-_defineProperty__default['default'](BitmovinPlayer, 'defaultProps', {
+_defineProperty(BitmovinPlayer, 'defaultProps', {
   onSourceLoaded: () => {},
   onReady: () => {},
   onPlay: () => {},
@@ -5714,11 +5294,11 @@ _defineProperty__default['default'](BitmovinPlayer, 'defaultProps', {
 })
 
 const PlayerVideo = props => {
-  const store = React.useContext(Context.Adapter)
+  const store = useContext(Context.Adapter)
   const videoRef = useVideoRef()
   const setPlayer = useSetPlayer()
   const dispatchSessionEvent = useDispatchSessionEvent()
-  return /*#__PURE__*/ jsxRuntime.jsx(BitmovinPlayer, {
+  return /*#__PURE__*/ jsx(BitmovinPlayer, {
     store: store,
     setPlayer: setPlayer,
     videoRef: videoRef,
@@ -5734,94 +5314,34 @@ const loadBitmovin = async ({
   config = {},
 }) => {
   // Don't move module paths to array or other variables! they need to be resolved by bundlers
-  const {Player} = await Promise.resolve().then(function () {
-    return /*#__PURE__*/ _interopNamespace(
-      require('bitmovin-player/modules/bitmovinplayer-core')
-    )
-  })
+  const {Player} = await import('bitmovin-player/modules/bitmovinplayer-core')
   const nativeHls = needNativeHls()
   const bitmovinModules = []
     .concat(
-      await Promise.resolve().then(function () {
-        return /*#__PURE__*/ _interopNamespace(
-          require('bitmovin-player/modules/bitmovinplayer-engine-bitmovin')
-        )
-      }),
+      await import('bitmovin-player/modules/bitmovinplayer-engine-bitmovin'),
       nativeHls &&
-        (await Promise.resolve().then(function () {
-          return /*#__PURE__*/ _interopNamespace(
-            require('bitmovin-player/modules/bitmovinplayer-engine-native')
-          )
-        })),
+        (await import('bitmovin-player/modules/bitmovinplayer-engine-native')),
       await Promise.all([
-        Promise.resolve().then(function () {
-          return /*#__PURE__*/ _interopNamespace(
-            require('bitmovin-player/modules/bitmovinplayer-drm')
-          )
-        }),
-        Promise.resolve().then(function () {
-          return /*#__PURE__*/ _interopNamespace(
-            require('bitmovin-player/modules/bitmovinplayer-abr')
-          )
-        }),
-        Promise.resolve().then(function () {
-          return /*#__PURE__*/ _interopNamespace(
-            require('bitmovin-player/modules/bitmovinplayer-subtitles')
-          )
-        }),
-        Promise.resolve().then(function () {
-          return /*#__PURE__*/ _interopNamespace(
-            require('bitmovin-player/modules/bitmovinplayer-container-mp4')
-          )
-        }),
-        Promise.resolve().then(function () {
-          return /*#__PURE__*/ _interopNamespace(
-            require('bitmovin-player/modules/bitmovinplayer-style')
-          )
-        }),
+        import('bitmovin-player/modules/bitmovinplayer-drm'),
+        import('bitmovin-player/modules/bitmovinplayer-abr'),
+        import('bitmovin-player/modules/bitmovinplayer-subtitles'),
+        import('bitmovin-player/modules/bitmovinplayer-container-mp4'),
+        import('bitmovin-player/modules/bitmovinplayer-style'),
       ]),
       nativeHls &&
         (await Promise.all([
-          Promise.resolve().then(function () {
-            return /*#__PURE__*/ _interopNamespace(
-              require('bitmovin-player/modules/bitmovinplayer-hls.js')
-            )
-          }),
-          Promise.resolve().then(function () {
-            return /*#__PURE__*/ _interopNamespace(
-              require('bitmovin-player/modules/bitmovinplayer-subtitles-native.js')
-            )
-          }),
+          import('bitmovin-player/modules/bitmovinplayer-hls.js'),
+          import('bitmovin-player/modules/bitmovinplayer-subtitles-native.js'),
         ])),
       !nativeHls &&
-        (await Promise.resolve().then(function () {
-          return /*#__PURE__*/ _interopNamespace(
-            require('bitmovin-player/modules/bitmovinplayer-subtitles-vtt')
-          )
-        })),
+        (await import('bitmovin-player/modules/bitmovinplayer-subtitles-vtt')),
       !nativeHls &&
-        (await Promise.resolve().then(function () {
-          return /*#__PURE__*/ _interopNamespace(
-            require('bitmovin-player/modules/bitmovinplayer-xml')
-          )
-        })),
+        (await import('bitmovin-player/modules/bitmovinplayer-xml')),
       !nativeHls &&
         (await Promise.all([
-          Promise.resolve().then(function () {
-            return /*#__PURE__*/ _interopNamespace(
-              require('bitmovin-player/modules/bitmovinplayer-dash')
-            )
-          }),
-          Promise.resolve().then(function () {
-            return /*#__PURE__*/ _interopNamespace(
-              require('bitmovin-player/modules/bitmovinplayer-mserenderer')
-            )
-          }),
-          Promise.resolve().then(function () {
-            return /*#__PURE__*/ _interopNamespace(
-              require('bitmovin-player/modules/bitmovinplayer-polyfill')
-            )
-          }),
+          import('bitmovin-player/modules/bitmovinplayer-dash'),
+          import('bitmovin-player/modules/bitmovinplayer-mserenderer'),
+          import('bitmovin-player/modules/bitmovinplayer-polyfill'),
         ]))
     )
     .filter(Boolean)
@@ -5899,23 +5419,23 @@ const subscribeMediaState = (media, updateState, plugins = []) => {
   }
 
   const registered = [
-    on$1(media, 'error', () =>
+    on(media, 'error', () =>
       syncState({
         playbackState: 'error',
       })
     ),
-    on$1(media, 'play', syncState),
-    on$1(media, 'paused', () =>
+    on(media, 'play', syncState),
+    on(media, 'paused', () =>
       syncState({
         playbackState: 'paused',
       })
     ),
-    on$1(media, 'seeking', () =>
+    on(media, 'seeking', () =>
       syncState({
         waiting: true,
       })
     ),
-    on$1(media, 'timeupdate', () =>
+    on(media, 'timeupdate', () =>
       syncState(
         !media.paused && {
           playbackState: 'playing',
@@ -5923,13 +5443,13 @@ const subscribeMediaState = (media, updateState, plugins = []) => {
         }
       )
     ),
-    on$1(media, 'ended', () =>
+    on(media, 'ended', () =>
       syncState({
         playbackState: 'ended',
       })
     ), // when playing SSAI stream,
     // sometimes duration changes to wrong value when playing an ad
-    on$1(media, 'emptied', () =>
+    on(media, 'emptied', () =>
       syncState({
         seekEnabled: false,
         duration: 0,
@@ -5937,7 +5457,7 @@ const subscribeMediaState = (media, updateState, plugins = []) => {
         waiting: true,
       })
     ),
-    on$1(media, 'durationchange', () => {
+    on(media, 'durationchange', () => {
       syncState({
         seekEnabled: Number.isFinite(media.duration),
       })
@@ -6011,7 +5531,7 @@ const seek = (media, {player, plugins = []}, time) => {
   }
 }
 
-function _EMOTION_STRINGIFIED_CSS_ERROR__$3() {
+function _EMOTION_STRINGIFIED_CSS_ERROR__$2() {
   return "You have tried to stringify object returned from `css` function. It isn't supposed to be used directly (e.g. as value of the `className` prop), but rather handed to emotion so it can handle it (e.g. as value of `css` prop)."
 }
 
@@ -6189,7 +5709,7 @@ const ControlsBlock = ({
   nextEpisodeButton = '',
 }) =>
   order === 'desktop'
-    ? jsxRuntime$1.jsxs(jsxRuntime$1.Fragment, {
+    ? jsxs(Fragment, {
         children: [
           previousEpisodeButton,
           playButton,
@@ -6198,7 +5718,7 @@ const ControlsBlock = ({
           forwardButton,
         ],
       })
-    : jsxRuntime$1.jsxs(jsxRuntime$1.Fragment, {
+    : jsxs(Fragment, {
         children: [
           rewindButton,
           previousEpisodeButton,
@@ -6208,7 +5728,7 @@ const ControlsBlock = ({
         ],
       })
 
-var _ref$3 =
+var _ref$2 =
   process.env.NODE_ENV === 'production'
     ? {
         name: '11g4mt0',
@@ -6219,10 +5739,10 @@ var _ref$3 =
         styles: 'font-size:16px;label:DefaultLayout;',
         map:
           '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkRlZmF1bHRMYXlvdXQuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBMFE4QiIsImZpbGUiOiJEZWZhdWx0TGF5b3V0LmpzIiwic291cmNlc0NvbnRlbnQiOlsiLyogQGpzeEltcG9ydFNvdXJjZSBAZW1vdGlvbi9yZWFjdCAqL1xuLyogZXNsaW50LWRpc2FibGUgcmVhY3QvcHJvcC10eXBlcyAqL1xuY29uc3QgZXhwYW5kID0ge1xuICBtYXJnaW46IDAsXG4gIGZsZXg6ICcxJyxcbn1cblxuY29uc3QgY29udGFpbmVyU3R5bGUgPSB7XG4gIHdpZHRoOiAnMTAwJScsXG4gIGhlaWdodDogJzEwMCUnLFxuICBib3hTaXppbmc6ICdib3JkZXItYm94JyxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBmbGV4RGlyZWN0aW9uOiAnY29sdW1uJyxcbiAgb3ZlcmZsb3c6ICdoaWRkZW4nLFxuICBjb2xvcjogJ3doaXRlJyxcbiAgLy8gcHJldmVudCBhbmltYXRpb24gZ2xpY2goYWZ0ZXJpbWFnZSkgb2YgZGVzY2VuZGFudCBlbGVtZW50c1xuICB0cmFuc2Zvcm06ICd0cmFuc2xhdGVYKDApJyxcbiAgdXNlclNlbGVjdDogJ25vbmUnLFxuICBoMToge1xuICAgIG1hcmdpbjogMCxcbiAgICBmb250U2l6ZTogJzFlbScsXG4gICAgbGluZUhlaWdodDogJzEuNWVtJyxcbiAgfSxcbiAgJ2EsIGE6bGluaywgYTp2aXNpdGVkJzoge1xuICAgIGNvbG9yOiAnI2ZmZicsXG4gICAgb3BhY2l0eTogMC44LFxuICAgIHRleHREZWNvcmF0aW9uOiAnbm9uZScsXG4gIH0sXG4gIGJ1dHRvbjoge1xuICAgIGZvbnRTaXplOiAnaW5oZXJpdCcsXG4gIH0sXG59XG5cbmNvbnN0IGRyb3AgPSB7XG4gIGJhY2tncm91bmRJbWFnZTogYGxpbmVhci1ncmFkaWVudChcbiAgICAwZGVnLFxuICAgIHJnYmEoMCwwLDAsMC41KSAwLFxuICAgIHJnYmEoMCwwLDAsMCkgOHJlbSBjYWxjKDEwMCUgLSA4cmVtKSxcbiAgICByZ2JhKDAsMCwwLDAuNSkgMTAwJVxuICApYCxcbn1cblxuY29uc3QgZHJvcFRvcCA9IHtcbiAgYmFja2dyb3VuZEltYWdlOiBgbGluZWFyLWdyYWRpZW50KFxuICAgIDBkZWcsXG4gICAgcmdiYSgwLDAsMCwwKSAwLFxuICAgIHJnYmEoMCwwLDAsMCkgOHJlbSBjYWxjKDEwMCUgLSA4cmVtKSxcbiAgICByZ2JhKDAsMCwwLDAuNSkgMTAwJVxuICApYCxcbn1cblxuY29uc3QgcmVzcG9uc2l2ZVN0eWxlcyA9IHtcbiAgZGVza3RvcDoge1xuICAgIGZvbnRTaXplOiAnMjRweCcsXG4gIH0sIC8vIGFkZCBpZiBuZWNlc3Nhcnk6IGJpZy1kZXNrdG9wXG59XG5cbmNvbnN0IHJvd1N0eWxlID0ge1xuICBib3hTaXppbmc6ICdib3JkZXItYm94JyxcbiAgd2lkdGg6ICcxMDAlJyxcbiAgcGFkZGluZzogJ2NhbGMoMmVtIC0gMTZweCknLFxuICBkaXNwbGF5OiAnZmxleCcsXG4gIGFsaWduSXRlbXM6ICdjZW50ZXInLFxuICBidXR0b246IHtcbiAgICBmbGV4OiAnMCAwIDEuNWVtJyxcbiAgICB3aWR0aDogJzEuNWVtJyxcbiAgICBoZWlnaHQ6ICcxLjVlbScsXG4gIH0sXG4gICc+IGJ1dHRvbjpub3QoOmRpc2FibGVkKSB+IGJ1dHRvbjpub3QoOmRpc2FibGVkKSwgZGl2IH4gYnV0dG9uOmxhc3Qtb2YtdHlwZSc6IHtcbiAgICBtYXJnaW5MZWZ0OiAnMC41cmVtJyxcbiAgfSxcbiAgJz4gYnV0dG9uOm5vdCg6bGFzdC1vZi10eXBlKSc6IHtcbiAgICBtYXJnaW5SaWdodDogJzAuNXJlbScsXG4gIH0sXG59XG5cbmNvbnN0IGRpc3BsYXlTdHlsZXMgPSB7XG4gIGhpZGRlbjoge1xuICAgICc+IGRpdjpub3QoLnBpbm5lZCksID4gYnV0dG9uOm5vdCgucGlubmVkKSwgPiBoMTpub3QoLnBpbm5lZCknOiB7XG4gICAgICBvcGFjaXR5OiAwLFxuICAgICAgdHJhbnNmb3JtOiAndHJhbnNsYXRlKC0xMDB2dyknLFxuICAgICAgdHJhbnNpdGlvbjogJ29wYWNpdHkgMC41cyBlYXNlLW91dCwgdHJhbnNmb3JtIDBzIDAuNXMnLFxuICAgIH0sXG4gIH0sXG4gIHNob3duOiB7XG4gICAgJz4gZGl2Om5vdCgucGlubmVkKSwgPiBidXR0b246bm90KC5waW5uZWQpLCA+IGgxOm5vdCgucGlubmVkKSc6IHtcbiAgICAgIHRyYW5zaXRpb246ICdvcGFjaXR5IDAuNXMgZWFzZS1vdXQnLFxuICAgIH0sXG4gIH0sXG59XG5cbmNvbnN0IGNvbnRyb2xzRGlzcGxheVN0eWxlcyA9IHtcbiAgaGlkZGVuOiB7XG4gICAgLi4uZGlzcGxheVN0eWxlcy5oaWRkZW4sXG4gICAgJ34gZGl2Om5vdCgucGlubmVkKSc6IGRpc3BsYXlTdHlsZXMuaGlkZGVuLFxuICB9LFxuICBzaG93bjoge1xuICAgIC4uLmRpc3BsYXlTdHlsZXMuZGlzcGxheSxcbiAgICAnfiBkaXYnOiBkaXNwbGF5U3R5bGVzLmRpc3BsYXksXG4gIH0sXG59XG5cbmNvbnN0IGNvbnRyb2xzU3R5bGUgPSB7XG4gIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICB6SW5kZXg6ICcyJyxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgJz4gYnV0dG9uJzoge1xuICAgIG1hcmdpbjogJzFlbScsXG4gICAgd2lkdGg6ICcxLjc1ZW0nLFxuICAgIGhlaWdodDogJzEuNzVlbScsXG4gICAgJyY6ZGlzYWJsZWQnOiB7XG4gICAgICBvcGFjaXR5OiAwLjMsXG4gICAgfSxcbiAgICAnJi5wbGF5LWJ1dHRvbic6IHtcbiAgICAgIHdpZHRoOiAnM2VtJyxcbiAgICAgIGhlaWdodDogJzNlbScsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3QgdGV4dEVsbGlwc2lzID0ge1xuICBvdmVyZmxvdzogJ2hpZGRlbicsXG4gIHdoaXRlU3BhY2U6ICdub3dyYXAnLFxuICB0ZXh0T3ZlcmZsb3c6ICdlbGxpcHNpcycsXG59XG5cbmNvbnN0IGluZm9TdHlsZSA9IHtcbiAgYWxpZ25JdGVtczogJ2ZsZXgtc3RhcnQnLFxuICBvdmVyZmxvdzogJ3Zpc2libGUnLFxuICBoMToge1xuICAgIGhlaWdodDogJzNlbScsXG4gICAgZm9udFdlaWdodDogJzUwMCcsXG4gICAgLi4udGV4dEVsbGlwc2lzLFxuICAgICc+IGRpdic6IHRleHRFbGxpcHNpcyxcbiAgfSxcbn1cblxuY29uc3QgYmFja1N0eWxlID0ge1xuICBwb3NpdGlvbjogJ2Fic29sdXRlJyxcbiAgekluZGV4OiAnLTEnLFxuICB3aWR0aDogJzEwMCUnLFxuICBoZWlnaHQ6ICcxMDAlJyxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAganVzdGlmeUNvbnRlbnQ6ICdjZW50ZXInLFxufVxuXG5jb25zdCBza2lwU3R5bGUgPSB7XG4gIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICByaWdodDogMCxcbiAgYm90dG9tOiAnOXJlbScsXG4gIHRleHRBbGlnbjogJ3JpZ2h0JyxcbiAgYnV0dG9uOiB7XG4gICAgd2lkdGg6ICdhdXRvJyxcbiAgICBoZWlnaHQ6ICdhdXRvJyxcbiAgfSxcbn1cblxuY29uc3QgZGVrc3RvcFN0eWxlID0ge1xuICAnPiBkaXYnOiB7XG4gICAgJz4gYnV0dG9uOm5vdCg6ZGlzYWJsZWQpIH4gYnV0dG9uOm5vdCg6ZGlzYWJsZWQpLCBidXR0b246bGFzdC1vZi10eXBlJzoge1xuICAgICAgbWFyZ2luTGVmdDogJzAuNzVlbScsXG4gICAgfSxcbiAgICAnPiBidXR0b246bm90KDpsYXN0LW9mLXR5cGUpLCA+IGJ1dHRvbjpmaXJzdC1vZi10eXBlLCA+IGJ1dHRvbiB+IGRpdic6IHtcbiAgICAgIG1hcmdpblJpZ2h0OiAnMC43NWVtJyxcbiAgICB9LFxuICAgICc+IGJ1dHRvbjpmaXJzdC1vZi10eXBlJzoge1xuICAgICAgbWFyZ2luTGVmdDogJzAnLFxuICAgIH0sXG4gIH0sXG59XG5cbmNvbnN0IGRlc2t0b3BDb250cm9scyA9IHtcbiAgZmxleFdyYXA6ICd3cmFwJyxcbiAgJz4gZGl2OmZpcnN0LW9mLXR5cGUnOiB7XG4gICAgZmxleDogJzEwMCUnLFxuICAgIG1hcmdpbkJvdHRvbTogJzAuODhlbScsXG4gIH0sXG4gICdidXR0b25bZGlzYWJsZWRdJzoge1xuICAgIGRpc3BsYXk6ICdub25lJyxcbiAgfSxcbn1cblxuY29uc3QgQ29udHJvbHNCbG9jayA9ICh7XG4gIG9yZGVyID0gJ21vYmlsZScsXG4gIHBsYXlCdXR0b24sXG4gIHJld2luZEJ1dHRvbiA9ICcnLFxuICBmb3J3YXJkQnV0dG9uID0gJycsXG4gIHByZXZpb3VzRXBpc29kZUJ1dHRvbiA9ICcnLFxuICBuZXh0RXBpc29kZUJ1dHRvbiA9ICcnLFxufSkgPT5cbiAgb3JkZXIgPT09ICdkZXNrdG9wJyA/IChcbiAgICA8PlxuICAgICAge3ByZXZpb3VzRXBpc29kZUJ1dHRvbn1cbiAgICAgIHtwbGF5QnV0dG9ufVxuICAgICAge25leHRFcGlzb2RlQnV0dG9ufVxuICAgICAge3Jld2luZEJ1dHRvbn1cbiAgICAgIHtmb3J3YXJkQnV0dG9ufVxuICAgIDwvPlxuICApIDogKFxuICAgIDw+XG4gICAgICB7cmV3aW5kQnV0dG9ufVxuICAgICAge3ByZXZpb3VzRXBpc29kZUJ1dHRvbn1cbiAgICAgIHtwbGF5QnV0dG9ufVxuICAgICAge25leHRFcGlzb2RlQnV0dG9ufVxuICAgICAge2ZvcndhcmRCdXR0b259XG4gICAgPC8+XG4gIClcblxuY29uc3QgRGVmYXVsdExheW91dCA9ICh7XG4gIHR5cGUgPSAnbW9iaWxlJyxcbiAgc3R5bGUsXG4gIGRpc3BsYXksXG4gIGNvbnRyb2xzRGlzcGxheSA9IGRpc3BsYXksXG4gIHNpemUsXG4gIHRpdGxlID0gJycsXG4gIGNoYW5uZWxUaXRsZSA9ICcnLFxuICB2aWRlbyxcbiAgaGF2ZUJvdHRvbUl0ZW0sXG4gIHNlZWtiYXIgPSAnJyxcbiAgY29udHJvbEJ1dHRvbnMsXG4gIHZvbHVtZUNvbnRyb2wsXG4gIGZ1bmN0aW9uQnV0dG9ucyxcbiAgZnVsbHNjcmVlbkJ1dHRvbixcbiAgYmFja0J1dHRvbixcbiAgYWRTdGF0dXMgPSAnJyxcbiAgYWRMaW5rID0gJycsXG4gIGFkU2tpcEJ1dHRvbixcbiAgYmFja0l0ZW1zLFxuICBjaGlsZHJlbixcbiAgY29udGFpbmVyUmVmLFxuICBiYWNrUmVmLFxuICAuLi5yZXN0XG59KSA9PiAoXG4gIDxkaXZcbiAgICBjc3M9e1tcbiAgICAgIGNvbnRhaW5lclN0eWxlLFxuICAgICAgcmVzcG9uc2l2ZVN0eWxlc1tzaXplXSxcbiAgICAgIHR5cGUgPT09ICdkZXNrdG9wJyAmJiBkZWtzdG9wU3R5bGUsXG4gICAgXX1cbiAgICBzdHlsZT17c3R5bGV9XG4gICAgcmVmPXtjb250YWluZXJSZWZ9XG4gICAgey4uLnJlc3R9XG4gID5cbiAgICB7dmlkZW99XG4gICAgPGRpdlxuICAgICAgcmVmPXtiYWNrUmVmfVxuICAgICAgY3NzPXtbXG4gICAgICAgIGJhY2tTdHlsZSxcbiAgICAgICAgZGlzcGxheSAhPT0gJ2hpZGRlbicgJiYgKGhhdmVCb3R0b21JdGVtID8gZHJvcFRvcCA6IGRyb3ApLFxuICAgICAgXX1cbiAgICA+XG4gICAgICB7dHlwZSA9PT0gJ21vYmlsZScgPyAoXG4gICAgICAgIDxkaXYgY3NzPXtbY29udHJvbHNTdHlsZSwgZGlzcGxheVN0eWxlc1tjb250cm9sc0Rpc3BsYXldXX0+XG4gICAgICAgICAgPENvbnRyb2xzQmxvY2sgb3JkZXI9XCJtb2JpbGVcIiB7Li4uY29udHJvbEJ1dHRvbnN9IC8+XG4gICAgICAgIDwvZGl2PlxuICAgICAgKSA6IChcbiAgICAgICAgYmFja0l0ZW1zXG4gICAgICApfVxuICAgICAge2FkU2tpcEJ1dHRvbiAmJiA8ZGl2IGNzcz17c2tpcFN0eWxlfT57YWRTa2lwQnV0dG9ufTwvZGl2Pn1cbiAgICA8L2Rpdj5cbiAgICA8ZGl2IGNzcz17W3Jvd1N0eWxlLCBpbmZvU3R5bGUsIGRpc3BsYXlTdHlsZXNbZGlzcGxheV1dfT5cbiAgICAgIHtiYWNrQnV0dG9ufVxuICAgICAgPGgxPlxuICAgICAgICB7dGl0bGV9XG4gICAgICAgIHtjaGFubmVsVGl0bGUgJiYgPGRpdiBjc3M9e3tmb250U2l6ZTogJzE2cHgnfX0+e2NoYW5uZWxUaXRsZX08L2Rpdj59XG4gICAgICA8L2gxPlxuICAgICAgPGRpdiBjc3M9e2V4cGFuZH0gLz5cbiAgICAgIHt0eXBlID09PSAnbW9iaWxlJyAmJiBmdW5jdGlvbkJ1dHRvbnN9XG4gICAgICB7YWRMaW5rICYmIDxkaXYgY2xhc3NOYW1lPVwicGlubmVkXCI+e2FkTGlua308L2Rpdj59XG4gICAgPC9kaXY+XG4gICAgPGRpdlxuICAgICAgY3NzPXtbXG4gICAgICAgIHJvd1N0eWxlLFxuICAgICAgICB7bWFyZ2luVG9wOiAnYXV0byd9LFxuICAgICAgICB0eXBlID09PSAnZGVza3RvcCcgJiYgZGVza3RvcENvbnRyb2xzLFxuICAgICAgICBjb250cm9sc0Rpc3BsYXlTdHlsZXNbY29udHJvbHNEaXNwbGF5XSxcbiAgICAgIF19XG4gICAgPlxuICAgICAge3NlZWtiYXIgfHwgPGRpdiAvPn1cbiAgICAgIHt0eXBlID09PSAnZGVza3RvcCcgJiYgKFxuICAgICAgICA8Q29udHJvbHNCbG9jayBvcmRlcj1cImRlc2t0b3BcIiB7Li4uY29udHJvbEJ1dHRvbnN9IC8+XG4gICAgICApfVxuICAgICAge2FkU3RhdHVzICYmIChcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwaW5uZWRcIiBjc3M9e3tmbGV4OiAxLCB0ZXh0U2hhZG93OiAnMnB4IDJweCAxcHggIzAwMCd9fT5cbiAgICAgICAgICB7YWRTdGF0dXN9XG4gICAgICAgIDwvZGl2PlxuICAgICAgKX1cbiAgICAgIHt0eXBlID09PSAnZGVza3RvcCcgJiYgKFxuICAgICAgICA8PlxuICAgICAgICAgIDxkaXYgY3NzPXtleHBhbmR9IC8+XG4gICAgICAgICAge3ZvbHVtZUNvbnRyb2x9XG4gICAgICAgICAge2Z1bmN0aW9uQnV0dG9uc31cbiAgICAgICAgPC8+XG4gICAgICApfVxuICAgICAge2Z1bGxzY3JlZW5CdXR0b259XG4gICAgPC9kaXY+XG4gICAge2NoaWxkcmVufVxuICA8L2Rpdj5cbilcblxuZXhwb3J0IGRlZmF1bHQgRGVmYXVsdExheW91dFxuIl19 */',
-        toString: _EMOTION_STRINGIFIED_CSS_ERROR__$3,
+        toString: _EMOTION_STRINGIFIED_CSS_ERROR__$2,
       }
 
-var _ref2$1 =
+var _ref2 =
   process.env.NODE_ENV === 'production'
     ? {
         name: '1n8d5lm',
@@ -6233,7 +5753,7 @@ var _ref2$1 =
         styles: 'flex:1;text-shadow:2px 2px 1px #000;label:DefaultLayout;',
         map:
           '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkRlZmF1bHRMYXlvdXQuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBNlJnQyIsImZpbGUiOiJEZWZhdWx0TGF5b3V0LmpzIiwic291cmNlc0NvbnRlbnQiOlsiLyogQGpzeEltcG9ydFNvdXJjZSBAZW1vdGlvbi9yZWFjdCAqL1xuLyogZXNsaW50LWRpc2FibGUgcmVhY3QvcHJvcC10eXBlcyAqL1xuY29uc3QgZXhwYW5kID0ge1xuICBtYXJnaW46IDAsXG4gIGZsZXg6ICcxJyxcbn1cblxuY29uc3QgY29udGFpbmVyU3R5bGUgPSB7XG4gIHdpZHRoOiAnMTAwJScsXG4gIGhlaWdodDogJzEwMCUnLFxuICBib3hTaXppbmc6ICdib3JkZXItYm94JyxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBmbGV4RGlyZWN0aW9uOiAnY29sdW1uJyxcbiAgb3ZlcmZsb3c6ICdoaWRkZW4nLFxuICBjb2xvcjogJ3doaXRlJyxcbiAgLy8gcHJldmVudCBhbmltYXRpb24gZ2xpY2goYWZ0ZXJpbWFnZSkgb2YgZGVzY2VuZGFudCBlbGVtZW50c1xuICB0cmFuc2Zvcm06ICd0cmFuc2xhdGVYKDApJyxcbiAgdXNlclNlbGVjdDogJ25vbmUnLFxuICBoMToge1xuICAgIG1hcmdpbjogMCxcbiAgICBmb250U2l6ZTogJzFlbScsXG4gICAgbGluZUhlaWdodDogJzEuNWVtJyxcbiAgfSxcbiAgJ2EsIGE6bGluaywgYTp2aXNpdGVkJzoge1xuICAgIGNvbG9yOiAnI2ZmZicsXG4gICAgb3BhY2l0eTogMC44LFxuICAgIHRleHREZWNvcmF0aW9uOiAnbm9uZScsXG4gIH0sXG4gIGJ1dHRvbjoge1xuICAgIGZvbnRTaXplOiAnaW5oZXJpdCcsXG4gIH0sXG59XG5cbmNvbnN0IGRyb3AgPSB7XG4gIGJhY2tncm91bmRJbWFnZTogYGxpbmVhci1ncmFkaWVudChcbiAgICAwZGVnLFxuICAgIHJnYmEoMCwwLDAsMC41KSAwLFxuICAgIHJnYmEoMCwwLDAsMCkgOHJlbSBjYWxjKDEwMCUgLSA4cmVtKSxcbiAgICByZ2JhKDAsMCwwLDAuNSkgMTAwJVxuICApYCxcbn1cblxuY29uc3QgZHJvcFRvcCA9IHtcbiAgYmFja2dyb3VuZEltYWdlOiBgbGluZWFyLWdyYWRpZW50KFxuICAgIDBkZWcsXG4gICAgcmdiYSgwLDAsMCwwKSAwLFxuICAgIHJnYmEoMCwwLDAsMCkgOHJlbSBjYWxjKDEwMCUgLSA4cmVtKSxcbiAgICByZ2JhKDAsMCwwLDAuNSkgMTAwJVxuICApYCxcbn1cblxuY29uc3QgcmVzcG9uc2l2ZVN0eWxlcyA9IHtcbiAgZGVza3RvcDoge1xuICAgIGZvbnRTaXplOiAnMjRweCcsXG4gIH0sIC8vIGFkZCBpZiBuZWNlc3Nhcnk6IGJpZy1kZXNrdG9wXG59XG5cbmNvbnN0IHJvd1N0eWxlID0ge1xuICBib3hTaXppbmc6ICdib3JkZXItYm94JyxcbiAgd2lkdGg6ICcxMDAlJyxcbiAgcGFkZGluZzogJ2NhbGMoMmVtIC0gMTZweCknLFxuICBkaXNwbGF5OiAnZmxleCcsXG4gIGFsaWduSXRlbXM6ICdjZW50ZXInLFxuICBidXR0b246IHtcbiAgICBmbGV4OiAnMCAwIDEuNWVtJyxcbiAgICB3aWR0aDogJzEuNWVtJyxcbiAgICBoZWlnaHQ6ICcxLjVlbScsXG4gIH0sXG4gICc+IGJ1dHRvbjpub3QoOmRpc2FibGVkKSB+IGJ1dHRvbjpub3QoOmRpc2FibGVkKSwgZGl2IH4gYnV0dG9uOmxhc3Qtb2YtdHlwZSc6IHtcbiAgICBtYXJnaW5MZWZ0OiAnMC41cmVtJyxcbiAgfSxcbiAgJz4gYnV0dG9uOm5vdCg6bGFzdC1vZi10eXBlKSc6IHtcbiAgICBtYXJnaW5SaWdodDogJzAuNXJlbScsXG4gIH0sXG59XG5cbmNvbnN0IGRpc3BsYXlTdHlsZXMgPSB7XG4gIGhpZGRlbjoge1xuICAgICc+IGRpdjpub3QoLnBpbm5lZCksID4gYnV0dG9uOm5vdCgucGlubmVkKSwgPiBoMTpub3QoLnBpbm5lZCknOiB7XG4gICAgICBvcGFjaXR5OiAwLFxuICAgICAgdHJhbnNmb3JtOiAndHJhbnNsYXRlKC0xMDB2dyknLFxuICAgICAgdHJhbnNpdGlvbjogJ29wYWNpdHkgMC41cyBlYXNlLW91dCwgdHJhbnNmb3JtIDBzIDAuNXMnLFxuICAgIH0sXG4gIH0sXG4gIHNob3duOiB7XG4gICAgJz4gZGl2Om5vdCgucGlubmVkKSwgPiBidXR0b246bm90KC5waW5uZWQpLCA+IGgxOm5vdCgucGlubmVkKSc6IHtcbiAgICAgIHRyYW5zaXRpb246ICdvcGFjaXR5IDAuNXMgZWFzZS1vdXQnLFxuICAgIH0sXG4gIH0sXG59XG5cbmNvbnN0IGNvbnRyb2xzRGlzcGxheVN0eWxlcyA9IHtcbiAgaGlkZGVuOiB7XG4gICAgLi4uZGlzcGxheVN0eWxlcy5oaWRkZW4sXG4gICAgJ34gZGl2Om5vdCgucGlubmVkKSc6IGRpc3BsYXlTdHlsZXMuaGlkZGVuLFxuICB9LFxuICBzaG93bjoge1xuICAgIC4uLmRpc3BsYXlTdHlsZXMuZGlzcGxheSxcbiAgICAnfiBkaXYnOiBkaXNwbGF5U3R5bGVzLmRpc3BsYXksXG4gIH0sXG59XG5cbmNvbnN0IGNvbnRyb2xzU3R5bGUgPSB7XG4gIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICB6SW5kZXg6ICcyJyxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgJz4gYnV0dG9uJzoge1xuICAgIG1hcmdpbjogJzFlbScsXG4gICAgd2lkdGg6ICcxLjc1ZW0nLFxuICAgIGhlaWdodDogJzEuNzVlbScsXG4gICAgJyY6ZGlzYWJsZWQnOiB7XG4gICAgICBvcGFjaXR5OiAwLjMsXG4gICAgfSxcbiAgICAnJi5wbGF5LWJ1dHRvbic6IHtcbiAgICAgIHdpZHRoOiAnM2VtJyxcbiAgICAgIGhlaWdodDogJzNlbScsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3QgdGV4dEVsbGlwc2lzID0ge1xuICBvdmVyZmxvdzogJ2hpZGRlbicsXG4gIHdoaXRlU3BhY2U6ICdub3dyYXAnLFxuICB0ZXh0T3ZlcmZsb3c6ICdlbGxpcHNpcycsXG59XG5cbmNvbnN0IGluZm9TdHlsZSA9IHtcbiAgYWxpZ25JdGVtczogJ2ZsZXgtc3RhcnQnLFxuICBvdmVyZmxvdzogJ3Zpc2libGUnLFxuICBoMToge1xuICAgIGhlaWdodDogJzNlbScsXG4gICAgZm9udFdlaWdodDogJzUwMCcsXG4gICAgLi4udGV4dEVsbGlwc2lzLFxuICAgICc+IGRpdic6IHRleHRFbGxpcHNpcyxcbiAgfSxcbn1cblxuY29uc3QgYmFja1N0eWxlID0ge1xuICBwb3NpdGlvbjogJ2Fic29sdXRlJyxcbiAgekluZGV4OiAnLTEnLFxuICB3aWR0aDogJzEwMCUnLFxuICBoZWlnaHQ6ICcxMDAlJyxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAganVzdGlmeUNvbnRlbnQ6ICdjZW50ZXInLFxufVxuXG5jb25zdCBza2lwU3R5bGUgPSB7XG4gIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICByaWdodDogMCxcbiAgYm90dG9tOiAnOXJlbScsXG4gIHRleHRBbGlnbjogJ3JpZ2h0JyxcbiAgYnV0dG9uOiB7XG4gICAgd2lkdGg6ICdhdXRvJyxcbiAgICBoZWlnaHQ6ICdhdXRvJyxcbiAgfSxcbn1cblxuY29uc3QgZGVrc3RvcFN0eWxlID0ge1xuICAnPiBkaXYnOiB7XG4gICAgJz4gYnV0dG9uOm5vdCg6ZGlzYWJsZWQpIH4gYnV0dG9uOm5vdCg6ZGlzYWJsZWQpLCBidXR0b246bGFzdC1vZi10eXBlJzoge1xuICAgICAgbWFyZ2luTGVmdDogJzAuNzVlbScsXG4gICAgfSxcbiAgICAnPiBidXR0b246bm90KDpsYXN0LW9mLXR5cGUpLCA+IGJ1dHRvbjpmaXJzdC1vZi10eXBlLCA+IGJ1dHRvbiB+IGRpdic6IHtcbiAgICAgIG1hcmdpblJpZ2h0OiAnMC43NWVtJyxcbiAgICB9LFxuICAgICc+IGJ1dHRvbjpmaXJzdC1vZi10eXBlJzoge1xuICAgICAgbWFyZ2luTGVmdDogJzAnLFxuICAgIH0sXG4gIH0sXG59XG5cbmNvbnN0IGRlc2t0b3BDb250cm9scyA9IHtcbiAgZmxleFdyYXA6ICd3cmFwJyxcbiAgJz4gZGl2OmZpcnN0LW9mLXR5cGUnOiB7XG4gICAgZmxleDogJzEwMCUnLFxuICAgIG1hcmdpbkJvdHRvbTogJzAuODhlbScsXG4gIH0sXG4gICdidXR0b25bZGlzYWJsZWRdJzoge1xuICAgIGRpc3BsYXk6ICdub25lJyxcbiAgfSxcbn1cblxuY29uc3QgQ29udHJvbHNCbG9jayA9ICh7XG4gIG9yZGVyID0gJ21vYmlsZScsXG4gIHBsYXlCdXR0b24sXG4gIHJld2luZEJ1dHRvbiA9ICcnLFxuICBmb3J3YXJkQnV0dG9uID0gJycsXG4gIHByZXZpb3VzRXBpc29kZUJ1dHRvbiA9ICcnLFxuICBuZXh0RXBpc29kZUJ1dHRvbiA9ICcnLFxufSkgPT5cbiAgb3JkZXIgPT09ICdkZXNrdG9wJyA/IChcbiAgICA8PlxuICAgICAge3ByZXZpb3VzRXBpc29kZUJ1dHRvbn1cbiAgICAgIHtwbGF5QnV0dG9ufVxuICAgICAge25leHRFcGlzb2RlQnV0dG9ufVxuICAgICAge3Jld2luZEJ1dHRvbn1cbiAgICAgIHtmb3J3YXJkQnV0dG9ufVxuICAgIDwvPlxuICApIDogKFxuICAgIDw+XG4gICAgICB7cmV3aW5kQnV0dG9ufVxuICAgICAge3ByZXZpb3VzRXBpc29kZUJ1dHRvbn1cbiAgICAgIHtwbGF5QnV0dG9ufVxuICAgICAge25leHRFcGlzb2RlQnV0dG9ufVxuICAgICAge2ZvcndhcmRCdXR0b259XG4gICAgPC8+XG4gIClcblxuY29uc3QgRGVmYXVsdExheW91dCA9ICh7XG4gIHR5cGUgPSAnbW9iaWxlJyxcbiAgc3R5bGUsXG4gIGRpc3BsYXksXG4gIGNvbnRyb2xzRGlzcGxheSA9IGRpc3BsYXksXG4gIHNpemUsXG4gIHRpdGxlID0gJycsXG4gIGNoYW5uZWxUaXRsZSA9ICcnLFxuICB2aWRlbyxcbiAgaGF2ZUJvdHRvbUl0ZW0sXG4gIHNlZWtiYXIgPSAnJyxcbiAgY29udHJvbEJ1dHRvbnMsXG4gIHZvbHVtZUNvbnRyb2wsXG4gIGZ1bmN0aW9uQnV0dG9ucyxcbiAgZnVsbHNjcmVlbkJ1dHRvbixcbiAgYmFja0J1dHRvbixcbiAgYWRTdGF0dXMgPSAnJyxcbiAgYWRMaW5rID0gJycsXG4gIGFkU2tpcEJ1dHRvbixcbiAgYmFja0l0ZW1zLFxuICBjaGlsZHJlbixcbiAgY29udGFpbmVyUmVmLFxuICBiYWNrUmVmLFxuICAuLi5yZXN0XG59KSA9PiAoXG4gIDxkaXZcbiAgICBjc3M9e1tcbiAgICAgIGNvbnRhaW5lclN0eWxlLFxuICAgICAgcmVzcG9uc2l2ZVN0eWxlc1tzaXplXSxcbiAgICAgIHR5cGUgPT09ICdkZXNrdG9wJyAmJiBkZWtzdG9wU3R5bGUsXG4gICAgXX1cbiAgICBzdHlsZT17c3R5bGV9XG4gICAgcmVmPXtjb250YWluZXJSZWZ9XG4gICAgey4uLnJlc3R9XG4gID5cbiAgICB7dmlkZW99XG4gICAgPGRpdlxuICAgICAgcmVmPXtiYWNrUmVmfVxuICAgICAgY3NzPXtbXG4gICAgICAgIGJhY2tTdHlsZSxcbiAgICAgICAgZGlzcGxheSAhPT0gJ2hpZGRlbicgJiYgKGhhdmVCb3R0b21JdGVtID8gZHJvcFRvcCA6IGRyb3ApLFxuICAgICAgXX1cbiAgICA+XG4gICAgICB7dHlwZSA9PT0gJ21vYmlsZScgPyAoXG4gICAgICAgIDxkaXYgY3NzPXtbY29udHJvbHNTdHlsZSwgZGlzcGxheVN0eWxlc1tjb250cm9sc0Rpc3BsYXldXX0+XG4gICAgICAgICAgPENvbnRyb2xzQmxvY2sgb3JkZXI9XCJtb2JpbGVcIiB7Li4uY29udHJvbEJ1dHRvbnN9IC8+XG4gICAgICAgIDwvZGl2PlxuICAgICAgKSA6IChcbiAgICAgICAgYmFja0l0ZW1zXG4gICAgICApfVxuICAgICAge2FkU2tpcEJ1dHRvbiAmJiA8ZGl2IGNzcz17c2tpcFN0eWxlfT57YWRTa2lwQnV0dG9ufTwvZGl2Pn1cbiAgICA8L2Rpdj5cbiAgICA8ZGl2IGNzcz17W3Jvd1N0eWxlLCBpbmZvU3R5bGUsIGRpc3BsYXlTdHlsZXNbZGlzcGxheV1dfT5cbiAgICAgIHtiYWNrQnV0dG9ufVxuICAgICAgPGgxPlxuICAgICAgICB7dGl0bGV9XG4gICAgICAgIHtjaGFubmVsVGl0bGUgJiYgPGRpdiBjc3M9e3tmb250U2l6ZTogJzE2cHgnfX0+e2NoYW5uZWxUaXRsZX08L2Rpdj59XG4gICAgICA8L2gxPlxuICAgICAgPGRpdiBjc3M9e2V4cGFuZH0gLz5cbiAgICAgIHt0eXBlID09PSAnbW9iaWxlJyAmJiBmdW5jdGlvbkJ1dHRvbnN9XG4gICAgICB7YWRMaW5rICYmIDxkaXYgY2xhc3NOYW1lPVwicGlubmVkXCI+e2FkTGlua308L2Rpdj59XG4gICAgPC9kaXY+XG4gICAgPGRpdlxuICAgICAgY3NzPXtbXG4gICAgICAgIHJvd1N0eWxlLFxuICAgICAgICB7bWFyZ2luVG9wOiAnYXV0byd9LFxuICAgICAgICB0eXBlID09PSAnZGVza3RvcCcgJiYgZGVza3RvcENvbnRyb2xzLFxuICAgICAgICBjb250cm9sc0Rpc3BsYXlTdHlsZXNbY29udHJvbHNEaXNwbGF5XSxcbiAgICAgIF19XG4gICAgPlxuICAgICAge3NlZWtiYXIgfHwgPGRpdiAvPn1cbiAgICAgIHt0eXBlID09PSAnZGVza3RvcCcgJiYgKFxuICAgICAgICA8Q29udHJvbHNCbG9jayBvcmRlcj1cImRlc2t0b3BcIiB7Li4uY29udHJvbEJ1dHRvbnN9IC8+XG4gICAgICApfVxuICAgICAge2FkU3RhdHVzICYmIChcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwaW5uZWRcIiBjc3M9e3tmbGV4OiAxLCB0ZXh0U2hhZG93OiAnMnB4IDJweCAxcHggIzAwMCd9fT5cbiAgICAgICAgICB7YWRTdGF0dXN9XG4gICAgICAgIDwvZGl2PlxuICAgICAgKX1cbiAgICAgIHt0eXBlID09PSAnZGVza3RvcCcgJiYgKFxuICAgICAgICA8PlxuICAgICAgICAgIDxkaXYgY3NzPXtleHBhbmR9IC8+XG4gICAgICAgICAge3ZvbHVtZUNvbnRyb2x9XG4gICAgICAgICAge2Z1bmN0aW9uQnV0dG9uc31cbiAgICAgICAgPC8+XG4gICAgICApfVxuICAgICAge2Z1bGxzY3JlZW5CdXR0b259XG4gICAgPC9kaXY+XG4gICAge2NoaWxkcmVufVxuICA8L2Rpdj5cbilcblxuZXhwb3J0IGRlZmF1bHQgRGVmYXVsdExheW91dFxuIl19 */',
-        toString: _EMOTION_STRINGIFIED_CSS_ERROR__$3,
+        toString: _EMOTION_STRINGIFIED_CSS_ERROR__$2,
       }
 
 const DefaultLayout = ({
@@ -6261,7 +5781,7 @@ const DefaultLayout = ({
   backRef,
   ...rest
 }) =>
-  jsxRuntime$1.jsxs('div', {
+  jsxs('div', {
     css: [
       containerStyle$2,
       responsiveStyles[size],
@@ -6276,7 +5796,7 @@ const DefaultLayout = ({
     ...rest,
     children: [
       video,
-      jsxRuntime$1.jsxs('div', {
+      jsxs('div', {
         ref: backRef,
         css: [
           backStyle,
@@ -6288,7 +5808,7 @@ const DefaultLayout = ({
         ],
         children: [
           type === 'mobile'
-            ? jsxRuntime$1.jsx('div', {
+            ? jsx$1('div', {
                 css: [
                   controlsStyle,
                   displayStyles[controlsDisplay],
@@ -6299,20 +5819,20 @@ const DefaultLayout = ({
                     ? ''
                     : '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkRlZmF1bHRMYXlvdXQuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBOFBhIiwiZmlsZSI6IkRlZmF1bHRMYXlvdXQuanMiLCJzb3VyY2VzQ29udGVudCI6WyIvKiBAanN4SW1wb3J0U291cmNlIEBlbW90aW9uL3JlYWN0ICovXG4vKiBlc2xpbnQtZGlzYWJsZSByZWFjdC9wcm9wLXR5cGVzICovXG5jb25zdCBleHBhbmQgPSB7XG4gIG1hcmdpbjogMCxcbiAgZmxleDogJzEnLFxufVxuXG5jb25zdCBjb250YWluZXJTdHlsZSA9IHtcbiAgd2lkdGg6ICcxMDAlJyxcbiAgaGVpZ2h0OiAnMTAwJScsXG4gIGJveFNpemluZzogJ2JvcmRlci1ib3gnLFxuICBkaXNwbGF5OiAnZmxleCcsXG4gIGZsZXhEaXJlY3Rpb246ICdjb2x1bW4nLFxuICBvdmVyZmxvdzogJ2hpZGRlbicsXG4gIGNvbG9yOiAnd2hpdGUnLFxuICAvLyBwcmV2ZW50IGFuaW1hdGlvbiBnbGljaChhZnRlcmltYWdlKSBvZiBkZXNjZW5kYW50IGVsZW1lbnRzXG4gIHRyYW5zZm9ybTogJ3RyYW5zbGF0ZVgoMCknLFxuICB1c2VyU2VsZWN0OiAnbm9uZScsXG4gIGgxOiB7XG4gICAgbWFyZ2luOiAwLFxuICAgIGZvbnRTaXplOiAnMWVtJyxcbiAgICBsaW5lSGVpZ2h0OiAnMS41ZW0nLFxuICB9LFxuICAnYSwgYTpsaW5rLCBhOnZpc2l0ZWQnOiB7XG4gICAgY29sb3I6ICcjZmZmJyxcbiAgICBvcGFjaXR5OiAwLjgsXG4gICAgdGV4dERlY29yYXRpb246ICdub25lJyxcbiAgfSxcbiAgYnV0dG9uOiB7XG4gICAgZm9udFNpemU6ICdpbmhlcml0JyxcbiAgfSxcbn1cblxuY29uc3QgZHJvcCA9IHtcbiAgYmFja2dyb3VuZEltYWdlOiBgbGluZWFyLWdyYWRpZW50KFxuICAgIDBkZWcsXG4gICAgcmdiYSgwLDAsMCwwLjUpIDAsXG4gICAgcmdiYSgwLDAsMCwwKSA4cmVtIGNhbGMoMTAwJSAtIDhyZW0pLFxuICAgIHJnYmEoMCwwLDAsMC41KSAxMDAlXG4gIClgLFxufVxuXG5jb25zdCBkcm9wVG9wID0ge1xuICBiYWNrZ3JvdW5kSW1hZ2U6IGBsaW5lYXItZ3JhZGllbnQoXG4gICAgMGRlZyxcbiAgICByZ2JhKDAsMCwwLDApIDAsXG4gICAgcmdiYSgwLDAsMCwwKSA4cmVtIGNhbGMoMTAwJSAtIDhyZW0pLFxuICAgIHJnYmEoMCwwLDAsMC41KSAxMDAlXG4gIClgLFxufVxuXG5jb25zdCByZXNwb25zaXZlU3R5bGVzID0ge1xuICBkZXNrdG9wOiB7XG4gICAgZm9udFNpemU6ICcyNHB4JyxcbiAgfSwgLy8gYWRkIGlmIG5lY2Vzc2FyeTogYmlnLWRlc2t0b3Bcbn1cblxuY29uc3Qgcm93U3R5bGUgPSB7XG4gIGJveFNpemluZzogJ2JvcmRlci1ib3gnLFxuICB3aWR0aDogJzEwMCUnLFxuICBwYWRkaW5nOiAnY2FsYygyZW0gLSAxNnB4KScsXG4gIGRpc3BsYXk6ICdmbGV4JyxcbiAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gIGJ1dHRvbjoge1xuICAgIGZsZXg6ICcwIDAgMS41ZW0nLFxuICAgIHdpZHRoOiAnMS41ZW0nLFxuICAgIGhlaWdodDogJzEuNWVtJyxcbiAgfSxcbiAgJz4gYnV0dG9uOm5vdCg6ZGlzYWJsZWQpIH4gYnV0dG9uOm5vdCg6ZGlzYWJsZWQpLCBkaXYgfiBidXR0b246bGFzdC1vZi10eXBlJzoge1xuICAgIG1hcmdpbkxlZnQ6ICcwLjVyZW0nLFxuICB9LFxuICAnPiBidXR0b246bm90KDpsYXN0LW9mLXR5cGUpJzoge1xuICAgIG1hcmdpblJpZ2h0OiAnMC41cmVtJyxcbiAgfSxcbn1cblxuY29uc3QgZGlzcGxheVN0eWxlcyA9IHtcbiAgaGlkZGVuOiB7XG4gICAgJz4gZGl2Om5vdCgucGlubmVkKSwgPiBidXR0b246bm90KC5waW5uZWQpLCA+IGgxOm5vdCgucGlubmVkKSc6IHtcbiAgICAgIG9wYWNpdHk6IDAsXG4gICAgICB0cmFuc2Zvcm06ICd0cmFuc2xhdGUoLTEwMHZ3KScsXG4gICAgICB0cmFuc2l0aW9uOiAnb3BhY2l0eSAwLjVzIGVhc2Utb3V0LCB0cmFuc2Zvcm0gMHMgMC41cycsXG4gICAgfSxcbiAgfSxcbiAgc2hvd246IHtcbiAgICAnPiBkaXY6bm90KC5waW5uZWQpLCA+IGJ1dHRvbjpub3QoLnBpbm5lZCksID4gaDE6bm90KC5waW5uZWQpJzoge1xuICAgICAgdHJhbnNpdGlvbjogJ29wYWNpdHkgMC41cyBlYXNlLW91dCcsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3QgY29udHJvbHNEaXNwbGF5U3R5bGVzID0ge1xuICBoaWRkZW46IHtcbiAgICAuLi5kaXNwbGF5U3R5bGVzLmhpZGRlbixcbiAgICAnfiBkaXY6bm90KC5waW5uZWQpJzogZGlzcGxheVN0eWxlcy5oaWRkZW4sXG4gIH0sXG4gIHNob3duOiB7XG4gICAgLi4uZGlzcGxheVN0eWxlcy5kaXNwbGF5LFxuICAgICd+IGRpdic6IGRpc3BsYXlTdHlsZXMuZGlzcGxheSxcbiAgfSxcbn1cblxuY29uc3QgY29udHJvbHNTdHlsZSA9IHtcbiAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gIHpJbmRleDogJzInLFxuICBkaXNwbGF5OiAnZmxleCcsXG4gIGFsaWduSXRlbXM6ICdjZW50ZXInLFxuICAnPiBidXR0b24nOiB7XG4gICAgbWFyZ2luOiAnMWVtJyxcbiAgICB3aWR0aDogJzEuNzVlbScsXG4gICAgaGVpZ2h0OiAnMS43NWVtJyxcbiAgICAnJjpkaXNhYmxlZCc6IHtcbiAgICAgIG9wYWNpdHk6IDAuMyxcbiAgICB9LFxuICAgICcmLnBsYXktYnV0dG9uJzoge1xuICAgICAgd2lkdGg6ICczZW0nLFxuICAgICAgaGVpZ2h0OiAnM2VtJyxcbiAgICB9LFxuICB9LFxufVxuXG5jb25zdCB0ZXh0RWxsaXBzaXMgPSB7XG4gIG92ZXJmbG93OiAnaGlkZGVuJyxcbiAgd2hpdGVTcGFjZTogJ25vd3JhcCcsXG4gIHRleHRPdmVyZmxvdzogJ2VsbGlwc2lzJyxcbn1cblxuY29uc3QgaW5mb1N0eWxlID0ge1xuICBhbGlnbkl0ZW1zOiAnZmxleC1zdGFydCcsXG4gIG92ZXJmbG93OiAndmlzaWJsZScsXG4gIGgxOiB7XG4gICAgaGVpZ2h0OiAnM2VtJyxcbiAgICBmb250V2VpZ2h0OiAnNTAwJyxcbiAgICAuLi50ZXh0RWxsaXBzaXMsXG4gICAgJz4gZGl2JzogdGV4dEVsbGlwc2lzLFxuICB9LFxufVxuXG5jb25zdCBiYWNrU3R5bGUgPSB7XG4gIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICB6SW5kZXg6ICctMScsXG4gIHdpZHRoOiAnMTAwJScsXG4gIGhlaWdodDogJzEwMCUnLFxuICBkaXNwbGF5OiAnZmxleCcsXG4gIGFsaWduSXRlbXM6ICdjZW50ZXInLFxuICBqdXN0aWZ5Q29udGVudDogJ2NlbnRlcicsXG59XG5cbmNvbnN0IHNraXBTdHlsZSA9IHtcbiAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gIHJpZ2h0OiAwLFxuICBib3R0b206ICc5cmVtJyxcbiAgdGV4dEFsaWduOiAncmlnaHQnLFxuICBidXR0b246IHtcbiAgICB3aWR0aDogJ2F1dG8nLFxuICAgIGhlaWdodDogJ2F1dG8nLFxuICB9LFxufVxuXG5jb25zdCBkZWtzdG9wU3R5bGUgPSB7XG4gICc+IGRpdic6IHtcbiAgICAnPiBidXR0b246bm90KDpkaXNhYmxlZCkgfiBidXR0b246bm90KDpkaXNhYmxlZCksIGJ1dHRvbjpsYXN0LW9mLXR5cGUnOiB7XG4gICAgICBtYXJnaW5MZWZ0OiAnMC43NWVtJyxcbiAgICB9LFxuICAgICc+IGJ1dHRvbjpub3QoOmxhc3Qtb2YtdHlwZSksID4gYnV0dG9uOmZpcnN0LW9mLXR5cGUsID4gYnV0dG9uIH4gZGl2Jzoge1xuICAgICAgbWFyZ2luUmlnaHQ6ICcwLjc1ZW0nLFxuICAgIH0sXG4gICAgJz4gYnV0dG9uOmZpcnN0LW9mLXR5cGUnOiB7XG4gICAgICBtYXJnaW5MZWZ0OiAnMCcsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3QgZGVza3RvcENvbnRyb2xzID0ge1xuICBmbGV4V3JhcDogJ3dyYXAnLFxuICAnPiBkaXY6Zmlyc3Qtb2YtdHlwZSc6IHtcbiAgICBmbGV4OiAnMTAwJScsXG4gICAgbWFyZ2luQm90dG9tOiAnMC44OGVtJyxcbiAgfSxcbiAgJ2J1dHRvbltkaXNhYmxlZF0nOiB7XG4gICAgZGlzcGxheTogJ25vbmUnLFxuICB9LFxufVxuXG5jb25zdCBDb250cm9sc0Jsb2NrID0gKHtcbiAgb3JkZXIgPSAnbW9iaWxlJyxcbiAgcGxheUJ1dHRvbixcbiAgcmV3aW5kQnV0dG9uID0gJycsXG4gIGZvcndhcmRCdXR0b24gPSAnJyxcbiAgcHJldmlvdXNFcGlzb2RlQnV0dG9uID0gJycsXG4gIG5leHRFcGlzb2RlQnV0dG9uID0gJycsXG59KSA9PlxuICBvcmRlciA9PT0gJ2Rlc2t0b3AnID8gKFxuICAgIDw+XG4gICAgICB7cHJldmlvdXNFcGlzb2RlQnV0dG9ufVxuICAgICAge3BsYXlCdXR0b259XG4gICAgICB7bmV4dEVwaXNvZGVCdXR0b259XG4gICAgICB7cmV3aW5kQnV0dG9ufVxuICAgICAge2ZvcndhcmRCdXR0b259XG4gICAgPC8+XG4gICkgOiAoXG4gICAgPD5cbiAgICAgIHtyZXdpbmRCdXR0b259XG4gICAgICB7cHJldmlvdXNFcGlzb2RlQnV0dG9ufVxuICAgICAge3BsYXlCdXR0b259XG4gICAgICB7bmV4dEVwaXNvZGVCdXR0b259XG4gICAgICB7Zm9yd2FyZEJ1dHRvbn1cbiAgICA8Lz5cbiAgKVxuXG5jb25zdCBEZWZhdWx0TGF5b3V0ID0gKHtcbiAgdHlwZSA9ICdtb2JpbGUnLFxuICBzdHlsZSxcbiAgZGlzcGxheSxcbiAgY29udHJvbHNEaXNwbGF5ID0gZGlzcGxheSxcbiAgc2l6ZSxcbiAgdGl0bGUgPSAnJyxcbiAgY2hhbm5lbFRpdGxlID0gJycsXG4gIHZpZGVvLFxuICBoYXZlQm90dG9tSXRlbSxcbiAgc2Vla2JhciA9ICcnLFxuICBjb250cm9sQnV0dG9ucyxcbiAgdm9sdW1lQ29udHJvbCxcbiAgZnVuY3Rpb25CdXR0b25zLFxuICBmdWxsc2NyZWVuQnV0dG9uLFxuICBiYWNrQnV0dG9uLFxuICBhZFN0YXR1cyA9ICcnLFxuICBhZExpbmsgPSAnJyxcbiAgYWRTa2lwQnV0dG9uLFxuICBiYWNrSXRlbXMsXG4gIGNoaWxkcmVuLFxuICBjb250YWluZXJSZWYsXG4gIGJhY2tSZWYsXG4gIC4uLnJlc3Rcbn0pID0+IChcbiAgPGRpdlxuICAgIGNzcz17W1xuICAgICAgY29udGFpbmVyU3R5bGUsXG4gICAgICByZXNwb25zaXZlU3R5bGVzW3NpemVdLFxuICAgICAgdHlwZSA9PT0gJ2Rlc2t0b3AnICYmIGRla3N0b3BTdHlsZSxcbiAgICBdfVxuICAgIHN0eWxlPXtzdHlsZX1cbiAgICByZWY9e2NvbnRhaW5lclJlZn1cbiAgICB7Li4ucmVzdH1cbiAgPlxuICAgIHt2aWRlb31cbiAgICA8ZGl2XG4gICAgICByZWY9e2JhY2tSZWZ9XG4gICAgICBjc3M9e1tcbiAgICAgICAgYmFja1N0eWxlLFxuICAgICAgICBkaXNwbGF5ICE9PSAnaGlkZGVuJyAmJiAoaGF2ZUJvdHRvbUl0ZW0gPyBkcm9wVG9wIDogZHJvcCksXG4gICAgICBdfVxuICAgID5cbiAgICAgIHt0eXBlID09PSAnbW9iaWxlJyA/IChcbiAgICAgICAgPGRpdiBjc3M9e1tjb250cm9sc1N0eWxlLCBkaXNwbGF5U3R5bGVzW2NvbnRyb2xzRGlzcGxheV1dfT5cbiAgICAgICAgICA8Q29udHJvbHNCbG9jayBvcmRlcj1cIm1vYmlsZVwiIHsuLi5jb250cm9sQnV0dG9uc30gLz5cbiAgICAgICAgPC9kaXY+XG4gICAgICApIDogKFxuICAgICAgICBiYWNrSXRlbXNcbiAgICAgICl9XG4gICAgICB7YWRTa2lwQnV0dG9uICYmIDxkaXYgY3NzPXtza2lwU3R5bGV9PnthZFNraXBCdXR0b259PC9kaXY+fVxuICAgIDwvZGl2PlxuICAgIDxkaXYgY3NzPXtbcm93U3R5bGUsIGluZm9TdHlsZSwgZGlzcGxheVN0eWxlc1tkaXNwbGF5XV19PlxuICAgICAge2JhY2tCdXR0b259XG4gICAgICA8aDE+XG4gICAgICAgIHt0aXRsZX1cbiAgICAgICAge2NoYW5uZWxUaXRsZSAmJiA8ZGl2IGNzcz17e2ZvbnRTaXplOiAnMTZweCd9fT57Y2hhbm5lbFRpdGxlfTwvZGl2Pn1cbiAgICAgIDwvaDE+XG4gICAgICA8ZGl2IGNzcz17ZXhwYW5kfSAvPlxuICAgICAge3R5cGUgPT09ICdtb2JpbGUnICYmIGZ1bmN0aW9uQnV0dG9uc31cbiAgICAgIHthZExpbmsgJiYgPGRpdiBjbGFzc05hbWU9XCJwaW5uZWRcIj57YWRMaW5rfTwvZGl2Pn1cbiAgICA8L2Rpdj5cbiAgICA8ZGl2XG4gICAgICBjc3M9e1tcbiAgICAgICAgcm93U3R5bGUsXG4gICAgICAgIHttYXJnaW5Ub3A6ICdhdXRvJ30sXG4gICAgICAgIHR5cGUgPT09ICdkZXNrdG9wJyAmJiBkZXNrdG9wQ29udHJvbHMsXG4gICAgICAgIGNvbnRyb2xzRGlzcGxheVN0eWxlc1tjb250cm9sc0Rpc3BsYXldLFxuICAgICAgXX1cbiAgICA+XG4gICAgICB7c2Vla2JhciB8fCA8ZGl2IC8+fVxuICAgICAge3R5cGUgPT09ICdkZXNrdG9wJyAmJiAoXG4gICAgICAgIDxDb250cm9sc0Jsb2NrIG9yZGVyPVwiZGVza3RvcFwiIHsuLi5jb250cm9sQnV0dG9uc30gLz5cbiAgICAgICl9XG4gICAgICB7YWRTdGF0dXMgJiYgKFxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBpbm5lZFwiIGNzcz17e2ZsZXg6IDEsIHRleHRTaGFkb3c6ICcycHggMnB4IDFweCAjMDAwJ319PlxuICAgICAgICAgIHthZFN0YXR1c31cbiAgICAgICAgPC9kaXY+XG4gICAgICApfVxuICAgICAge3R5cGUgPT09ICdkZXNrdG9wJyAmJiAoXG4gICAgICAgIDw+XG4gICAgICAgICAgPGRpdiBjc3M9e2V4cGFuZH0gLz5cbiAgICAgICAgICB7dm9sdW1lQ29udHJvbH1cbiAgICAgICAgICB7ZnVuY3Rpb25CdXR0b25zfVxuICAgICAgICA8Lz5cbiAgICAgICl9XG4gICAgICB7ZnVsbHNjcmVlbkJ1dHRvbn1cbiAgICA8L2Rpdj5cbiAgICB7Y2hpbGRyZW59XG4gIDwvZGl2PlxuKVxuXG5leHBvcnQgZGVmYXVsdCBEZWZhdWx0TGF5b3V0XG4iXX0= */',
                 ],
-                children: jsxRuntime$1.jsx(ControlsBlock, {
+                children: jsx$1(ControlsBlock, {
                   order: 'mobile',
                   ...controlButtons,
                 }),
               })
             : backItems,
           adSkipButton &&
-            jsxRuntime$1.jsx('div', {
+            jsx$1('div', {
               css: skipStyle,
               children: adSkipButton,
             }),
         ],
       }),
-      jsxRuntime$1.jsxs('div', {
+      jsxs('div', {
         css: [
           rowStyle,
           infoStyle,
@@ -6324,28 +5844,28 @@ const DefaultLayout = ({
         ],
         children: [
           backButton,
-          jsxRuntime$1.jsxs('h1', {
+          jsxs('h1', {
             children: [
               title,
               channelTitle &&
-                jsxRuntime$1.jsx('div', {
-                  css: _ref$3,
+                jsx$1('div', {
+                  css: _ref$2,
                   children: channelTitle,
                 }),
             ],
           }),
-          jsxRuntime$1.jsx('div', {
+          jsx$1('div', {
             css: expand,
           }),
           type === 'mobile' && functionButtons,
           adLink &&
-            jsxRuntime$1.jsx('div', {
+            jsx$1('div', {
               className: 'pinned',
               children: adLink,
             }),
         ],
       }),
-      jsxRuntime$1.jsxs('div', {
+      jsxs('div', {
         css: [
           rowStyle,
           'margin-top:auto;',
@@ -6357,22 +5877,22 @@ const DefaultLayout = ({
             : '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkRlZmF1bHRMYXlvdXQuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBaVJNIiwiZmlsZSI6IkRlZmF1bHRMYXlvdXQuanMiLCJzb3VyY2VzQ29udGVudCI6WyIvKiBAanN4SW1wb3J0U291cmNlIEBlbW90aW9uL3JlYWN0ICovXG4vKiBlc2xpbnQtZGlzYWJsZSByZWFjdC9wcm9wLXR5cGVzICovXG5jb25zdCBleHBhbmQgPSB7XG4gIG1hcmdpbjogMCxcbiAgZmxleDogJzEnLFxufVxuXG5jb25zdCBjb250YWluZXJTdHlsZSA9IHtcbiAgd2lkdGg6ICcxMDAlJyxcbiAgaGVpZ2h0OiAnMTAwJScsXG4gIGJveFNpemluZzogJ2JvcmRlci1ib3gnLFxuICBkaXNwbGF5OiAnZmxleCcsXG4gIGZsZXhEaXJlY3Rpb246ICdjb2x1bW4nLFxuICBvdmVyZmxvdzogJ2hpZGRlbicsXG4gIGNvbG9yOiAnd2hpdGUnLFxuICAvLyBwcmV2ZW50IGFuaW1hdGlvbiBnbGljaChhZnRlcmltYWdlKSBvZiBkZXNjZW5kYW50IGVsZW1lbnRzXG4gIHRyYW5zZm9ybTogJ3RyYW5zbGF0ZVgoMCknLFxuICB1c2VyU2VsZWN0OiAnbm9uZScsXG4gIGgxOiB7XG4gICAgbWFyZ2luOiAwLFxuICAgIGZvbnRTaXplOiAnMWVtJyxcbiAgICBsaW5lSGVpZ2h0OiAnMS41ZW0nLFxuICB9LFxuICAnYSwgYTpsaW5rLCBhOnZpc2l0ZWQnOiB7XG4gICAgY29sb3I6ICcjZmZmJyxcbiAgICBvcGFjaXR5OiAwLjgsXG4gICAgdGV4dERlY29yYXRpb246ICdub25lJyxcbiAgfSxcbiAgYnV0dG9uOiB7XG4gICAgZm9udFNpemU6ICdpbmhlcml0JyxcbiAgfSxcbn1cblxuY29uc3QgZHJvcCA9IHtcbiAgYmFja2dyb3VuZEltYWdlOiBgbGluZWFyLWdyYWRpZW50KFxuICAgIDBkZWcsXG4gICAgcmdiYSgwLDAsMCwwLjUpIDAsXG4gICAgcmdiYSgwLDAsMCwwKSA4cmVtIGNhbGMoMTAwJSAtIDhyZW0pLFxuICAgIHJnYmEoMCwwLDAsMC41KSAxMDAlXG4gIClgLFxufVxuXG5jb25zdCBkcm9wVG9wID0ge1xuICBiYWNrZ3JvdW5kSW1hZ2U6IGBsaW5lYXItZ3JhZGllbnQoXG4gICAgMGRlZyxcbiAgICByZ2JhKDAsMCwwLDApIDAsXG4gICAgcmdiYSgwLDAsMCwwKSA4cmVtIGNhbGMoMTAwJSAtIDhyZW0pLFxuICAgIHJnYmEoMCwwLDAsMC41KSAxMDAlXG4gIClgLFxufVxuXG5jb25zdCByZXNwb25zaXZlU3R5bGVzID0ge1xuICBkZXNrdG9wOiB7XG4gICAgZm9udFNpemU6ICcyNHB4JyxcbiAgfSwgLy8gYWRkIGlmIG5lY2Vzc2FyeTogYmlnLWRlc2t0b3Bcbn1cblxuY29uc3Qgcm93U3R5bGUgPSB7XG4gIGJveFNpemluZzogJ2JvcmRlci1ib3gnLFxuICB3aWR0aDogJzEwMCUnLFxuICBwYWRkaW5nOiAnY2FsYygyZW0gLSAxNnB4KScsXG4gIGRpc3BsYXk6ICdmbGV4JyxcbiAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gIGJ1dHRvbjoge1xuICAgIGZsZXg6ICcwIDAgMS41ZW0nLFxuICAgIHdpZHRoOiAnMS41ZW0nLFxuICAgIGhlaWdodDogJzEuNWVtJyxcbiAgfSxcbiAgJz4gYnV0dG9uOm5vdCg6ZGlzYWJsZWQpIH4gYnV0dG9uOm5vdCg6ZGlzYWJsZWQpLCBkaXYgfiBidXR0b246bGFzdC1vZi10eXBlJzoge1xuICAgIG1hcmdpbkxlZnQ6ICcwLjVyZW0nLFxuICB9LFxuICAnPiBidXR0b246bm90KDpsYXN0LW9mLXR5cGUpJzoge1xuICAgIG1hcmdpblJpZ2h0OiAnMC41cmVtJyxcbiAgfSxcbn1cblxuY29uc3QgZGlzcGxheVN0eWxlcyA9IHtcbiAgaGlkZGVuOiB7XG4gICAgJz4gZGl2Om5vdCgucGlubmVkKSwgPiBidXR0b246bm90KC5waW5uZWQpLCA+IGgxOm5vdCgucGlubmVkKSc6IHtcbiAgICAgIG9wYWNpdHk6IDAsXG4gICAgICB0cmFuc2Zvcm06ICd0cmFuc2xhdGUoLTEwMHZ3KScsXG4gICAgICB0cmFuc2l0aW9uOiAnb3BhY2l0eSAwLjVzIGVhc2Utb3V0LCB0cmFuc2Zvcm0gMHMgMC41cycsXG4gICAgfSxcbiAgfSxcbiAgc2hvd246IHtcbiAgICAnPiBkaXY6bm90KC5waW5uZWQpLCA+IGJ1dHRvbjpub3QoLnBpbm5lZCksID4gaDE6bm90KC5waW5uZWQpJzoge1xuICAgICAgdHJhbnNpdGlvbjogJ29wYWNpdHkgMC41cyBlYXNlLW91dCcsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3QgY29udHJvbHNEaXNwbGF5U3R5bGVzID0ge1xuICBoaWRkZW46IHtcbiAgICAuLi5kaXNwbGF5U3R5bGVzLmhpZGRlbixcbiAgICAnfiBkaXY6bm90KC5waW5uZWQpJzogZGlzcGxheVN0eWxlcy5oaWRkZW4sXG4gIH0sXG4gIHNob3duOiB7XG4gICAgLi4uZGlzcGxheVN0eWxlcy5kaXNwbGF5LFxuICAgICd+IGRpdic6IGRpc3BsYXlTdHlsZXMuZGlzcGxheSxcbiAgfSxcbn1cblxuY29uc3QgY29udHJvbHNTdHlsZSA9IHtcbiAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gIHpJbmRleDogJzInLFxuICBkaXNwbGF5OiAnZmxleCcsXG4gIGFsaWduSXRlbXM6ICdjZW50ZXInLFxuICAnPiBidXR0b24nOiB7XG4gICAgbWFyZ2luOiAnMWVtJyxcbiAgICB3aWR0aDogJzEuNzVlbScsXG4gICAgaGVpZ2h0OiAnMS43NWVtJyxcbiAgICAnJjpkaXNhYmxlZCc6IHtcbiAgICAgIG9wYWNpdHk6IDAuMyxcbiAgICB9LFxuICAgICcmLnBsYXktYnV0dG9uJzoge1xuICAgICAgd2lkdGg6ICczZW0nLFxuICAgICAgaGVpZ2h0OiAnM2VtJyxcbiAgICB9LFxuICB9LFxufVxuXG5jb25zdCB0ZXh0RWxsaXBzaXMgPSB7XG4gIG92ZXJmbG93OiAnaGlkZGVuJyxcbiAgd2hpdGVTcGFjZTogJ25vd3JhcCcsXG4gIHRleHRPdmVyZmxvdzogJ2VsbGlwc2lzJyxcbn1cblxuY29uc3QgaW5mb1N0eWxlID0ge1xuICBhbGlnbkl0ZW1zOiAnZmxleC1zdGFydCcsXG4gIG92ZXJmbG93OiAndmlzaWJsZScsXG4gIGgxOiB7XG4gICAgaGVpZ2h0OiAnM2VtJyxcbiAgICBmb250V2VpZ2h0OiAnNTAwJyxcbiAgICAuLi50ZXh0RWxsaXBzaXMsXG4gICAgJz4gZGl2JzogdGV4dEVsbGlwc2lzLFxuICB9LFxufVxuXG5jb25zdCBiYWNrU3R5bGUgPSB7XG4gIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICB6SW5kZXg6ICctMScsXG4gIHdpZHRoOiAnMTAwJScsXG4gIGhlaWdodDogJzEwMCUnLFxuICBkaXNwbGF5OiAnZmxleCcsXG4gIGFsaWduSXRlbXM6ICdjZW50ZXInLFxuICBqdXN0aWZ5Q29udGVudDogJ2NlbnRlcicsXG59XG5cbmNvbnN0IHNraXBTdHlsZSA9IHtcbiAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gIHJpZ2h0OiAwLFxuICBib3R0b206ICc5cmVtJyxcbiAgdGV4dEFsaWduOiAncmlnaHQnLFxuICBidXR0b246IHtcbiAgICB3aWR0aDogJ2F1dG8nLFxuICAgIGhlaWdodDogJ2F1dG8nLFxuICB9LFxufVxuXG5jb25zdCBkZWtzdG9wU3R5bGUgPSB7XG4gICc+IGRpdic6IHtcbiAgICAnPiBidXR0b246bm90KDpkaXNhYmxlZCkgfiBidXR0b246bm90KDpkaXNhYmxlZCksIGJ1dHRvbjpsYXN0LW9mLXR5cGUnOiB7XG4gICAgICBtYXJnaW5MZWZ0OiAnMC43NWVtJyxcbiAgICB9LFxuICAgICc+IGJ1dHRvbjpub3QoOmxhc3Qtb2YtdHlwZSksID4gYnV0dG9uOmZpcnN0LW9mLXR5cGUsID4gYnV0dG9uIH4gZGl2Jzoge1xuICAgICAgbWFyZ2luUmlnaHQ6ICcwLjc1ZW0nLFxuICAgIH0sXG4gICAgJz4gYnV0dG9uOmZpcnN0LW9mLXR5cGUnOiB7XG4gICAgICBtYXJnaW5MZWZ0OiAnMCcsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3QgZGVza3RvcENvbnRyb2xzID0ge1xuICBmbGV4V3JhcDogJ3dyYXAnLFxuICAnPiBkaXY6Zmlyc3Qtb2YtdHlwZSc6IHtcbiAgICBmbGV4OiAnMTAwJScsXG4gICAgbWFyZ2luQm90dG9tOiAnMC44OGVtJyxcbiAgfSxcbiAgJ2J1dHRvbltkaXNhYmxlZF0nOiB7XG4gICAgZGlzcGxheTogJ25vbmUnLFxuICB9LFxufVxuXG5jb25zdCBDb250cm9sc0Jsb2NrID0gKHtcbiAgb3JkZXIgPSAnbW9iaWxlJyxcbiAgcGxheUJ1dHRvbixcbiAgcmV3aW5kQnV0dG9uID0gJycsXG4gIGZvcndhcmRCdXR0b24gPSAnJyxcbiAgcHJldmlvdXNFcGlzb2RlQnV0dG9uID0gJycsXG4gIG5leHRFcGlzb2RlQnV0dG9uID0gJycsXG59KSA9PlxuICBvcmRlciA9PT0gJ2Rlc2t0b3AnID8gKFxuICAgIDw+XG4gICAgICB7cHJldmlvdXNFcGlzb2RlQnV0dG9ufVxuICAgICAge3BsYXlCdXR0b259XG4gICAgICB7bmV4dEVwaXNvZGVCdXR0b259XG4gICAgICB7cmV3aW5kQnV0dG9ufVxuICAgICAge2ZvcndhcmRCdXR0b259XG4gICAgPC8+XG4gICkgOiAoXG4gICAgPD5cbiAgICAgIHtyZXdpbmRCdXR0b259XG4gICAgICB7cHJldmlvdXNFcGlzb2RlQnV0dG9ufVxuICAgICAge3BsYXlCdXR0b259XG4gICAgICB7bmV4dEVwaXNvZGVCdXR0b259XG4gICAgICB7Zm9yd2FyZEJ1dHRvbn1cbiAgICA8Lz5cbiAgKVxuXG5jb25zdCBEZWZhdWx0TGF5b3V0ID0gKHtcbiAgdHlwZSA9ICdtb2JpbGUnLFxuICBzdHlsZSxcbiAgZGlzcGxheSxcbiAgY29udHJvbHNEaXNwbGF5ID0gZGlzcGxheSxcbiAgc2l6ZSxcbiAgdGl0bGUgPSAnJyxcbiAgY2hhbm5lbFRpdGxlID0gJycsXG4gIHZpZGVvLFxuICBoYXZlQm90dG9tSXRlbSxcbiAgc2Vla2JhciA9ICcnLFxuICBjb250cm9sQnV0dG9ucyxcbiAgdm9sdW1lQ29udHJvbCxcbiAgZnVuY3Rpb25CdXR0b25zLFxuICBmdWxsc2NyZWVuQnV0dG9uLFxuICBiYWNrQnV0dG9uLFxuICBhZFN0YXR1cyA9ICcnLFxuICBhZExpbmsgPSAnJyxcbiAgYWRTa2lwQnV0dG9uLFxuICBiYWNrSXRlbXMsXG4gIGNoaWxkcmVuLFxuICBjb250YWluZXJSZWYsXG4gIGJhY2tSZWYsXG4gIC4uLnJlc3Rcbn0pID0+IChcbiAgPGRpdlxuICAgIGNzcz17W1xuICAgICAgY29udGFpbmVyU3R5bGUsXG4gICAgICByZXNwb25zaXZlU3R5bGVzW3NpemVdLFxuICAgICAgdHlwZSA9PT0gJ2Rlc2t0b3AnICYmIGRla3N0b3BTdHlsZSxcbiAgICBdfVxuICAgIHN0eWxlPXtzdHlsZX1cbiAgICByZWY9e2NvbnRhaW5lclJlZn1cbiAgICB7Li4ucmVzdH1cbiAgPlxuICAgIHt2aWRlb31cbiAgICA8ZGl2XG4gICAgICByZWY9e2JhY2tSZWZ9XG4gICAgICBjc3M9e1tcbiAgICAgICAgYmFja1N0eWxlLFxuICAgICAgICBkaXNwbGF5ICE9PSAnaGlkZGVuJyAmJiAoaGF2ZUJvdHRvbUl0ZW0gPyBkcm9wVG9wIDogZHJvcCksXG4gICAgICBdfVxuICAgID5cbiAgICAgIHt0eXBlID09PSAnbW9iaWxlJyA/IChcbiAgICAgICAgPGRpdiBjc3M9e1tjb250cm9sc1N0eWxlLCBkaXNwbGF5U3R5bGVzW2NvbnRyb2xzRGlzcGxheV1dfT5cbiAgICAgICAgICA8Q29udHJvbHNCbG9jayBvcmRlcj1cIm1vYmlsZVwiIHsuLi5jb250cm9sQnV0dG9uc30gLz5cbiAgICAgICAgPC9kaXY+XG4gICAgICApIDogKFxuICAgICAgICBiYWNrSXRlbXNcbiAgICAgICl9XG4gICAgICB7YWRTa2lwQnV0dG9uICYmIDxkaXYgY3NzPXtza2lwU3R5bGV9PnthZFNraXBCdXR0b259PC9kaXY+fVxuICAgIDwvZGl2PlxuICAgIDxkaXYgY3NzPXtbcm93U3R5bGUsIGluZm9TdHlsZSwgZGlzcGxheVN0eWxlc1tkaXNwbGF5XV19PlxuICAgICAge2JhY2tCdXR0b259XG4gICAgICA8aDE+XG4gICAgICAgIHt0aXRsZX1cbiAgICAgICAge2NoYW5uZWxUaXRsZSAmJiA8ZGl2IGNzcz17e2ZvbnRTaXplOiAnMTZweCd9fT57Y2hhbm5lbFRpdGxlfTwvZGl2Pn1cbiAgICAgIDwvaDE+XG4gICAgICA8ZGl2IGNzcz17ZXhwYW5kfSAvPlxuICAgICAge3R5cGUgPT09ICdtb2JpbGUnICYmIGZ1bmN0aW9uQnV0dG9uc31cbiAgICAgIHthZExpbmsgJiYgPGRpdiBjbGFzc05hbWU9XCJwaW5uZWRcIj57YWRMaW5rfTwvZGl2Pn1cbiAgICA8L2Rpdj5cbiAgICA8ZGl2XG4gICAgICBjc3M9e1tcbiAgICAgICAgcm93U3R5bGUsXG4gICAgICAgIHttYXJnaW5Ub3A6ICdhdXRvJ30sXG4gICAgICAgIHR5cGUgPT09ICdkZXNrdG9wJyAmJiBkZXNrdG9wQ29udHJvbHMsXG4gICAgICAgIGNvbnRyb2xzRGlzcGxheVN0eWxlc1tjb250cm9sc0Rpc3BsYXldLFxuICAgICAgXX1cbiAgICA+XG4gICAgICB7c2Vla2JhciB8fCA8ZGl2IC8+fVxuICAgICAge3R5cGUgPT09ICdkZXNrdG9wJyAmJiAoXG4gICAgICAgIDxDb250cm9sc0Jsb2NrIG9yZGVyPVwiZGVza3RvcFwiIHsuLi5jb250cm9sQnV0dG9uc30gLz5cbiAgICAgICl9XG4gICAgICB7YWRTdGF0dXMgJiYgKFxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInBpbm5lZFwiIGNzcz17e2ZsZXg6IDEsIHRleHRTaGFkb3c6ICcycHggMnB4IDFweCAjMDAwJ319PlxuICAgICAgICAgIHthZFN0YXR1c31cbiAgICAgICAgPC9kaXY+XG4gICAgICApfVxuICAgICAge3R5cGUgPT09ICdkZXNrdG9wJyAmJiAoXG4gICAgICAgIDw+XG4gICAgICAgICAgPGRpdiBjc3M9e2V4cGFuZH0gLz5cbiAgICAgICAgICB7dm9sdW1lQ29udHJvbH1cbiAgICAgICAgICB7ZnVuY3Rpb25CdXR0b25zfVxuICAgICAgICA8Lz5cbiAgICAgICl9XG4gICAgICB7ZnVsbHNjcmVlbkJ1dHRvbn1cbiAgICA8L2Rpdj5cbiAgICB7Y2hpbGRyZW59XG4gIDwvZGl2PlxuKVxuXG5leHBvcnQgZGVmYXVsdCBEZWZhdWx0TGF5b3V0XG4iXX0= */',
         ],
         children: [
-          seekbar || jsxRuntime$1.jsx('div', {}),
+          seekbar || jsx$1('div', {}),
           type === 'desktop' &&
-            jsxRuntime$1.jsx(ControlsBlock, {
+            jsx$1(ControlsBlock, {
               order: 'desktop',
               ...controlButtons,
             }),
           adStatus &&
-            jsxRuntime$1.jsx('div', {
+            jsx$1('div', {
               className: 'pinned',
-              css: _ref2$1,
+              css: _ref2,
               children: adStatus,
             }),
           type === 'desktop' &&
-            jsxRuntime$1.jsxs(jsxRuntime$1.Fragment, {
+            jsxs(Fragment, {
               children: [
-                jsxRuntime$1.jsx('div', {
+                jsx$1('div', {
                   css: expand,
                 }),
                 volumeControl,
@@ -6444,8 +5964,8 @@ var icon = {
 }
 
 const Icon$1 = ({type}) =>
-  jsxRuntime$1.jsx('div', {
-    css: /*#__PURE__*/ react.css(
+  jsx$1('div', {
+    css: /*#__PURE__*/ css(
       {
         width: 'inherit',
         height: 'inherit',
@@ -6483,7 +6003,7 @@ const styles$2 = {
 }
 
 const Button = ({startIcon, children, ...rest}) =>
-  jsxRuntime$1.jsxs('button', {
+  jsxs('button', {
     type: 'button',
     css: styles$2,
     ...rest,
@@ -6495,7 +6015,7 @@ Button.propTypes = {
   children: propTypes.node,
 }
 
-const PlayButton$2 = ({
+const PlayButton$1 = ({
   ended,
   paused,
   waiting,
@@ -6504,15 +6024,15 @@ const PlayButton$2 = ({
 }) =>
   waiting && waitingStyle === 'spin'
     ? 'waiting'
-    : jsxRuntime$1.jsx(Button, {
-        startIcon: jsxRuntime$1.jsx(Icon$1, {
+    : jsx$1(Button, {
+        startIcon: jsx$1(Icon$1, {
           type: ended ? 'replay' : paused ? 'play' : 'pause',
         }),
         disabled: waiting && waitingStyle === 'disabled',
         onClick: onClick,
       })
 
-PlayButton$2.propTypes = {
+PlayButton$1.propTypes = {
   ended: propTypes.bool,
   paused: propTypes.bool,
   waiting: propTypes.bool,
@@ -6520,12 +6040,12 @@ PlayButton$2.propTypes = {
   onClick: propTypes.func,
 }
 
-function _EMOTION_STRINGIFIED_CSS_ERROR__$2() {
+function _EMOTION_STRINGIFIED_CSS_ERROR__$1() {
   return "You have tried to stringify object returned from `css` function. It isn't supposed to be used directly (e.g. as value of the `className` prop), but rather handed to emotion so it can handle it (e.g. as value of `css` prop)."
 }
 const queryMouse =
   '(hover: hover), screen and (-ms-high-contrast: active), (-ms-high-contrast: none)'
-const style$b = {
+const style$a = {
   position: 'relative',
   height: '100%',
   display: 'flex',
@@ -6669,7 +6189,7 @@ const eventHandlers = ({
         },
       } // TODO align with material ui more, move special handling of pointer events
 
-var _ref$2 =
+var _ref$1 =
   process.env.NODE_ENV === 'production'
     ? {
         name: 'dfjll8',
@@ -6680,7 +6200,7 @@ var _ref$2 =
         styles: 'background-color:#fff;label:SimpleSlider;',
         map:
           '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlNpbXBsZVNsaWRlci5qc3giXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBOEtVIiwiZmlsZSI6IlNpbXBsZVNsaWRlci5qc3giLCJzb3VyY2VzQ29udGVudCI6WyIvKiBlc2xpbnQtZGlzYWJsZSBuby1wYXJhbS1yZWFzc2lnbiAqL1xuLyogZXNsaW50LWRpc2FibGUganN4LWExMXkvbm8tc3RhdGljLWVsZW1lbnQtaW50ZXJhY3Rpb25zICovXG4vKiBlc2xpbnQtZGlzYWJsZSBqc3gtYTExeS9jbGljay1ldmVudHMtaGF2ZS1rZXktZXZlbnRzICovXG4vKiBAanN4SW1wb3J0U291cmNlIEBlbW90aW9uL3JlYWN0ICovXG5pbXBvcnQge3VzZVN0YXRlLCB1c2VSZWZ9IGZyb20gJ3JlYWN0J1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJ1xuXG5jb25zdCBxdWVyeU1vdXNlID1cbiAgJyhob3ZlcjogaG92ZXIpLCBzY3JlZW4gYW5kICgtbXMtaGlnaC1jb250cmFzdDogYWN0aXZlKSwgKC1tcy1oaWdoLWNvbnRyYXN0OiBub25lKSdcblxuY29uc3Qgc3R5bGUgPSB7XG4gIHBvc2l0aW9uOiAncmVsYXRpdmUnLFxuICBoZWlnaHQ6ICcxMDAlJyxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgY3Vyc29yOiAncG9pbnRlcicsXG4gIHVzZXJTZWxlY3Q6ICdub25lJyxcbiAgdG91Y2hBY3Rpb246ICdub25lJyxcbn1cblxuY29uc3QgcmFpbFN0eWxlID0ge1xuICBwb3NpdGlvbjogJ3JlbGF0aXZlJyxcbiAgZmxleDogJzEwMCUnLFxuICBoZWlnaHQ6ICc0cHgnLFxuICBvdmVyZmxvdzogJ2hpZGRlbicsXG4gIGJhY2tncm91bmQ6ICdyZ2JhKDI1NSwgMjU1LCAyNTUsIDAuMyknLFxuICAnPiBkaXYnOiB7XG4gICAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gICAgdG9wOiAnMCcsXG4gICAgbGVmdDogJzAnLFxuICAgIHdpZHRoOiAnMTAwJScsXG4gICAgaGVpZ2h0OiAnMTAwJScsXG4gIH0sXG59XG5cbmNvbnN0IG1hcmtTdHlsZSA9IHtcbiAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gIGhlaWdodDogcmFpbFN0eWxlLmhlaWdodCxcbiAgd2lkdGg6ICc0cHgnLFxuICB0cmFuc2Zvcm06ICd0cmFuc2xhdGVYKC01MCUpJyxcbiAgYmFja2dyb3VuZENvbG9yOiAnI2ZmOTgzNScsXG59XG5cbmNvbnN0IHRodW1iU3R5bGUgPSB7XG4gIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICB0b3A6ICc1MCUnLFxuICBoZWlnaHQ6ICcxNHB4JyxcbiAgd2lkdGg6ICcxNHB4JyxcbiAgYm9yZGVyUmFkaXVzOiAnMTAwJScsXG4gIGJhY2tncm91bmRDb2xvcjogJyNmZmYnLFxuICBib3hTaGFkb3c6ICcwIDJweCAycHggMCByZ2JhKDAsIDAsIDAsIDAuNSknLFxuICB0cmFuc2Zvcm06ICd0cmFuc2xhdGUoLTUwJSwgLTUwJSknLFxufVxuXG5jb25zdCBnZXRQb2ludGVyRGF0YSA9IGV2ZW50ID0+IHtcbiAgY29uc3Qge3BhZ2VYOiB4LCBwYWdlWTogeX0gPVxuICAgIGV2ZW50LnRvdWNoZXM/LlswXSB8fCBldmVudC5jaGFuZ2VkVG91Y2hlcz8uWzBdIHx8IGV2ZW50XG4gIGNvbnN0IHt3aWR0aCwgbGVmdH0gPSBldmVudC5jdXJyZW50VGFyZ2V0LmdldEJvdW5kaW5nQ2xpZW50UmVjdCgpXG4gIHJldHVybiB7eCwgeSwgd2lkdGgsIGxlZnR9XG59XG5cbmNvbnN0IGdldFNsaWRlclZhbHVlID0gKHt4LCBsZWZ0LCB3aWR0aH0pID0+XG4gIE1hdGgubWF4KDAsIE1hdGgubWluKCh4IC0gbGVmdCkgLyB3aWR0aCwgMSkpXG5cbmNvbnN0IGRlYm91bmNlZFBvaW50ZXJIYW5kbGVycyA9ICh7c3RhdGUsIG9uTW92ZSwgb25MZWF2ZX0pID0+IHtcbiAgY29uc3QgZW1pdCA9ICgpID0+IHtcbiAgICBpZiAoIXN0YXRlLnNjaGVkdWxlZCkge1xuICAgICAgcmV0dXJuXG4gICAgfVxuICAgIGlmIChzdGF0ZS50eXBlID09PSAnbGVhdmUnKSB7XG4gICAgICBvbkxlYXZlPy4oc3RhdGUuZXZlbnQsIHN0YXRlKVxuICAgIH0gZWxzZSB7XG4gICAgICBvbk1vdmUoc3RhdGUuZXZlbnQsIHN0YXRlKVxuICAgIH1cbiAgICBzdGF0ZS5zY2hlZHVsZWQgPSBmYWxzZVxuICB9XG4gIGNvbnN0IHNjaGVkdWxlID0gKCkgPT4ge1xuICAgIGlmIChzdGF0ZS5zY2hlZHVsZWQpIHtcbiAgICAgIHJldHVyblxuICAgIH1cbiAgICBzdGF0ZS5zY2hlZHVsZWQgPSB0cnVlXG4gICAgcmVxdWVzdEFuaW1hdGlvbkZyYW1lKGVtaXQpXG4gIH1cblxuICByZXR1cm4ge1xuICAgIG9uUG9pbnRlck1vdmU6IGV2ZW50ID0+IHtcbiAgICAgIGNvbnN0IHR5cGUgPVxuICAgICAgICBldmVudC5idXR0b25zID4gMCB8fCBldmVudC50b3VjaGVzPy5sZW5ndGggPiAwID8gJ2NoYW5nZScgOiAnbW92ZSdcbiAgICAgIE9iamVjdC5hc3NpZ24oc3RhdGUsIHtldmVudCwgdHlwZSwgLi4uZ2V0UG9pbnRlckRhdGEoZXZlbnQpfSlcbiAgICAgIHNjaGVkdWxlKClcbiAgICB9LFxuICAgIG9uUG9pbnRlckxlYXZlOiBldmVudCA9PiB7XG4gICAgICBjb25zdCB0eXBlID0gJ2xlYXZlJ1xuICAgICAgT2JqZWN0LmFzc2lnbihzdGF0ZSwge2V2ZW50LCB0eXBlfSlcbiAgICAgIHNjaGVkdWxlKClcbiAgICB9LFxuICAgIGVtaXQsXG4gIH1cbn1cblxuY29uc3QgZXZlbnRIYW5kbGVycyA9ICh7XG4gIG9uUG9pbnRlckRvd24sXG4gIG9uUG9pbnRlck1vdmUsXG4gIG9uUG9pbnRlckxlYXZlLFxuICBvblBvaW50ZXJVcCxcbn0pID0+XG4gIHR5cGVvZiB3aW5kb3cgIT09ICd1bmRlZmluZWQnICYmIHdpbmRvdy5tYXRjaE1lZGlhKHF1ZXJ5TW91c2UpLm1hdGNoZXNcbiAgICA/IHtvblBvaW50ZXJEb3duLCBvblBvaW50ZXJNb3ZlLCBvblBvaW50ZXJMZWF2ZSwgb25Qb2ludGVyVXB9XG4gICAgOiB7XG4gICAgICAgIG9uVG91Y2hTdGFydDogb25Qb2ludGVyRG93bixcbiAgICAgICAgb25Ub3VjaE1vdmU6IG9uUG9pbnRlck1vdmUsXG4gICAgICAgIG9uVG91Y2hFbmQ6IGV2ZW50ID0+IHtcbiAgICAgICAgICBvblBvaW50ZXJMZWF2ZShldmVudClcbiAgICAgICAgICBvblBvaW50ZXJVcChldmVudClcbiAgICAgICAgfSxcbiAgICAgIH1cblxuLy8gVE9ETyBhbGlnbiB3aXRoIG1hdGVyaWFsIHVpIG1vcmUsIG1vdmUgc3BlY2lhbCBoYW5kbGluZyBvZiBwb2ludGVyIGV2ZW50c1xuY29uc3QgU2ltcGxlU2xpZGVyID0gKHtcbiAgbWluID0gMCxcbiAgbWF4ID0gMTAwLFxuICB2YWx1ZSxcbiAgbWFya3MgPSBbXSxcbiAgY2xhc3NOYW1lID0gJycsXG4gIGNsYXNzZXMgPSB7fSxcbiAgb25Qb2ludGVyTW92ZSxcbiAgb25Qb2ludGVyTGVhdmUsXG4gIG9uQ2hhbmdlLFxuICBvbkNoYW5nZUNvbW1pdHRlZCxcbn0pID0+IHtcbiAgY29uc3QgcG9pbnRlclN0YXRlID0gdXNlUmVmKHt9KVxuICBjb25zdCBbZm9jdXNWYWx1ZSwgc2V0Rm9jdXNWYWx1ZV0gPSB1c2VTdGF0ZSgtMSlcbiAgY29uc3QgY3VycmVudFBvc2l0aW9uID1cbiAgICAoKGZvY3VzVmFsdWUgPj0gMCA/IGZvY3VzVmFsdWUgOiB2YWx1ZSkgLSBtaW4pIC8gKG1heCAtIG1pbilcbiAgY29uc3QgcG9pbnRlckhhbmRsZXJzID0gZGVib3VuY2VkUG9pbnRlckhhbmRsZXJzKHtcbiAgICBzdGF0ZTogcG9pbnRlclN0YXRlLmN1cnJlbnQsXG4gICAgb25Nb3ZlOiAoZXZlbnQsIHt0eXBlLCB4LCB5LCB3aWR0aCwgbGVmdH0pID0+IHtcbiAgICAgIGNvbnN0IHBvaW50ZXJWYWx1ZSA9IG1pbiArIG1heCAqIGdldFNsaWRlclZhbHVlKHt4LCB3aWR0aCwgbGVmdH0pXG4gICAgICBvblBvaW50ZXJNb3ZlPy4oZXZlbnQsIHt2YWx1ZTogcG9pbnRlclZhbHVlLCB4LCB5fSlcbiAgICAgIGlmICh0eXBlID09PSAnY2hhbmdlJykge1xuICAgICAgICBzZXRGb2N1c1ZhbHVlKHBvaW50ZXJWYWx1ZSlcbiAgICAgICAgb25DaGFuZ2U/LihldmVudCwge3ZhbHVlOiBwb2ludGVyVmFsdWUsIHgsIHl9KVxuICAgICAgfVxuICAgIH0sXG4gICAgb25MZWF2ZTogKCkgPT4gb25Qb2ludGVyTGVhdmU/LigpLFxuICB9KVxuICBjb25zdCBoYW5kbGVQb2ludGVyVXAgPSBldmVudCA9PiB7XG4gICAgaWYgKGV2ZW50LnBvaW50ZXJJZCkge1xuICAgICAgZXZlbnQuY3VycmVudFRhcmdldC5yZWxlYXNlUG9pbnRlckNhcHR1cmUoZXZlbnQucG9pbnRlcklkKVxuICAgIH1cbiAgICBjb25zdCBwb2ludGVyVmFsdWUgPSBtaW4gKyBtYXggKiBnZXRTbGlkZXJWYWx1ZShnZXRQb2ludGVyRGF0YShldmVudCkpXG4gICAgcG9pbnRlckhhbmRsZXJzLmVtaXQoKVxuICAgIG9uQ2hhbmdlQ29tbWl0dGVkPy4oZXZlbnQsIHt2YWx1ZTogcG9pbnRlclZhbHVlfSlcbiAgICBzZXRGb2N1c1ZhbHVlKClcbiAgfVxuXG4gIHJldHVybiAoXG4gICAgPGRpdlxuICAgICAgY2xhc3NOYW1lPXtjbGFzc05hbWV9XG4gICAgICBjc3M9e3N0eWxlfVxuICAgICAgb25DbGljaz17ZXZlbnQgPT4gZXZlbnQuc3RvcFByb3BhZ2F0aW9uKCl9XG4gICAgICB7Li4uZXZlbnRIYW5kbGVycyh7XG4gICAgICAgIG9uUG9pbnRlckRvd246IGV2ZW50ID0+IHtcbiAgICAgICAgICBpZiAoZXZlbnQudHlwZSA9PT0gJ3BvaW50ZXJkb3duJykge1xuICAgICAgICAgICAgZXZlbnQuY3VycmVudFRhcmdldC5zZXRQb2ludGVyQ2FwdHVyZShldmVudC5wb2ludGVySWQpXG4gICAgICAgICAgfVxuICAgICAgICAgIHBvaW50ZXJIYW5kbGVycy5vblBvaW50ZXJNb3ZlKGV2ZW50KVxuICAgICAgICB9LFxuICAgICAgICAuLi5wb2ludGVySGFuZGxlcnMsXG4gICAgICAgIG9uUG9pbnRlclVwOiBoYW5kbGVQb2ludGVyVXAsXG4gICAgICB9KX1cbiAgICA+XG4gICAgICA8ZGl2IGNsYXNzTmFtZT17Y2xhc3Nlcy5yYWlsfSBjc3M9e3JhaWxTdHlsZX0+XG4gICAgICAgIDxkaXZcbiAgICAgICAgICBjc3M9e3tiYWNrZ3JvdW5kQ29sb3I6ICcjZmZmJ319XG4gICAgICAgICAgY2xhc3NOYW1lPXtjbGFzc2VzLnRyYWNrfVxuICAgICAgICAgIHN0eWxlPXt7dHJhbnNmb3JtOiBgdHJhbnNsYXRlWCgke2N1cnJlbnRQb3NpdGlvbiAqIDEwMCAtIDEwMH0lKWB9fVxuICAgICAgICAvPlxuICAgICAgPC9kaXY+XG4gICAgICB7bWFya3MubWFwKHBvc2l0aW9uID0+IChcbiAgICAgICAgPGRpdlxuICAgICAgICAgIGtleT17cG9zaXRpb259XG4gICAgICAgICAgY3NzPXttYXJrU3R5bGV9XG4gICAgICAgICAgY2xhc3NOYW1lPXtjbGFzc2VzLm1hcmtlZH1cbiAgICAgICAgICBzdHlsZT17e2xlZnQ6IGAkeyhwb3NpdGlvbiAvIG1heCkgKiAxMDB9JWB9fVxuICAgICAgICAvPlxuICAgICAgKSl9XG4gICAgICB7b25DaGFuZ2UgPyAoXG4gICAgICAgIDxkaXZcbiAgICAgICAgICBjc3M9e3RodW1iU3R5bGV9XG4gICAgICAgICAgY2xhc3NOYW1lPXtjbGFzc2VzLnRodW1ifVxuICAgICAgICAgIHN0eWxlPXt7bGVmdDogYGNhbGMoJHtjdXJyZW50UG9zaXRpb24gKiAxMDB9JSlgfX1cbiAgICAgICAgLz5cbiAgICAgICkgOiAoXG4gICAgICAgIDxkaXYgLz5cbiAgICAgICl9XG4gICAgPC9kaXY+XG4gIClcbn1cblxuU2ltcGxlU2xpZGVyLnByb3BUeXBlcyA9IHtcbiAgbWluOiBQcm9wVHlwZXMubnVtYmVyLFxuICBtYXg6IFByb3BUeXBlcy5udW1iZXIsXG4gIHZhbHVlOiBQcm9wVHlwZXMubnVtYmVyLFxuICBtYXJrczogUHJvcFR5cGVzLmFycmF5LFxuICBjbGFzc05hbWU6IFByb3BUeXBlcy5zdHJpbmcsXG4gIGNsYXNzZXM6IFByb3BUeXBlcy5vYmplY3QsXG4gIG9uUG9pbnRlck1vdmU6IFByb3BUeXBlcy5mdW5jLFxuICBvblBvaW50ZXJMZWF2ZTogUHJvcFR5cGVzLmZ1bmMsXG4gIG9uQ2hhbmdlOiBQcm9wVHlwZXMuZnVuYyxcbiAgb25DaGFuZ2VDb21taXR0ZWQ6IFByb3BUeXBlcy5mdW5jLFxufVxuXG5leHBvcnQgZGVmYXVsdCBTaW1wbGVTbGlkZXJcbiJdfQ== */',
-        toString: _EMOTION_STRINGIFIED_CSS_ERROR__$2,
+        toString: _EMOTION_STRINGIFIED_CSS_ERROR__$1,
       }
 
 const SimpleSlider = ({
@@ -6695,8 +6215,8 @@ const SimpleSlider = ({
   onChange,
   onChangeCommitted,
 }) => {
-  const pointerState = React.useRef({})
-  const [focusValue, setFocusValue] = React.useState(-1)
+  const pointerState = useRef({})
+  const [focusValue, setFocusValue] = useState(-1)
   const currentPosition =
     ((focusValue >= 0 ? focusValue : value) - min) / (max - min)
   const pointerHandlers = debouncedPointerHandlers({
@@ -6750,9 +6270,9 @@ const SimpleSlider = ({
     setFocusValue()
   }
 
-  return jsxRuntime$1.jsxs('div', {
+  return jsxs('div', {
     className: className,
-    css: style$b,
+    css: style$a,
     onClick: event => event.stopPropagation(),
     ...eventHandlers({
       onPointerDown: event => {
@@ -6766,11 +6286,11 @@ const SimpleSlider = ({
       onPointerUp: handlePointerUp,
     }),
     children: [
-      jsxRuntime$1.jsx('div', {
+      jsx$1('div', {
         className: classes.rail,
         css: railStyle,
-        children: jsxRuntime$1.jsx('div', {
-          css: _ref$2,
+        children: jsx$1('div', {
+          css: _ref$1,
           className: classes.track,
           style: {
             transform: `translateX(${currentPosition * 100 - 100}%)`,
@@ -6778,7 +6298,7 @@ const SimpleSlider = ({
         }),
       }),
       marks.map(position =>
-        jsxRuntime$1.jsx(
+        jsx$1(
           'div',
           {
             css: markStyle,
@@ -6791,14 +6311,14 @@ const SimpleSlider = ({
         )
       ),
       onChange
-        ? jsxRuntime$1.jsx('div', {
+        ? jsx$1('div', {
             css: thumbStyle,
             className: classes.thumb,
             style: {
               left: `calc(${currentPosition * 100}%)`,
             },
           })
-        : jsxRuntime$1.jsx('div', {}),
+        : jsx$1('div', {}),
     ],
   })
 }
@@ -6839,7 +6359,7 @@ const seekbarStyle = {
   letterSpacing: '1px',
   color: '#fff',
 }
-const sliderStyle$1 = {
+const sliderStyle = {
   flex: 1,
   margin: '0 1em',
   '@media (hover: hover), screen and (-ms-high-contrast: active), (-ms-high-contrast: none)': {
@@ -6885,7 +6405,7 @@ const reducePointer = (state, {type, value, x}) => {
   }
 } // TODO use className instead of classes ?
 
-const Seekbar$1 = ({
+const Seekbar = ({
   style,
   classes,
   currentTime,
@@ -6899,11 +6419,11 @@ const Seekbar$1 = ({
 }) => {
   var _ref$current
 
-  const [pointerState, dispatchPointer] = React.useReducer(reducePointer, {})
+  const [pointerState, dispatchPointer] = useReducer(reducePointer, {})
   const pointerActive = pointerState.hover || pointerState.focused
   const displayTime = pointerActive ? pointerState.value : currentTime // to reflect boundary when container resized
 
-  const {ref} = useDimensions__default['default']()
+  const {ref} = useDimensions()
   const rect =
     (_ref$current = ref.current) === null || _ref$current === void 0
       ? void 0
@@ -6936,7 +6456,7 @@ const Seekbar$1 = ({
       play()
     },
   }
-  return jsxRuntime$1.jsxs('div', {
+  return jsxs('div', {
     ref: ref,
     className: 'kks-player__seek-bar',
     css: [
@@ -6954,10 +6474,10 @@ const Seekbar$1 = ({
     },
     children: [
       formattedTime(displayTime),
-      jsxRuntime$1.jsx(react.ClassNames, {
+      jsx$1(ClassNames, {
         children: ({css}) =>
-          jsxRuntime$1.jsx(SimpleSlider, {
-            css: sliderStyle$1,
+          jsx$1(SimpleSlider, {
+            css: sliderStyle,
             classes: {
               track: css({
                 backgroundColor: 'red',
@@ -6975,7 +6495,7 @@ const Seekbar$1 = ({
       formattedTime(duration),
       pointerActive &&
         addons.map(Component =>
-          jsxRuntime$1.jsx(Component, {
+          jsx$1(Component, {
             time: pointerState.value,
           })
         ),
@@ -6983,7 +6503,7 @@ const Seekbar$1 = ({
   })
 }
 
-Seekbar$1.propTypes = {
+Seekbar.propTypes = {
   style: propTypes.object,
   classes: propTypes.object,
   currentTime: propTypes.number,
@@ -6997,7 +6517,7 @@ Seekbar$1.propTypes = {
 }
 
 /* @jsxImportSource @emotion/react */
-const rotateInfinite$1 = react.keyframes`
+const rotateInfinite$1 = keyframes`
   0% {
     transform: translate(-50%, -50%) rotate(0deg);
   }
@@ -7005,7 +6525,7 @@ const rotateInfinite$1 = react.keyframes`
     transform: translate(-50%, -50%) rotate(360deg); 
   }
 `
-const style$a = {
+const style$9 = {
   position: 'absolute',
   top: '50%',
   left: '50%',
@@ -7019,9 +6539,9 @@ const style$a = {
 }
 
 const LoadingSpinner = () =>
-  jsxRuntime$1.jsx('div', {
+  jsx$1('div', {
     className: 'kks-player__loading',
-    css: style$a,
+    css: style$9,
   })
 
 /* eslint-disable no-param-reassign */
@@ -7034,8 +6554,8 @@ const sizes$2 = {
 }
 
 const useLinkState = subscribe => {
-  const [state, setState] = React.useState({})
-  React.useEffect(() => {
+  const [state, setState] = useState({})
+  useEffect(() => {
     const unsubscribe = subscribe(setState)
     return () => unsubscribe()
   }, [])
@@ -7060,10 +6580,10 @@ const VideoPlayer = ({
   Layout = DefaultLayout,
   ...videoAttributes
 }) => {
-  const videoContainer = React.useRef()
-  const videoElement = React.useRef()
-  const [player, setPlayer] = React.useState()
-  React.useEffect(() => {
+  const videoContainer = useRef()
+  const videoElement = useRef()
+  const [player, setPlayer] = useState()
+  useEffect(() => {
     loadPlayer(videoElement.current, {
       container: videoContainer.current,
       autoplay,
@@ -7081,7 +6601,7 @@ const VideoPlayer = ({
     return () =>
       player === null || player === void 0 ? void 0 : player.destroy()
   }, [])
-  React.useEffect(() => {
+  useEffect(() => {
     if (source && player) {
       load(
         videoElement.current,
@@ -7109,12 +6629,8 @@ const VideoPlayer = ({
     pinned: !autohide || paused || waiting,
     tapToHide: uiType === 'mobile',
   })
-  const {
-    width,
-    currentBreakpoint: size,
-    ref: containerRef,
-  } = useDimensions__default['default']({
-    polyfill: resizeObserver.ResizeObserver,
+  const {width, currentBreakpoint: size, ref: containerRef} = useDimensions({
+    polyfill: ResizeObserver,
     breakpoints: sizes$2,
   })
   const layoutProps =
@@ -7126,19 +6642,19 @@ const VideoPlayer = ({
           width,
           size,
         })) || {}
-  return /*#__PURE__*/ jsxRuntime.jsx(Layout, {
+  return /*#__PURE__*/ jsx(Layout, {
     style: style,
     type: uiType,
     display: mode,
     size: size,
-    video: /*#__PURE__*/ jsxRuntime.jsx('div', {
+    video: /*#__PURE__*/ jsx('div', {
       style: {
         position: 'absolute',
         zIndex: '-1',
         height: '100%',
       },
       ref: videoContainer,
-      children: /*#__PURE__*/ jsxRuntime.jsx('video', {
+      children: /*#__PURE__*/ jsx('video', {
         data: 'playcraft-video',
         ref: element => {
           if (videoRef) {
@@ -7154,7 +6670,7 @@ const VideoPlayer = ({
     containerRef: containerRef,
     seekbar:
       Number.isFinite(duration) &&
-      /*#__PURE__*/ jsxRuntime.jsx(Seekbar$1, {
+      /*#__PURE__*/ jsx(Seekbar, {
         currentTime: currentTime,
         bufferTime: bufferTime,
         duration: duration,
@@ -7176,7 +6692,7 @@ const VideoPlayer = ({
       }),
     ...layoutProps,
     controlButtons: {
-      playButton: /*#__PURE__*/ jsxRuntime.jsx(PlayButton$2, {
+      playButton: /*#__PURE__*/ jsx(PlayButton$1, {
         ended: ended,
         paused: paused,
         onClick: () =>
@@ -7188,7 +6704,7 @@ const VideoPlayer = ({
       ...layoutProps.controlButtons,
     },
     backItems: waiting
-      ? /*#__PURE__*/ jsxRuntime.jsx(LoadingSpinner, {})
+      ? /*#__PURE__*/ jsx(LoadingSpinner, {})
       : layoutProps.backItems,
     onClick: onClick,
     onMouseMove: onMouseMove,
@@ -7214,7 +6730,7 @@ VideoPlayer.propTypes = {
 }
 
 const useStore = (...args) => {
-  const store = React.useContext(Context.Adapter)
+  const store = useContext(Context.Adapter)
   return store.useStore(...args)
 }
 
@@ -7344,7 +6860,7 @@ const getPlaybackInfo = ({Module, API, Player, UI}, options) => {
 }
 
 const useUiActions = () => {
-  const {dispatch} = React.useContext(Context.Module)
+  const {dispatch} = useContext(Context.Module)
   return {
     toggleRecommendationPanel: () =>
       dispatch(UiAction.toggleRecommendationPanel()),
@@ -7367,14 +6883,14 @@ const imageStyle$1 = {
 const CoverImageWrap = ({url, children}) => {
   const {
     state: {state: moduleState},
-  } = React.useContext(Context.Module)
+  } = useContext(Context.Module)
   return url &&
     [
       ModuleState.UNINITIALIZATION,
       ModuleState.INITIALIZING,
       ModuleState.INITIALIZED,
     ].includes(moduleState)
-    ? jsxRuntime$1.jsx('img', {
+    ? jsx$1('img', {
         css: imageStyle$1,
         src: url,
       })
@@ -7405,7 +6921,7 @@ const getPlaybackState = ({Module, Player}) => ({
 })
 
 /* @jsxImportSource @emotion/react */
-const style$9 = {
+const style$8 = {
   zIndex: 7,
   position: 'fixed',
   padding: '8px 12px',
@@ -7424,10 +6940,10 @@ const Tooltip = ({
   children,
   container = document.body,
 }) => {
-  const tooltipRef = React.useRef()
-  const boxes = React.useRef()
-  const [open, setOpen] = React.useState(false)
-  const [position, setPosition] = React.useState(() => ({
+  const tooltipRef = useRef()
+  const boxes = useRef()
+  const [open, setOpen] = useState(false)
+  const [position, setPosition] = useState(() => ({
     left: '100%',
   }))
   const childProps = {
@@ -7447,7 +6963,7 @@ const Tooltip = ({
       setOpen(false)
     },
   }
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       const targetPosition = getPopoverPosition(
         tooltipRef.current.getBoundingClientRect(),
@@ -7458,14 +6974,14 @@ const Tooltip = ({
   }, [open, position.left])
   return !isDesktop() && window.matchMedia('(any-hover: none)').matches
     ? children
-    : jsxRuntime$1.jsxs(jsxRuntime$1.Fragment, {
+    : jsxs(Fragment, {
         children: [
-          /*#__PURE__*/ React.cloneElement(children, childProps),
+          /*#__PURE__*/ cloneElement(children, childProps),
           open &&
-            /*#__PURE__*/ reactDom.createPortal(
-              jsxRuntime$1.jsx('div', {
+            /*#__PURE__*/ createPortal(
+              jsx$1('div', {
                 style: {
-                  ...style$9,
+                  ...style$8,
                   ...position,
                   top: `calc(${position.top}px - ${bottom})`,
                 },
@@ -7487,12 +7003,12 @@ Tooltip.propTypes = {
 }
 
 const ControlsTooltip = ({children, ...props}) => {
-  const {state = {}} = React.useContext(Context.UI) || {}
+  const {state = {}} = useContext(Context.UI) || {}
   const uiContainer = useUiContainer() // follows YouTube UX, tooltips are not shown while settings open
 
   return state.isSettingsOpen
     ? children
-    : /*#__PURE__*/ jsxRuntime.jsx(Tooltip, {
+    : /*#__PURE__*/ jsx(Tooltip, {
         ...props,
         container: uiContainer,
         children: children,
@@ -7537,21 +7053,6 @@ const mask = {
   color: 'white',
   userSelect: 'text',
 }
-const button = {
-  border: 'none',
-  outline: 'none',
-  cursor: 'pointer',
-  padding: 0,
-  flexShrink: 0,
-  width: 36,
-  height: 36,
-  backgroundColor: 'transparent',
-  userSelect: 'none',
-  '*': {
-    pointerEvents: 'none',
-    touchAction: 'none',
-  },
-}
 
 /* @jsxImportSource @emotion/react */
 const _style = {
@@ -7565,11 +7066,8 @@ const _style = {
 }
 
 const SquareButton = ({name, style, children, ...others}) =>
-  jsxRuntime$1.jsx('button', {
-    className: classnames__default['default'](
-      'kks-player__square-button',
-      name
-    ),
+  jsx$1('button', {
+    className: classnames('kks-player__square-button', name),
     css: [
       _style,
       center,
@@ -7590,9 +7088,9 @@ SquareButton.propTypes = {
 }
 
 const Icon = ({style, src}) =>
-  jsxRuntime$1.jsx('span', {
+  jsx$1('span', {
     className: 'kks-player__icon',
-    css: /*#__PURE__*/ react.css(
+    css: /*#__PURE__*/ css(
       {
         width: 'inherit',
         height: 'inherit',
@@ -7618,25 +7116,25 @@ Icon.defaultProps = {
   style: {},
 }
 
-const IconButton$1 = ({
+const IconButton = ({
   name = '',
   src,
   style = {},
   onClick = () => {},
   ...others
 }) =>
-  /*#__PURE__*/ jsxRuntime.jsx(SquareButton, {
+  /*#__PURE__*/ jsx(SquareButton, {
     style: style,
     name: name,
     onClick: onClick,
     ...others,
-    children: /*#__PURE__*/ jsxRuntime.jsx(Icon, {
+    children: /*#__PURE__*/ jsx(Icon, {
       src: src,
       style: style.icon,
     }),
   })
 
-IconButton$1.propTypes = {
+IconButton.propTypes = {
   src: propTypes.string.isRequired,
   name: propTypes.string,
   tooltip: propTypes.string,
@@ -7648,14 +7146,14 @@ IconButton$1.propTypes = {
 
 /* eslint-disable indent */
 
-const PlayButton$1 = () => {
-  const playbackState = useStore(getPlaybackState, shallow__default['default'])
+const PlayButton = () => {
+  const playbackState = useStore(getPlaybackState, shallow)
   const disabled = !isDesktop() && playbackState.loading
   const status = useDebounce({
     delay: 200,
     value: playbackState.status,
   })
-  const {dispatch} = React.useContext(Context.PlayerState)
+  const {dispatch} = useContext(Context.PlayerState)
 
   const buttonProps = (() => {
     switch (status) {
@@ -7679,13 +7177,13 @@ const PlayButton$1 = () => {
     }
   })()
 
-  return /*#__PURE__*/ jsxRuntime.jsx(ControlsTooltip, {
-    title: /*#__PURE__*/ jsxRuntime.jsx(Message, {
+  return /*#__PURE__*/ jsx(ControlsTooltip, {
+    title: /*#__PURE__*/ jsx(Message, {
       code: buttonProps.tooltip,
     }),
     bottom: '48px',
-    children: /*#__PURE__*/ jsxRuntime.jsx(IconButton$1, {
-      name: css.cx(
+    children: /*#__PURE__*/ jsx(IconButton, {
+      name: cx(
         'play-button',
         'kks-player__play-button',
         `kks-player__play-button--${status}`
@@ -7697,20 +7195,20 @@ const PlayButton$1 = () => {
   })
 }
 
-const RewindButton$1 = ({style}) => {
+const RewindButton = ({style}) => {
   const {
     state: {progressTime, seekTime},
     dispatch,
-  } = React.useContext(Context.PlayerProgress)
-  const {state} = React.useContext(Context.PlayerState)
+  } = useContext(Context.PlayerProgress)
+  const {state} = useContext(Context.PlayerState)
   return (
     state !== PlayerState$1.ENDED &&
-    /*#__PURE__*/ jsxRuntime.jsx(ControlsTooltip, {
-      title: /*#__PURE__*/ jsxRuntime.jsx(Message, {
+    /*#__PURE__*/ jsx(ControlsTooltip, {
+      title: /*#__PURE__*/ jsx(Message, {
         code: 'KKS.PLAYER.REWIND',
       }),
       bottom: '48px',
-      children: /*#__PURE__*/ jsxRuntime.jsx(IconButton$1, {
+      children: /*#__PURE__*/ jsx(IconButton, {
         style: style,
         name: 'kks-player__rewind-button',
         src: icon.rewind10,
@@ -7725,24 +7223,24 @@ const RewindButton$1 = ({style}) => {
   )
 }
 
-RewindButton$1.propTypes = {
+RewindButton.propTypes = {
   style: propTypes.object,
 }
 
-const ForwardButton$1 = ({style}) => {
+const ForwardButton = ({style}) => {
   const {
     state: {progressTime, seekTime},
     dispatch,
-  } = React.useContext(Context.PlayerProgress)
-  const {state} = React.useContext(Context.PlayerState)
+  } = useContext(Context.PlayerProgress)
+  const {state} = useContext(Context.PlayerState)
   return (
     state !== PlayerState$1.ENDED &&
-    /*#__PURE__*/ jsxRuntime.jsx(ControlsTooltip, {
-      title: /*#__PURE__*/ jsxRuntime.jsx(Message, {
+    /*#__PURE__*/ jsx(ControlsTooltip, {
+      title: /*#__PURE__*/ jsx(Message, {
         code: 'KKS.PLAYER.FORWARD',
       }),
       bottom: '48px',
-      children: /*#__PURE__*/ jsxRuntime.jsx(IconButton$1, {
+      children: /*#__PURE__*/ jsx(IconButton, {
         style: style,
         name: 'kks-player__forward-button',
         src: icon.forward10,
@@ -7757,20 +7255,20 @@ const ForwardButton$1 = ({style}) => {
   )
 }
 
-ForwardButton$1.propTypes = {
+ForwardButton.propTypes = {
   style: propTypes.object,
 }
 
-function _EMOTION_STRINGIFIED_CSS_ERROR__$1() {
+function _EMOTION_STRINGIFIED_CSS_ERROR__() {
   return "You have tried to stringify object returned from `css` function. It isn't supposed to be used directly (e.g. as value of the `className` prop), but rather handed to emotion so it can handle it (e.g. as value of `css` prop)."
 }
-const style$8 = {
+const style$7 = {
   display: 'inline-flex',
   alignItems: 'center',
 }
 /* eslint-disable react/prop-types */
 
-var _ref$1 =
+var _ref =
   process.env.NODE_ENV === 'production'
     ? {
         name: '1vats5l',
@@ -7781,7 +7279,7 @@ var _ref$1 =
         styles: 'margin-left:0.8rem;width:4em;label:VolumeControl;',
         map:
           '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlZvbHVtZUNvbnRyb2wuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBZ0RVIiwiZmlsZSI6IlZvbHVtZUNvbnRyb2wuanMiLCJzb3VyY2VzQ29udGVudCI6WyIvKiBlc2xpbnQtZGlzYWJsZSBpbmRlbnQgKi9cbi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCBpY29uIGZyb20gJ3N0eWxlL2ljb24nXG5pbXBvcnQgVG9vbHRpcCBmcm9tICdjb21wb25lbnQvVG9vbHRpcCdcbmltcG9ydCBNZXNzYWdlIGZyb20gJ2NvbnRleHQvSTE4bi9NZXNzYWdlJ1xuaW1wb3J0IFNpbXBsZVNsaWRlciBmcm9tICdwbGF5ZXJVaS9TaW1wbGVTbGlkZXInXG5pbXBvcnQgSWNvbiBmcm9tICcuL0ljb24nXG5pbXBvcnQgQnV0dG9uIGZyb20gJy4vQnV0dG9uL1NxdWFyZUJ1dHRvbidcblxuY29uc3Qgc3R5bGUgPSB7XG4gIGRpc3BsYXk6ICdpbmxpbmUtZmxleCcsXG4gIGFsaWduSXRlbXM6ICdjZW50ZXInLFxufVxuXG4vKiBlc2xpbnQtZGlzYWJsZSByZWFjdC9wcm9wLXR5cGVzICovXG5jb25zdCBWb2x1bWVDb250cm9sID0gKHtcbiAgdXNlVm9sdW1lU3RhdGUsXG4gIGRpc3BsYXlTbGlkZXIgPSBmYWxzZSxcbiAgbWF4ID0gMSxcbiAgVG9vbHRpcENvbXBvbmVudCA9IFRvb2x0aXAsXG4gIC8qIGVzbGludC1kaXNhYmxlIHJlYWN0L3Byb3AtdHlwZXMgKi9cbn0pID0+IHtcbiAgY29uc3Qge3ZvbHVtZSwgbXV0ZWQsIGNoYW5nZVZvbHVtZSwgdG9nZ2xlTXV0ZWR9ID0gdXNlVm9sdW1lU3RhdGUoKVxuICBjb25zdCBpY29uTmFtZSA9XG4gICAgbXV0ZWQgfHwgdm9sdW1lID09PSAwXG4gICAgICA/IGljb24ubXV0ZVxuICAgICAgOiB2b2x1bWUgPCBtYXggLyAyXG4gICAgICA/IGljb24udm9sdW1lTG93XG4gICAgICA6IGljb24udm9sdW1lSGlnaHRcblxuICByZXR1cm4gKFxuICAgIDxkaXYgY2xhc3NOYW1lPVwia2tzLXBsYXllcl9fdm9sdW1lXCIgY3NzPXtzdHlsZX0+XG4gICAgICA8VG9vbHRpcENvbXBvbmVudFxuICAgICAgICB0aXRsZT17XG4gICAgICAgICAgPE1lc3NhZ2UgY29kZT17bXV0ZWQgPyAnS0tTLlBMQVlFUi5VTk1VVEUnIDogJ0tLUy5QTEFZRVIuTVVURSd9IC8+XG4gICAgICAgIH1cbiAgICAgICAgYm90dG9tPVwiNDhweFwiXG4gICAgICA+XG4gICAgICAgIDxCdXR0b25cbiAgICAgICAgICBuYW1lPVwia2tzLXBsYXllcl9fdm9sdW1lLWJ1dHRvblwiXG4gICAgICAgICAgdG9vbHRpcD17bXV0ZWQgPyAnS0tTLlBMQVlFUi5VTk1VVEUnIDogJ0tLUy5QTEFZRVIuTVVURSd9XG4gICAgICAgICAgb25DbGljaz17dG9nZ2xlTXV0ZWR9XG4gICAgICAgID5cbiAgICAgICAgICA8SWNvbiBzcmM9e2ljb25OYW1lfSAvPlxuICAgICAgICA8L0J1dHRvbj5cbiAgICAgIDwvVG9vbHRpcENvbXBvbmVudD5cbiAgICAgIHtkaXNwbGF5U2xpZGVyICYmIChcbiAgICAgICAgPFNpbXBsZVNsaWRlclxuICAgICAgICAgIGNzcz17e1xuICAgICAgICAgICAgbWFyZ2luTGVmdDogJzAuOHJlbScsXG4gICAgICAgICAgICB3aWR0aDogJzRlbScsXG4gICAgICAgICAgfX1cbiAgICAgICAgICB2YWx1ZT17bXV0ZWQgPyAwIDogdm9sdW1lfVxuICAgICAgICAgIG1heD17bWF4fVxuICAgICAgICAgIG9uQ2hhbmdlPXsoXywge3ZhbHVlfSkgPT4gY2hhbmdlVm9sdW1lKHZhbHVlKX1cbiAgICAgICAgLz5cbiAgICAgICl9XG4gICAgPC9kaXY+XG4gIClcbn1cblxuZXhwb3J0IGRlZmF1bHQgVm9sdW1lQ29udHJvbFxuIl19 */',
-        toString: _EMOTION_STRINGIFIED_CSS_ERROR__$1,
+        toString: _EMOTION_STRINGIFIED_CSS_ERROR__,
       }
 
 const VolumeControl$1 = ({
@@ -7798,27 +7296,27 @@ const VolumeControl$1 = ({
       : volume < max / 2
       ? icon.volumeLow
       : icon.volumeHight
-  return jsxRuntime$1.jsxs('div', {
+  return jsxs('div', {
     className: 'kks-player__volume',
-    css: style$8,
+    css: style$7,
     children: [
-      jsxRuntime$1.jsx(TooltipComponent, {
-        title: jsxRuntime$1.jsx(Message, {
+      jsx$1(TooltipComponent, {
+        title: jsx$1(Message, {
           code: muted ? 'KKS.PLAYER.UNMUTE' : 'KKS.PLAYER.MUTE',
         }),
         bottom: '48px',
-        children: jsxRuntime$1.jsx(SquareButton, {
+        children: jsx$1(SquareButton, {
           name: 'kks-player__volume-button',
           tooltip: muted ? 'KKS.PLAYER.UNMUTE' : 'KKS.PLAYER.MUTE',
           onClick: toggleMuted,
-          children: jsxRuntime$1.jsx(Icon, {
+          children: jsx$1(Icon, {
             src: iconName,
           }),
         }),
       }),
       displaySlider &&
-        jsxRuntime$1.jsx(SimpleSlider, {
-          css: _ref$1,
+        jsx$1(SimpleSlider, {
+          css: _ref,
           value: muted ? 0 : volume,
           max: max,
           onChange: (_, {value}) => changeVolume(value),
@@ -7831,7 +7329,7 @@ const usePlayerVolume = () => {
   const {
     state: {volume, muted},
     dispatch,
-  } = React.useContext(Context.PlayerVolume)
+  } = useContext(Context.PlayerVolume)
   return {
     volume,
     muted,
@@ -7843,7 +7341,7 @@ const usePlayerVolume = () => {
 }
 
 const VolumeControl = props =>
-  /*#__PURE__*/ jsxRuntime.jsx(VolumeControl$1, {
+  /*#__PURE__*/ jsx(VolumeControl$1, {
     max: 100,
     TooltipComponent: ControlsTooltip,
     useVolumeState: usePlayerVolume,
@@ -7948,8 +7446,7 @@ var API = (state = initState$4, action) => {
         playback: {
           heartbeat: true,
           internalSync: ItemType$1.LIVES === state.content.contentType,
-          updateTime:
-            _get__default['default'](playbackInfo, 'time.last_played') || 0,
+          updateTime: _get(playbackInfo, 'time.last_played') || 0,
         },
       }))(action.playbackInfo)
 
@@ -8454,9 +7951,9 @@ var createStore = () => {
     }
   }
 
-  const zustand = create__default['default'](
-    middleware.devtools(
-      middleware.redux(
+  const zustand = create(
+    devtools(
+      redux(
         reducer,
         reducer(
           {},
@@ -8469,7 +7966,7 @@ var createStore = () => {
   )
   return Object.assign(store, {
     zustand,
-    useStore: createHook__default['default'](zustand),
+    useStore: createHook(zustand),
     dispatch: action => {
       const oldState = state
       const finalAction = applyMiddlewares(action) || action
@@ -8492,7 +7989,7 @@ var createStore = () => {
 }
 
 const useMenu = () => {
-  const {dispatch} = React.useContext(Context.UI)
+  const {dispatch} = useContext(Context.UI)
 
   const show = () => {
     if (!isDesktop()) {
@@ -8554,7 +8051,7 @@ const getMaxQuality = (
 const getAdaptiveHlsUrl = async (manifests, defaultQuality, getState) => {
   const manifestUrl = manifests.hls.url
   if (!needNativeHls()) return manifestUrl
-  const {data: manifest} = await axios__default['default'].get(manifestUrl)
+  const {data: manifest} = await axios.get(manifestUrl)
   const {
     UI: {selectedQualityName, qualityItems, qualityPrecedence},
   } = getState()
@@ -8688,8 +8185,8 @@ const useSettings = () => {
     _options$quality2,
     _player$getAudio
 
-  const {options} = React.useContext(Context.Module)
-  const {content, playingSourceType} = React.useContext(Context.API).state
+  const {options} = useContext(Context.Module)
+  const {content, playingSourceType} = useContext(Context.API).state
   const {
     qualityItems,
     mediaSources,
@@ -8697,7 +8194,7 @@ const useSettings = () => {
       qualityItems,
       options.quality
     ),
-  } = React.useContext(Context.UI).state
+  } = useContext(Context.UI).state
   const player = usePlayer()
   const selectedQualityName =
     (_ref =
@@ -8781,7 +8278,7 @@ const useSettings = () => {
 }
 
 const useChangeSettings = () => {
-  const {dispatch} = React.useContext(Context.Module)
+  const {dispatch} = useContext(Context.Module)
   const player = usePlayer()
   return ({section, value}) => {
     if (section === 'mediaSource' || !player.hasEnded()) {
@@ -8825,12 +8322,12 @@ const SettingButton = ({style}) => {
   const haveSettings = useSettings().length > 0
   return (
     haveSettings &&
-    /*#__PURE__*/ jsxRuntime.jsx(ControlsTooltip, {
-      title: /*#__PURE__*/ jsxRuntime.jsx(Message, {
+    /*#__PURE__*/ jsx(ControlsTooltip, {
+      title: /*#__PURE__*/ jsx(Message, {
         code: 'KKS.SETTING',
       }),
       bottom: '48px',
-      children: /*#__PURE__*/ jsxRuntime.jsx(IconButton$1, {
+      children: /*#__PURE__*/ jsx(IconButton, {
         style: style,
         name: 'kks-player__setting-button',
         src: icon.setting,
@@ -8845,7 +8342,7 @@ SettingButton.propTypes = {
 }
 
 /* @jsxImportSource @emotion/react */
-const connectingAnimation = react.keyframes`
+const connectingAnimation = keyframes`
   0% {
     background-image: url("${icon.castConntecting0}");
   }
@@ -8901,8 +8398,8 @@ const styles$1 = {
 }
 
 const CastButton = ({castState, children, style, ...props}) =>
-  jsxRuntime$1.jsx('button', {
-    className: classnames__default['default'](
+  jsx$1('button', {
+    className: classnames(
       'kks-player__castbtn',
       castState && `kks-player__castbtn--${castState.toLocaleLowerCase()}`
     ),
@@ -8949,12 +8446,12 @@ const CastVideoButton = ({contentId, contentType, mediaSource, ...props}) => {
     }
   }
 
-  return /*#__PURE__*/ jsxRuntime.jsx(ControlsTooltip, {
-    title: /*#__PURE__*/ jsxRuntime.jsx(Message, {
+  return /*#__PURE__*/ jsx(ControlsTooltip, {
+    title: /*#__PURE__*/ jsx(Message, {
       code: tooltip,
     }),
     bottom: '48px',
-    children: /*#__PURE__*/ jsxRuntime.jsx(CastButton, {
+    children: /*#__PURE__*/ jsx(CastButton, {
       castState: castState,
       onClick: handleCast,
       ...props,
@@ -8970,15 +8467,15 @@ CastVideoButton.propTypes = {
 
 const FunctionButtons = ({full = true}) => {
   const {toolPanels = []} = useOptions()
-  const {dispatch} = React.useContext(Context.Module)
-  return /*#__PURE__*/ jsxRuntime.jsxs(jsxRuntime.Fragment, {
+  const {dispatch} = useContext(Context.Module)
+  return /*#__PURE__*/ jsxs$1(Fragment$1, {
     children: [
       full &&
-        /*#__PURE__*/ jsxRuntime.jsxs(jsxRuntime.Fragment, {
+        /*#__PURE__*/ jsxs$1(Fragment$1, {
           children: [
-            /*#__PURE__*/ jsxRuntime.jsx(CastVideoButton, {}),
+            /*#__PURE__*/ jsx(CastVideoButton, {}),
             toolPanels.map((item, index) =>
-              /*#__PURE__*/ React.cloneElement(item.button, {
+              /*#__PURE__*/ cloneElement(item.button, {
                 key: index,
                 onClick: () => {
                   dispatch(UiAction.openPanel(index))
@@ -8987,7 +8484,7 @@ const FunctionButtons = ({full = true}) => {
             ),
           ],
         }),
-      /*#__PURE__*/ jsxRuntime.jsx(SettingButton, {}),
+      /*#__PURE__*/ jsx(SettingButton, {}),
     ],
   })
 }
@@ -8997,7 +8494,7 @@ FunctionButtons.propTypes = {
 }
 
 const FullScreenButton = ({style}) => {
-  const {state, dispatch} = React.useContext(Context.PlayerViewMode)
+  const {state, dispatch} = useContext(Context.PlayerViewMode)
   const src =
     state === PlayerViewMode.INLINE
       ? icon.enterFullScreen
@@ -9015,13 +8512,13 @@ const FullScreenButton = ({style}) => {
     )
   }
 
-  return /*#__PURE__*/ jsxRuntime.jsx(ControlsTooltip, {
-    title: /*#__PURE__*/ jsxRuntime.jsx(Message, {
+  return /*#__PURE__*/ jsx(ControlsTooltip, {
+    title: /*#__PURE__*/ jsx(Message, {
       code: tooltip,
     }),
     bottom: '48px',
-    children: /*#__PURE__*/ jsxRuntime.jsx(IconButton$1, {
-      name: classnames__default['default'](
+    children: /*#__PURE__*/ jsx(IconButton, {
+      name: classnames(
         'kks-player__full-screen-button',
         `kks-player__full-screen-button--${
           state === PlayerViewMode.INLINE ? 'inline' : 'fullscreen'
@@ -9042,20 +8539,16 @@ const PreEpisodeButton = ({style}) => {
   const {
     state: {content},
     dispatch,
-  } = React.useContext(Context.API)
+  } = useContext(Context.API)
 
-  const preEpisode = _get__default['default'](
-    content,
-    'recommend.previous.id',
-    null
-  )
+  const preEpisode = _get(content, 'recommend.previous.id', null)
 
-  return /*#__PURE__*/ jsxRuntime.jsx(ControlsTooltip, {
-    title: /*#__PURE__*/ jsxRuntime.jsx(Message, {
+  return /*#__PURE__*/ jsx(ControlsTooltip, {
+    title: /*#__PURE__*/ jsx(Message, {
       code: 'KKS.PLAYER.PREVIOUS',
     }),
     bottom: '48px',
-    children: /*#__PURE__*/ jsxRuntime.jsx(IconButton$1, {
+    children: /*#__PURE__*/ jsx(IconButton, {
       style: style,
       name: 'kks-player__previous-episode-button',
       src: icon.previousEpisode,
@@ -9071,24 +8564,20 @@ PreEpisodeButton.propTypes = {
   style: propTypes.object,
 }
 
-const NextEpisodeButton$1 = ({style}) => {
+const NextEpisodeButton = ({style}) => {
   const {
     state: {content},
     dispatch,
-  } = React.useContext(Context.API)
+  } = useContext(Context.API)
 
-  const nextEpisode = _get__default['default'](
-    content,
-    'recommend.next.id',
-    null
-  )
+  const nextEpisode = _get(content, 'recommend.next.id', null)
 
-  return /*#__PURE__*/ jsxRuntime.jsx(ControlsTooltip, {
-    title: /*#__PURE__*/ jsxRuntime.jsx(Message, {
+  return /*#__PURE__*/ jsx(ControlsTooltip, {
+    title: /*#__PURE__*/ jsx(Message, {
       code: 'KKS.PLAYER.NEXT',
     }),
     bottom: '48px',
-    children: /*#__PURE__*/ jsxRuntime.jsx(IconButton$1, {
+    children: /*#__PURE__*/ jsx(IconButton, {
       style: style,
       name: 'kks-player__next-episode-button',
       src: icon.nextEpisode,
@@ -9099,14 +8588,14 @@ const NextEpisodeButton$1 = ({style}) => {
   })
 }
 
-NextEpisodeButton$1.propTypes = {
+NextEpisodeButton.propTypes = {
   keep: propTypes.bool,
   style: propTypes.object,
 }
 
 const BackButton = ({style}) => {
-  const {dispatch} = React.useContext(Context.Module)
-  return /*#__PURE__*/ jsxRuntime.jsx(IconButton$1, {
+  const {dispatch} = useContext(Context.Module)
+  return /*#__PURE__*/ jsx(IconButton, {
     style: style,
     name: 'kks-player__back-button',
     src: icon.back,
@@ -9120,7 +8609,7 @@ BackButton.propTypes = {
 
 const ErrorMessage = ({errorAction}) => {
   const {error} = errorAction
-  const {getMessage} = React.useContext(I18n.Context)
+  const {getMessage} = useContext(I18n.Context)
   const code = error.code || 0
   const data = {...error, code, CODE: code}
   const errorMessage =
@@ -9129,7 +8618,7 @@ const ErrorMessage = ({errorAction}) => {
     getMessage(`KKS.ERROR.${error.name}`, data) ||
     getMessage(`KKS.ERROR.${error.code}`, data) ||
     error.message
-  return /*#__PURE__*/ jsxRuntime.jsx('div', {
+  return /*#__PURE__*/ jsx('div', {
     className: 'kks-player__error-message',
     children: errorMessage,
   })
@@ -9140,7 +8629,7 @@ ErrorMessage.propTypes = {
 }
 
 /* @jsxImportSource @emotion/react */
-const style$7 = {
+const style$6 = {
   width: '200px',
   height: '40px',
   borderRadius: '4px',
@@ -9155,10 +8644,10 @@ const style$7 = {
 }
 
 const TextButton = ({name, onClick, text, defaultValue}) =>
-  jsxRuntime$1.jsx('button', {
-    className: classnames__default['default']('kks-player__text-button', name),
+  jsx$1('button', {
+    className: classnames('kks-player__text-button', name),
     css: [
-      style$7,
+      style$6,
       center,
       'display:inline-block;' +
         (process.env.NODE_ENV === 'production' ? '' : ';label:TextButton;'),
@@ -9167,7 +8656,7 @@ const TextButton = ({name, onClick, text, defaultValue}) =>
         : '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlRleHRCdXR0b24uanN4Il0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQXVCSSIsImZpbGUiOiJUZXh0QnV0dG9uLmpzeCIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCBjbGFzc25hbWVzIGZyb20gJ2NsYXNzbmFtZXMnXG5pbXBvcnQgUHJvcFR5cGVzIGZyb20gJ3Byb3AtdHlwZXMnXG5pbXBvcnQge2NlbnRlcn0gZnJvbSAnc3R5bGUnXG5pbXBvcnQgSTE4biBmcm9tICdjb250ZXh0L0kxOG4nXG5cbmNvbnN0IHN0eWxlID0ge1xuICB3aWR0aDogJzIwMHB4JyxcbiAgaGVpZ2h0OiAnNDBweCcsXG4gIGJvcmRlclJhZGl1czogJzRweCcsXG4gIGJhY2tncm91bmQ6ICd0cmFuc3BhcmVudCcsXG4gIGJvcmRlcjogJzFweCBzb2xpZCcsXG4gIGNvbG9yOiAnd2hpdGUnLFxuICBmb250U2l6ZTogJzE2cHgnLFxuICBvcGFjaXR5OiAwLjgsXG4gIGN1cnNvcjogJ3BvaW50ZXInLFxuICBvdXRsaW5lOiAnbm9uZScsXG4gIHVzZXJTZWxlY3Q6ICdub25lJyxcbn1cblxuY29uc3QgVGV4dEJ1dHRvbiA9ICh7bmFtZSwgb25DbGljaywgdGV4dCwgZGVmYXVsdFZhbHVlfSkgPT4gKFxuICA8YnV0dG9uXG4gICAgY2xhc3NOYW1lPXtjbGFzc25hbWVzKCdra3MtcGxheWVyX190ZXh0LWJ1dHRvbicsIG5hbWUpfVxuICAgIGNzcz17W3N0eWxlLCBjZW50ZXIsIHtkaXNwbGF5OiAnaW5saW5lLWJsb2NrJ31dfVxuICAgIG9uQ2xpY2s9e29uQ2xpY2t9XG4gID5cbiAgICA8STE4bi5NZXNzYWdlIGNvZGU9e3RleHR9IGRlZmF1bHRWYWx1ZT17ZGVmYXVsdFZhbHVlfSAvPlxuICA8L2J1dHRvbj5cbilcblxuVGV4dEJ1dHRvbi5wcm9wVHlwZXMgPSB7XG4gIG5hbWU6IFByb3BUeXBlcy5zdHJpbmcsXG4gIG9uQ2xpY2s6IFByb3BUeXBlcy5mdW5jLFxuICB0ZXh0OiBQcm9wVHlwZXMuc3RyaW5nLFxuICBkZWZhdWx0VmFsdWU6IFByb3BUeXBlcy5zdHJpbmcsXG59XG5cbmV4cG9ydCBkZWZhdWx0IFRleHRCdXR0b25cbiJdfQ== */',
     ],
     onClick: onClick,
-    children: jsxRuntime$1.jsx(I18n.Message, {
+    children: jsx$1(I18n.Message, {
       code: text,
       defaultValue: defaultValue,
     }),
@@ -9181,7 +8670,7 @@ TextButton.propTypes = {
 }
 
 /* @jsxImportSource @emotion/react */
-const _css$3 = {
+const _css$2 = {
   icon: {
     width: '78px',
     height: '78px',
@@ -9189,7 +8678,7 @@ const _css$3 = {
 }
 
 const Error$1 = ({error, style, onBack}) =>
-  jsxRuntime$1.jsxs('div', {
+  jsxs('div', {
     className: 'kks-player__error',
     css: [
       mask,
@@ -9200,14 +8689,14 @@ const Error$1 = ({error, style, onBack}) =>
         : '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkVycm9yLmpzeCJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiQUFnQnFDIiwiZmlsZSI6IkVycm9yLmpzeCIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCBQcm9wVHlwZXMgZnJvbSAncHJvcC10eXBlcydcbmltcG9ydCB7bWFza30gZnJvbSAnc3R5bGUnXG5pbXBvcnQgaWNvbiBmcm9tICdzdHlsZS9pY29uJ1xuaW1wb3J0IEljb24gZnJvbSAnY29tcG9uZW50L0ljb24nXG5pbXBvcnQgRXJyb3JNZXNzYWdlIGZyb20gJ2NvbXBvbmVudC9FcnJvck1lc3NhZ2UnXG5pbXBvcnQgVGV4dEJ1dHRvbiBmcm9tICdjb21wb25lbnQvQnV0dG9uL1RleHRCdXR0b24nXG5cbmNvbnN0IF9jc3MgPSB7XG4gIGljb246IHtcbiAgICB3aWR0aDogJzc4cHgnLFxuICAgIGhlaWdodDogJzc4cHgnLFxuICB9LFxufVxuXG5jb25zdCBFcnJvciA9ICh7ZXJyb3IsIHN0eWxlLCBvbkJhY2t9KSA9PiAoXG4gIDxkaXYgY2xhc3NOYW1lPVwia2tzLXBsYXllcl9fZXJyb3JcIiBjc3M9e1ttYXNrLCBzdHlsZV19PlxuICAgIDxJY29uIHN0eWxlPXtfY3NzLmljb259IHNyYz17aWNvbi53YXJuaW5nfSAvPlxuICAgIDxFcnJvck1lc3NhZ2UgZXJyb3JBY3Rpb249e2Vycm9yW2Vycm9yLmxlbmd0aCAtIDFdfSAvPlxuICAgIDxUZXh0QnV0dG9uXG4gICAgICBuYW1lPVwia2tzLXBsYXllcl9fZXJyb3JfX2JhY2stYnV0dG9uXCJcbiAgICAgIHRleHQ9XCJLS1MuQkFDS1wiXG4gICAgICBkZWZhdWx0VmFsdWU9XCJCQUNLXCJcbiAgICAgIG9uQ2xpY2s9e29uQmFja31cbiAgICAvPlxuICA8L2Rpdj5cbilcbkVycm9yLnByb3BUeXBlcyA9IHtcbiAgZXJyb3I6IFByb3BUeXBlcy5hcnJheSxcbiAgc3R5bGU6IFByb3BUeXBlcy5vYmplY3QsXG4gIG9uQmFjazogUHJvcFR5cGVzLmZ1bmMsXG59XG5FcnJvci5kZWZhdWx0UHJvcHMgPSB7XG4gIGVycm9yOiBbXSxcbiAgc3R5bGU6IHt9LFxuICBvbkJhY2s6ICgpID0+IHt9LFxufVxuXG5leHBvcnQgZGVmYXVsdCBFcnJvclxuIl19 */',
     ],
     children: [
-      jsxRuntime$1.jsx(Icon, {
-        style: _css$3.icon,
+      jsx$1(Icon, {
+        style: _css$2.icon,
         src: icon.warning,
       }),
-      jsxRuntime$1.jsx(ErrorMessage, {
+      jsx$1(ErrorMessage, {
         errorAction: error[error.length - 1],
       }),
-      jsxRuntime$1.jsx(TextButton, {
+      jsx$1(TextButton, {
         name: 'kks-player__error__back-button',
         text: 'KKS.BACK',
         defaultValue: 'BACK',
@@ -9228,7 +8717,7 @@ Error$1.defaultProps = {
 }
 
 /* @jsxImportSource @emotion/react */
-const rotateInfinite = react.keyframes`
+const rotateInfinite = keyframes`
   0% {
     transform: rotate(0deg);
   }
@@ -9236,7 +8725,7 @@ const rotateInfinite = react.keyframes`
     transform: rotate(360deg); 
   }
 `
-const style$6 = {
+const style$5 = {
   display: 'block',
   animation: `${rotateInfinite} 1.2s linear infinite`,
   border: '0.25em solid #f22e05',
@@ -9247,7 +8736,7 @@ const style$6 = {
 }
 
 const Loading = ({css, styles}) =>
-  jsxRuntime$1.jsx('div', {
+  jsx$1('div', {
     css: [
       mask,
       css,
@@ -9257,9 +8746,9 @@ const Loading = ({css, styles}) =>
         ? ''
         : '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkxvYWRpbmcuanN4Il0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQXlCTyIsImZpbGUiOiJMb2FkaW5nLmpzeCIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCB7a2V5ZnJhbWVzfSBmcm9tICdAZW1vdGlvbi9yZWFjdCdcbmltcG9ydCBQcm9wVHlwZXMgZnJvbSAncHJvcC10eXBlcydcbmltcG9ydCB7bWFza30gZnJvbSAnc3R5bGUnXG5cbmNvbnN0IHJvdGF0ZUluZmluaXRlID0ga2V5ZnJhbWVzYFxuICAwJSB7XG4gICAgdHJhbnNmb3JtOiByb3RhdGUoMGRlZyk7XG4gIH1cbiAgMTAwJSAge1xuICAgIHRyYW5zZm9ybTogcm90YXRlKDM2MGRlZyk7IFxuICB9XG5gXG5cbmNvbnN0IHN0eWxlID0ge1xuICBkaXNwbGF5OiAnYmxvY2snLFxuICBhbmltYXRpb246IGAke3JvdGF0ZUluZmluaXRlfSAxLjJzIGxpbmVhciBpbmZpbml0ZWAsXG4gIGJvcmRlcjogJzAuMjVlbSBzb2xpZCAjZjIyZTA1JyxcbiAgYm9yZGVyUmlnaHRDb2xvcjogJ3RyYW5zcGFyZW50JyxcbiAgYm9yZGVyUmFkaXVzOiAnNTAlJyxcbiAgaGVpZ2h0OiAnM2VtJyxcbiAgd2lkdGg6ICczZW0nLFxufVxuXG5jb25zdCBMb2FkaW5nID0gKHtjc3MsIHN0eWxlc30pID0+IChcbiAgPGRpdiBjc3M9e1ttYXNrLCBjc3MsIHN0eWxlc119PlxuICAgIDxkaXYgY2xhc3NOYW1lPVwia2tzLXBsYXllcl9fbG9hZGluZ1wiIGNzcz17c3R5bGV9IC8+XG4gIDwvZGl2PlxuKVxuTG9hZGluZy5wcm9wVHlwZXMgPSB7XG4gIGNzczogUHJvcFR5cGVzLm9iamVjdCxcbiAgc3R5bGVzOiBQcm9wVHlwZXMub2JqZWN0LFxufVxuXG5leHBvcnQgZGVmYXVsdCBMb2FkaW5nXG4iXX0= */',
     ],
-    children: jsxRuntime$1.jsx('div', {
+    children: jsx$1('div', {
       className: 'kks-player__loading',
-      css: style$6,
+      css: style$5,
     }),
   })
 
@@ -9269,7 +8758,7 @@ Loading.propTypes = {
 }
 
 /* @jsxImportSource @emotion/react */
-const fadeout = react.keyframes`
+const fadeout = keyframes`
   0% {
     background-size: 140px 140px;
     opacity:1;
@@ -9280,7 +8769,7 @@ const fadeout = react.keyframes`
   }
 `
 
-const _css$2 = (animating, src) => ({
+const _css$1 = (animating, src) => ({
   ...(animating && {
     animationName: fadeout,
   }),
@@ -9295,23 +8784,23 @@ const _css$2 = (animating, src) => ({
 })
 
 const PlayPanel = ({isPlaying, href, onClick}) => {
-  const [animating, setAnimating] = React.useState(false)
+  const [animating, setAnimating] = useState(false)
   return href
-    ? jsxRuntime$1.jsx('a', {
+    ? jsx$1('a', {
         href: href,
         target: '_blank',
         rel: 'noreferrer',
         css: layer,
       })
-    : jsxRuntime$1.jsx('div', {
-        className: classnames__default['default']('kks-player__play-panel', {
+    : jsx$1('div', {
+        className: classnames('kks-player__play-panel', {
           [`kks-player__play-panel--${
             isPlaying ? 'play' : 'pause'
           }`]: animating,
         }),
         css: [
           layer,
-          _css$2(animating, isPlaying ? icon.playCircle : icon.pauseCircle),
+          _css$1(animating, isPlaying ? icon.playCircle : icon.pauseCircle),
           process.env.NODE_ENV === 'production' ? '' : ';label:PlayPanel;',
           process.env.NODE_ENV === 'production'
             ? ''
@@ -9332,7 +8821,7 @@ PlayPanel.propTypes = {
 }
 
 /* @jsxImportSource @emotion/react */
-const style$5 = {
+const style$4 = {
   border: 'none',
   outline: 'none',
   cursor: 'pointer',
@@ -9345,10 +8834,10 @@ const style$5 = {
 }
 
 const Link = ({name, onClick, text, defaultValue}) =>
-  jsxRuntime$1.jsx('a', {
-    className: classnames__default['default']('kks-player__link', name),
+  jsx$1('a', {
+    className: classnames('kks-player__link', name),
     css: [
-      style$5,
+      style$4,
       center,
       process.env.NODE_ENV === 'production' ? '' : ';label:Link;',
       process.env.NODE_ENV === 'production'
@@ -9356,7 +8845,7 @@ const Link = ({name, onClick, text, defaultValue}) =>
         : '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkxpbmsuanN4Il0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQXFCSSIsImZpbGUiOiJMaW5rLmpzeCIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCBjbGFzc25hbWVzIGZyb20gJ2NsYXNzbmFtZXMnXG5pbXBvcnQgUHJvcFR5cGVzIGZyb20gJ3Byb3AtdHlwZXMnXG5pbXBvcnQge2NlbnRlcn0gZnJvbSAnc3R5bGUnXG5pbXBvcnQgSTE4biBmcm9tICdjb250ZXh0L0kxOG4nXG5cbmNvbnN0IHN0eWxlID0ge1xuICBib3JkZXI6ICdub25lJyxcbiAgb3V0bGluZTogJ25vbmUnLFxuICBjdXJzb3I6ICdwb2ludGVyJyxcbiAgcGFkZGluZzogMCxcbiAgZmxleFNocmluazogMCxcbiAgZm9udFNpemU6IDE0LFxuICB3aWR0aDogJ2F1dG8nLFxuICBoZWlnaHQ6ICdhdXRvJyxcbiAgdXNlclNlbGVjdDogJ25vbmUnLFxufVxuXG5jb25zdCBMaW5rID0gKHtuYW1lLCBvbkNsaWNrLCB0ZXh0LCBkZWZhdWx0VmFsdWV9KSA9PiAoXG4gIDxhXG4gICAgY2xhc3NOYW1lPXtjbGFzc25hbWVzKCdra3MtcGxheWVyX19saW5rJywgbmFtZSl9XG4gICAgY3NzPXtbc3R5bGUsIGNlbnRlcl19XG4gICAgb25DbGljaz17b25DbGlja31cbiAgPlxuICAgIDxJMThuLk1lc3NhZ2UgY29kZT17dGV4dH0gZGVmYXVsdFZhbHVlPXtkZWZhdWx0VmFsdWV9IC8+XG4gIDwvYT5cbilcblxuTGluay5wcm9wVHlwZXMgPSB7XG4gIG5hbWU6IFByb3BUeXBlcy5zdHJpbmcsXG4gIG9uQ2xpY2s6IFByb3BUeXBlcy5mdW5jLFxuICB0ZXh0OiBQcm9wVHlwZXMuc3RyaW5nLFxuICBkZWZhdWx0VmFsdWU6IFByb3BUeXBlcy5zdHJpbmcsXG59XG5cbmV4cG9ydCBkZWZhdWx0IExpbmtcbiJdfQ== */',
     ],
     onClick: onClick,
-    children: jsxRuntime$1.jsx(I18n.Message, {
+    children: jsx$1(I18n.Message, {
       code: text,
       defaultValue: defaultValue,
     }),
@@ -9370,7 +8859,7 @@ Link.propTypes = {
 }
 
 /* @jsxImportSource @emotion/react */
-const _css$1 = {
+const _css = {
   title: {
     maxWidth: '416px',
     textAlign: 'center',
@@ -9384,7 +8873,7 @@ const _css$1 = {
 }
 
 const LinearEnd = ({onRetry, onLeave}) =>
-  jsxRuntime$1.jsxs('div', {
+  jsxs('div', {
     className: 'kks-player__linear-end',
     css: [
       mask,
@@ -9394,26 +8883,26 @@ const LinearEnd = ({onRetry, onLeave}) =>
         : '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkxpbmVhckVuZC5qc3giXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBcUIwQyIsImZpbGUiOiJMaW5lYXJFbmQuanN4Iiwic291cmNlc0NvbnRlbnQiOlsiLyogQGpzeEltcG9ydFNvdXJjZSBAZW1vdGlvbi9yZWFjdCAqL1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJ1xuaW1wb3J0IHttYXNrfSBmcm9tICdzdHlsZSdcbmltcG9ydCBJMThuIGZyb20gJ2NvbnRleHQvSTE4bidcbmltcG9ydCBUZXh0QnV0dG9uIGZyb20gJ2NvbXBvbmVudC9CdXR0b24vVGV4dEJ1dHRvbidcbmltcG9ydCBMaW5rIGZyb20gJ2NvbXBvbmVudC9CdXR0b24vTGluaydcblxuY29uc3QgX2NzcyA9IHtcbiAgdGl0bGU6IHtcbiAgICBtYXhXaWR0aDogJzQxNnB4JyxcbiAgICB0ZXh0QWxpZ246ICdjZW50ZXInLFxuICAgIGZvbnRTaXplOiAnMjBweCcsXG4gICAgZm9udFdlaWdodDogJ2JvbGQnLFxuICB9LFxuICBtZXNzYWdlOiB7XG4gICAgbWF4V2lkdGg6ICc0MTZweCcsXG4gICAgZm9udFNpemU6ICcxNnB4JyxcbiAgfSxcbn1cblxuY29uc3QgTGluZWFyRW5kID0gKHtvblJldHJ5LCBvbkxlYXZlfSkgPT4gKFxuICA8ZGl2IGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2xpbmVhci1lbmRcIiBjc3M9e1ttYXNrXX0+XG4gICAgPGRpdiBjbGFzc05hbWU9XCJra3MtcGxheWVyX19saW5lYXItZW5kX190aXRsZVwiIGNzcz17X2Nzcy50aXRsZX0+XG4gICAgICA8STE4bi5NZXNzYWdlIGNvZGU9XCJLS1MuUFJPR1JBTS5USVRMRVwiIC8+XG4gICAgPC9kaXY+XG4gICAgPGRpdiBjbGFzc05hbWU9XCJra3MtcGxheWVyX19saW5lYXItZW5kX19tZXNzYWdlXCIgY3NzPXtfY3NzLm1lc3NhZ2V9PlxuICAgICAgPEkxOG4uTWVzc2FnZSBjb2RlPVwiS0tTLlBST0dSQU0uTUVTU0FHRVwiIC8+XG4gICAgPC9kaXY+XG4gICAgPFRleHRCdXR0b25cbiAgICAgIG5hbWU9XCJra3MtcGxheWVyX19yZXRyeS1idXR0b25cIlxuICAgICAgdGV4dD1cIktLUy5UUllBR0FJTlwiXG4gICAgICBvbkNsaWNrPXtvblJldHJ5fVxuICAgIC8+XG4gICAgPExpbmtcbiAgICAgIG5hbWU9XCJra3MtcGxheWVyX19sZWF2ZS1idXR0b25cIlxuICAgICAgdGV4dD1cIktLUy5QTEFZRVIuRVhJVFwiXG4gICAgICBvbkNsaWNrPXtvbkxlYXZlfVxuICAgIC8+XG4gIDwvZGl2PlxuKVxuTGluZWFyRW5kLnByb3BUeXBlcyA9IHtcbiAgb25SZXRyeTogUHJvcFR5cGVzLmZ1bmMsXG4gIG9uTGVhdmU6IFByb3BUeXBlcy5mdW5jLFxufVxuZXhwb3J0IGRlZmF1bHQgTGluZWFyRW5kXG4iXX0= */',
     ],
     children: [
-      jsxRuntime$1.jsx('div', {
+      jsx$1('div', {
         className: 'kks-player__linear-end__title',
-        css: _css$1.title,
-        children: jsxRuntime$1.jsx(I18n.Message, {
+        css: _css.title,
+        children: jsx$1(I18n.Message, {
           code: 'KKS.PROGRAM.TITLE',
         }),
       }),
-      jsxRuntime$1.jsx('div', {
+      jsx$1('div', {
         className: 'kks-player__linear-end__message',
-        css: _css$1.message,
-        children: jsxRuntime$1.jsx(I18n.Message, {
+        css: _css.message,
+        children: jsx$1(I18n.Message, {
           code: 'KKS.PROGRAM.MESSAGE',
         }),
       }),
-      jsxRuntime$1.jsx(TextButton, {
+      jsx$1(TextButton, {
         name: 'kks-player__retry-button',
         text: 'KKS.TRYAGAIN',
         onClick: onRetry,
       }),
-      jsxRuntime$1.jsx(Link, {
+      jsx$1(Link, {
         name: 'kks-player__leave-button',
         text: 'KKS.PLAYER.EXIT',
         onClick: onLeave,
@@ -9427,7 +8916,7 @@ LinearEnd.propTypes = {
 }
 
 /* @jsxImportSource @emotion/react */
-const style$4 = {
+const style$3 = {
   backgroundColor: '#000',
   button: {
     position: 'absolute',
@@ -9442,31 +8931,31 @@ const iconStyle = {
 }
 
 const CastMask = ({onBack}) =>
-  jsxRuntime$1.jsxs('div', {
+  jsxs('div', {
     className: 'kks-player__cast-mask',
     css: [
       mask,
-      style$4,
+      style$3,
       process.env.NODE_ENV === 'production' ? '' : ';label:CastMask;',
       process.env.NODE_ENV === 'production'
         ? ''
         : '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkNhc3QuanN4Il0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQXlCeUMiLCJmaWxlIjoiQ2FzdC5qc3giLCJzb3VyY2VzQ29udGVudCI6WyIvKiBAanN4SW1wb3J0U291cmNlIEBlbW90aW9uL3JlYWN0ICovXG5pbXBvcnQgUHJvcFR5cGVzIGZyb20gJ3Byb3AtdHlwZXMnXG5cbmltcG9ydCB7bWFza30gZnJvbSAnc3R5bGUnXG5pbXBvcnQgaWNvbiBmcm9tICdzdHlsZS9pY29uJ1xuaW1wb3J0IEkxOG4gZnJvbSAnY29udGV4dC9JMThuJ1xuaW1wb3J0IEJ1dHRvbiBmcm9tICdjb21wb25lbnQvQnV0dG9uL1NxdWFyZUJ1dHRvbidcbmltcG9ydCBJY29uIGZyb20gJ2NvbXBvbmVudC9JY29uJ1xuXG5jb25zdCBzdHlsZSA9IHtcbiAgYmFja2dyb3VuZENvbG9yOiAnIzAwMCcsXG4gIGJ1dHRvbjoge1xuICAgIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICAgIHRvcDogJzM2cHgnLFxuICAgIGxlZnQ6ICczNnB4JyxcbiAgfSxcbn1cblxuY29uc3QgaWNvblN0eWxlID0ge1xuICB3aWR0aDogJzc4cHgnLFxuICBoZWlnaHQ6ICc3OHB4JyxcbiAgZmlsdGVyOiAnaW52ZXJ0KDEwMCUpJyxcbn1cblxuY29uc3QgQ2FzdE1hc2sgPSAoe29uQmFja30pID0+IChcbiAgPGRpdiBjbGFzc05hbWU9XCJra3MtcGxheWVyX19jYXN0LW1hc2tcIiBjc3M9e1ttYXNrLCBzdHlsZV19PlxuICAgIDxCdXR0b24gbmFtZT1cImtrcy1wbGF5ZXJfX2N0cmxidG4ga2tzLXBsYXllcl9fYmFjay1idXR0b25cIiBvbkNsaWNrPXtvbkJhY2t9PlxuICAgICAgPEljb24gc3JjPXtpY29uLmJhY2t9IC8+XG4gICAgPC9CdXR0b24+XG4gICAgPEljb24gc3JjPXtpY29uLmNhc3RDb25uZWN0ZWR9IHN0eWxlPXtpY29uU3R5bGV9IC8+XG4gICAgPGRpdiBjbGFzc05hbWU9XCJra3MtcGxheWVyX19jYXN0LW1hc2tfX21lc3NhZ2VcIj5cbiAgICAgIDxJMThuLk1lc3NhZ2UgY29kZT1cIktLUy5DQVNUSU5HXCIgLz5cbiAgICA8L2Rpdj5cbiAgPC9kaXY+XG4pXG5cbkNhc3RNYXNrLnByb3BUeXBlcyA9IHtcbiAgb25CYWNrOiBQcm9wVHlwZXMuZnVuYyxcbn1cblxuZXhwb3J0IGRlZmF1bHQgQ2FzdE1hc2tcbiJdfQ== */',
     ],
     children: [
-      jsxRuntime$1.jsx(SquareButton, {
+      jsx$1(SquareButton, {
         name: 'kks-player__ctrlbtn kks-player__back-button',
         onClick: onBack,
-        children: jsxRuntime$1.jsx(Icon, {
+        children: jsx$1(Icon, {
           src: icon.back,
         }),
       }),
-      jsxRuntime$1.jsx(Icon, {
+      jsx$1(Icon, {
         src: icon.castConnected,
         style: iconStyle,
       }),
-      jsxRuntime$1.jsx('div', {
+      jsx$1('div', {
         className: 'kks-player__cast-mask__message',
-        children: jsxRuntime$1.jsx(I18n.Message, {
+        children: jsx$1(I18n.Message, {
           code: 'KKS.CASTING',
         }),
       }),
@@ -9494,20 +8983,20 @@ const styles = {
 }
 
 const SkipButton = ({remainingTime, onClick}) =>
-  jsxRuntime$1.jsx('button', {
+  jsx$1('button', {
     css: styles,
     disabled: remainingTime > 0,
     onClick: onClick,
     children:
       remainingTime > 0
-        ? jsxRuntime$1.jsxs(jsxRuntime$1.Fragment, {
+        ? jsxs(Fragment, {
             children: [
               Math.ceil(remainingTime),
               ' ',
-              jsxRuntime$1.jsx(Message, {
+              jsx$1(Message, {
                 code: 'KKS.SSAI.SECONDS',
               }),
-              jsxRuntime$1.jsx(Icon, {
+              jsx$1(Icon, {
                 src: icon.nextEpisode,
                 style: {
                   opacity: 0.24,
@@ -9515,12 +9004,12 @@ const SkipButton = ({remainingTime, onClick}) =>
               }),
             ],
           })
-        : jsxRuntime$1.jsxs(jsxRuntime$1.Fragment, {
+        : jsxs(Fragment, {
             children: [
-              jsxRuntime$1.jsx(Message, {
+              jsx$1(Message, {
                 code: 'KKS.SSAI.SKIP.AD',
               }),
-              jsxRuntime$1.jsx(Icon, {
+              jsx$1(Icon, {
                 src: icon.nextEpisode,
               }),
             ],
@@ -9535,7 +9024,7 @@ SkipButton.propTypes = {
 /* eslint-disable indent */
 
 const PlayPane = () => {
-  const {status} = useStore(getPlaybackState, shallow__default['default'])
+  const {status} = useStore(getPlaybackState, shallow)
   const type = useStore(({UI: state}) =>
     state.activePanel === 'recommendation' ? 'dismiss' : 'play'
   )
@@ -9546,9 +9035,9 @@ const PlayPane = () => {
       ? void 0
       : _state$ad.clickThroughUrl
   })
-  const {dispatch} = React.useContext(Context.PlayerState)
+  const {dispatch} = useContext(Context.PlayerState)
   return type === 'dismiss'
-    ? /*#__PURE__*/ jsxRuntime.jsx('div', {
+    ? /*#__PURE__*/ jsx('div', {
         style: {
           height: '100%',
           width: '100%',
@@ -9557,7 +9046,7 @@ const PlayPane = () => {
         onClick: () => dispatch(UiAction.hidePanel()),
       })
     : type === 'play' &&
-        /*#__PURE__*/ jsxRuntime.jsx(PlayPanel, {
+        /*#__PURE__*/ jsx(PlayPanel, {
           isPlaying: /playing|loading/.test(status),
           href: adUrl,
           onClick: () => dispatch(playAction(status)),
@@ -9565,24 +9054,24 @@ const PlayPane = () => {
 }
 
 const ErrorOverlay = () => {
-  const {dispatch} = React.useContext(Context.Module)
-  const {error} = React.useContext(Context.Module).state
-  return /*#__PURE__*/ jsxRuntime.jsx(Error$1, {
+  const {dispatch} = useContext(Context.Module)
+  const {error} = useContext(Context.Module).state
+  return /*#__PURE__*/ jsx(Error$1, {
     error: error,
     onBack: () => dispatch(Action.back()),
   })
 }
 
 const CastingOverlay = () => {
-  const {dispatch} = React.useContext(Context.Module)
-  return /*#__PURE__*/ jsxRuntime.jsx(CastMask, {
+  const {dispatch} = useContext(Context.Module)
+  return /*#__PURE__*/ jsx(CastMask, {
     onBack: () => dispatch(Action.back()),
   })
 }
 
 const LinearEndedOverlay = () => {
-  const {dispatch} = React.useContext(Context.Module)
-  return /*#__PURE__*/ jsxRuntime.jsx(LinearEnd, {
+  const {dispatch} = useContext(Context.Module)
+  return /*#__PURE__*/ jsx(LinearEnd, {
     onRetry: () => dispatch(operator.retry),
     onLeave: () => dispatch(Action.back()),
   })
@@ -9603,8 +9092,8 @@ const getAdSkipTimeOffset = ({API, UI}) => {
 const AdSkipButton = () => {
   const {plugins} = useOptions()
   const skipTimeOffset = useStore(getAdSkipTimeOffset)
-  const [streamTime, setStreamTime] = React.useState(0)
-  React.useEffect(() => {
+  const [streamTime, setStreamTime] = useState(0)
+  useEffect(() => {
     const video = document.querySelector('video')
 
     const upadteTime = () => setStreamTime(() => video.currentTime)
@@ -9614,7 +9103,7 @@ const AdSkipButton = () => {
   }, [])
   return (
     skipTimeOffset >= 0 &&
-    /*#__PURE__*/ jsxRuntime.jsx(SkipButton, {
+    /*#__PURE__*/ jsx(SkipButton, {
       remainingTime: skipTimeOffset - streamTime,
       onClick: () =>
         plugins.forEach(plugin => {
@@ -9630,14 +9119,14 @@ const AdSkipButton = () => {
 }
 
 const getComponents = () => ({
-  PlayButton: PlayButton$1,
-  RewindButton: RewindButton$1,
-  ForwardButton: ForwardButton$1,
+  PlayButton,
+  RewindButton,
+  ForwardButton,
   VolumeControl,
   FunctionButtons,
   FullScreenButton,
   PreviousEpisodeButton: PreEpisodeButton,
-  NextEpisodeButton: NextEpisodeButton$1,
+  NextEpisodeButton,
   BackButton,
   Loading,
   PlayPane,
@@ -9668,7 +9157,7 @@ const sizes$1 = {
     '--spacing': '0.5rem',
   },
 }
-const style$3 = {
+const style$2 = {
   container: {
     position: 'absolute',
     zIndex: '-1',
@@ -9722,11 +9211,11 @@ const PlayDialog = ({
   dismiss,
   ...rest
 }) =>
-  jsxRuntime$1.jsxs('div', {
+  jsxs('div', {
     css: [
-      style$3.container,
+      style$2.container,
       sizes$1[size],
-      opening && style$3.opening,
+      opening && style$2.opening,
       process.env.NODE_ENV === 'production' ? '' : ';label:PlayDialog;',
       process.env.NODE_ENV === 'production'
         ? ''
@@ -9735,20 +9224,20 @@ const PlayDialog = ({
     ref: containerRef,
     ...rest,
     children: [
-      jsxRuntime$1.jsx('button', {
-        css: style$3.cover(coverImageUrl),
+      jsx$1('button', {
+        css: style$2.cover(coverImageUrl),
         onClick: play,
         className: 'kks-player__next-episode-button',
       }),
-      jsxRuntime$1.jsxs('div', {
-        css: style$3.info,
+      jsxs('div', {
+        css: style$2.info,
         children: [
-          jsxRuntime$1.jsxs('div', {
-            css: style$3.message,
+          jsxs('div', {
+            css: style$2.message,
             children: [
               message,
-              jsxRuntime$1.jsx('button', {
-                css: style$3.dismiss,
+              jsx$1('button', {
+                css: style$2.dismiss,
                 onClick: dismiss,
                 className: 'kks-player__cancel-autoplay-button',
               }),
@@ -9772,8 +9261,8 @@ PlayDialog.propTypes = {
 }
 
 const useCountdownSecond = ({time, enabled}) => {
-  const [timeLeft, setTimeLeft] = React.useState()
-  React.useEffect(() => {
+  const [timeLeft, setTimeLeft] = useState()
+  useEffect(() => {
     if (!enabled) return
     setTimeLeft(time)
     const intervalId = setInterval(
@@ -9786,9 +9275,9 @@ const useCountdownSecond = ({time, enabled}) => {
 }
 
 const AutoplayDialog = () => {
-  const {currentBreakpoint} = useDimensions__default['default']({
+  const {currentBreakpoint} = useDimensions({
     ref: useUiRef(),
-    polyfill: resizeObserver.ResizeObserver,
+    polyfill: ResizeObserver,
     breakpoints: {
       normal: 0,
       big: 600,
@@ -9799,12 +9288,12 @@ const AutoplayDialog = () => {
   const {
     state: {content},
     dispatch,
-  } = React.useContext(Context.API)
+  } = useContext(Context.API)
   const {
     id,
     title,
     images: [{url: coverImageUrl}],
-  } = _get__default['default'](content, 'recommend.next') || {
+  } = _get(content, 'recommend.next') || {
     images: [{}],
   }
 
@@ -9816,18 +9305,18 @@ const AutoplayDialog = () => {
     time: 10,
     enabled: opening,
   })
-  React.useEffect(() => {
+  useEffect(() => {
     if (timeLeft <= 0) playNext()
   }, [timeLeft > 0])
-  React.useEffect(() => {
+  useEffect(() => {
     if (opening) {
       dispatch(UiAction.offerAutoplay())
     }
   }, [opening])
-  return /*#__PURE__*/ jsxRuntime.jsx(PlayDialog, {
+  return /*#__PURE__*/ jsx(PlayDialog, {
     className: 'kks-player__autoplay pinned',
     opening: opening,
-    message: /*#__PURE__*/ jsxRuntime.jsx(I18n.Message, {
+    message: /*#__PURE__*/ jsx(I18n.Message, {
       code: 'KKS.ENDROLL.COUNTDOWN',
       property: {
         timeLeft,
@@ -9842,7 +9331,7 @@ const AutoplayDialog = () => {
 }
 
 /* @jsxImportSource @emotion/react */
-const style$2 = {
+const style$1 = {
   head: {
     position: 'sticky',
     zIndex: '1',
@@ -9944,16 +9433,16 @@ const dekstopStyle = {
     transform: 'translateY(-100vh)',
   },
   container: {
-    ...style$2.container,
+    ...style$1.container,
     maxHeight: '100%',
     background: 'rgba(0, 0, 0, 0.7)',
   },
-  head: {...style$2.head, background: '#000'},
+  head: {...style$1.head, background: '#000'},
   row: {
-    ...style$2.row,
+    ...style$1.row,
     '::after': {},
     '::before': {
-      ...style$2.row['::after'],
+      ...style$1.row['::after'],
       marginLeft: '0',
       marginRight: '4px',
     },
@@ -9972,7 +9461,7 @@ const dekstopStyle = {
 }
 
 const MenuItemText = ({text}) =>
-  jsxRuntime$1.jsx(FormattedMessage, {
+  jsx$1(FormattedMessage, {
     id: `KKS.SETTING.${text}`,
     getDefault: () => text,
   })
@@ -9982,13 +9471,13 @@ MenuItemText.propTypes = {
 }
 
 const MenuSection = ({sharedStyle, items = [], selectedValue, onSelect}) =>
-  jsxRuntime$1.jsx('div', {
+  jsx$1('div', {
     className: 'kks-player__menu-content',
     children: items.map(({value, label}) =>
-      jsxRuntime$1.jsxs(
+      jsxs(
         'div',
         {
-          className: classnames__default['default']('kks-player__menu-item', {
+          className: classnames('kks-player__menu-item', {
             'kks-player__menu-item--selected': selectedValue === value,
           }),
           css: [
@@ -10001,12 +9490,12 @@ const MenuSection = ({sharedStyle, items = [], selectedValue, onSelect}) =>
           ],
           onClick: () => onSelect(value),
           children: [
-            jsxRuntime$1.jsx(MenuItemText, {
+            jsx$1(MenuItemText, {
               text: label || value,
             }),
-            jsxRuntime$1.jsx('div', {
+            jsx$1('div', {
               css: [
-                style$2.space,
+                style$1.space,
                 process.env.NODE_ENV === 'production'
                   ? ''
                   : ';label:MenuSection;',
@@ -10031,21 +9520,21 @@ MenuSection.propTypes = {
 }
 
 const PlayerSettings = ({desktop, hasBottomPanel}) => {
-  const sharedStyle = desktop ? dekstopStyle : style$2
+  const sharedStyle = desktop ? dekstopStyle : style$1
   const {
     state: {isSettingsOpen},
     dispatch,
-  } = React.useContext(Context.UI)
-  const [path, setPath] = React.useState('/')
+  } = useContext(Context.UI)
+  const [path, setPath] = useState('/')
   const menuSections = useSettings()
   const changeSettings = useChangeSettings()
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isSettingsOpen) {
       setPath('/')
     }
   }, [isSettingsOpen])
-  const ref = React.useRef()
-  useOnclickOutside__default['default'](
+  const ref = useRef()
+  useOnclickOutside(
     () => {
       if (isSettingsOpen) {
         dispatch(UiAction.hideMenu())
@@ -10056,10 +9545,10 @@ const PlayerSettings = ({desktop, hasBottomPanel}) => {
       eventTypes: ['click'],
     }
   )
-  return jsxRuntime$1.jsx('div', {
+  return jsx$1('div', {
     css: [
       sharedStyle.overlay,
-      isSettingsOpen && style$2.opening,
+      isSettingsOpen && style$1.opening,
       hasBottomPanel && {
         bottom: '8em',
       },
@@ -10068,24 +9557,24 @@ const PlayerSettings = ({desktop, hasBottomPanel}) => {
         ? ''
         : '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlBsYXllclNldHRpbmdzLmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQWtOTSIsImZpbGUiOiJQbGF5ZXJTZXR0aW5ncy5qcyIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCB7dXNlU3RhdGUsIHVzZUVmZmVjdCwgdXNlQ29udGV4dCwgdXNlUmVmLCBGcmFnbWVudH0gZnJvbSAncmVhY3QnXG5pbXBvcnQgUHJvcFR5cGVzIGZyb20gJ3Byb3AtdHlwZXMnXG5pbXBvcnQgY2xhc3NuYW1lcyBmcm9tICdjbGFzc25hbWVzJ1xuaW1wb3J0IHVzZU9uY2xpY2tPdXRzaWRlIGZyb20gJ3JlYWN0LWNvb2wtb25jbGlja291dHNpZGUnXG5cbmltcG9ydCB7dXNlQ2hhbmdlU2V0dGluZ3MsIHVzZVNldHRpbmdzfSBmcm9tICdwbGF5ZXIvc2V0dGluZ3MnXG5pbXBvcnQge0NvbnRleHR9IGZyb20gJ3BsYXllci9zdG9yZSdcbmltcG9ydCBBY3Rpb24gZnJvbSAncGxheWVyL3N0b3JlL2FjdGlvbi9VSSdcbmltcG9ydCBpY29uIGZyb20gJ3N0eWxlL2ljb24nXG5pbXBvcnQge0Zvcm1hdHRlZE1lc3NhZ2V9IGZyb20gJ2NvbnRleHQvSTE4bidcblxuY29uc3Qgc3R5bGUgPSB7XG4gIGhlYWQ6IHtcbiAgICBwb3NpdGlvbjogJ3N0aWNreScsXG4gICAgekluZGV4OiAnMScsXG4gICAgdG9wOiAnMCcsXG4gICAgZGlzcGxheTogJ2ZsZXgnLFxuICAgIGFsaWduSXRlbXM6ICdjZW50ZXInLFxuICAgIHBhZGRpbmc6ICcxcmVtIDEuNXJlbScsXG4gICAgY29sb3I6ICd3aGl0ZScsXG4gICAgYmFja2dyb3VuZENvbG9yOiAnaW5oZXJpdCcsXG4gICAgZm9udFNpemU6ICcxNnB4JyxcbiAgICBmb250V2VpZ2h0OiAnYm9sZCcsXG4gICAgYnV0dG9uOiB7XG4gICAgICBtYXJnaW5SaWdodDogJzFyZW0nLFxuICAgICAgcGFkZGluZzogJzAnLFxuICAgICAgd2lkdGg6ICcxcmVtJyxcbiAgICAgIGhlaWdodDogJzFyZW0nLFxuICAgICAgYm9yZGVyOiAnbm9uZScsXG4gICAgfSxcbiAgfSxcbiAgb3ZlcmxheToge1xuICAgIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICAgIHpJbmRleDogJy0yJyxcbiAgICB0b3A6ICcwJyxcbiAgICB3aWR0aDogJzEwMCUnLFxuICAgIGhlaWdodDogJzEwMCUnLFxuICAgIGRpc3BsYXk6ICdmbGV4JyxcbiAgICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgICBqdXN0aWZ5Q29udGVudDogJ2NlbnRlcicsXG4gICAgYmFja2dyb3VuZENvbG9yOiAncmdiYSgwLCAwLCAwLCAwLjYpJyxcbiAgICBvcGFjaXR5OiAnMCcsXG4gICAgdHJhbnNpdGlvbjogJ29wYWNpdHkgMC4ycyBlYXNlLCB0cmFuc2Zvcm0gMHMgZWFzZSAwLjJzJyxcbiAgfSxcbiAgY29udGFpbmVyOiB7XG4gICAgZmxleDogJzAgMThyZW0nLFxuICAgIG1heEhlaWdodDogJ2NhbGMoMTAwJSAtIDJyZW0pJyxcbiAgICBjb2xvcjogJyNjY2MnLFxuICAgIGJhY2tncm91bmQ6ICcjMzMzMzMzJyxcbiAgICB3aGl0ZVNwYWNlOiAnbm93cmFwJyxcbiAgICBib3JkZXJSYWRpdXM6ICc0cHgnLFxuICAgIHVzZXJTZWxlY3Q6ICdub25lJyxcbiAgICBvdmVyZmxvdzogJ2F1dG8nLFxuICB9LFxuICBvcGVuaW5nOiB7XG4gICAgekluZGV4OiAnMCcsXG4gICAgb3BhY2l0eTogJzEnLFxuICAgIHRyYW5zZm9ybTogJ3RyYW5zbGF0ZVkoMCknLFxuICAgIHRyYW5zaXRpb246ICdvcGFjaXR5IDAuMnMgZWFzZScsXG4gIH0sXG4gIHRpdGxlOiB7XG4gICAgcGFkZGluZzogJzEycHggMThweCcsXG4gIH0sXG4gIGRpc21pc3M6IHtcbiAgICBiYWNrZ3JvdW5kOiBgY2VudGVyIC8gMXJlbSBuby1yZXBlYXQgdXJsKCR7aWNvbi5jbG9zZX0pLCB0cmFuc3BhcmVudGAsXG4gIH0sXG4gIGJhY2s6IHtcbiAgICBiYWNrZ3JvdW5kOiBgY2VudGVyIC8gMXJlbSBuby1yZXBlYXQgdXJsKCR7aWNvbi5iYWNrfSksIHRyYW5zcGFyZW50YCxcbiAgfSxcbiAgcm93OiB7XG4gICAgY3Vyc29yOiAncG9pbnRlcicsXG4gICAgZGlzcGxheTogJ2ZsZXgnLFxuICAgIHBhZGRpbmc6ICcxcmVtIDEuNXJlbScsXG4gICAgZm9udFNpemU6ICcxNnB4JyxcbiAgICAnOjphZnRlcic6IHtcbiAgICAgIGNvbnRlbnQ6ICdcIiBcIicsXG4gICAgICBtYXJnaW5MZWZ0OiAnMXJlbScsXG4gICAgICB3aWR0aDogJzIwcHgnLFxuICAgICAgaGVpZ2h0OiAnMjBweCcsXG4gICAgICBkaXNwbGF5OiAnaW5saW5lLWJsb2NrJyxcbiAgICAgIGNvbG9yOiAnd2hpdGUnLFxuICAgICAgYmFja2dyb3VuZFBvc2l0aW9uOiAnY2VudGVyJyxcbiAgICAgIGJhY2tncm91bmRTaXplOiAnY292ZXInLFxuICAgIH0sXG4gIH0sXG4gIHNwYWNlOiB7XG4gICAgZmxleDogJzEnLFxuICB9LFxuICBoYXNPcHRpb25zOiB7XG4gICAgJzo6YWZ0ZXInOiB7XG4gICAgICBiYWNrZ3JvdW5kSW1hZ2U6IGB1cmwoJHtpY29uLmFycm93VG9wfSlgLFxuICAgICAgdHJhbnNmb3JtOiAncm90YXRlKDkwZGVnKScsXG4gICAgfSxcbiAgfSxcbiAgc2VsZWN0ZWQ6IHtcbiAgICAnOjphZnRlcic6IHtcbiAgICAgIGJhY2tncm91bmRJbWFnZTogYHVybCgke2ljb24uY2hlY2t9KWAsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3QgZGVrc3RvcFN0eWxlID0ge1xuICBvdmVybGF5OiB7XG4gICAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gICAgYm90dG9tOiAnNWVtJyxcbiAgICByaWdodDogJzNyZW0nLFxuICAgIGRpc3BsYXk6ICdmbGV4JyxcbiAgICBhbGlnbkl0ZW1zOiAnZmxleC1lbmQnLFxuICAgIHdpZHRoOiAnMTVyZW0nLFxuICAgIGhlaWdodDogJ2NhbGMoMTAwJSAtIDhyZW0pJyxcbiAgICBvcGFjaXR5OiAnMCcsXG4gICAgdHJhbnNmb3JtOiAndHJhbnNsYXRlWSgtMTAwdmgpJyxcbiAgfSxcbiAgY29udGFpbmVyOiB7XG4gICAgLi4uc3R5bGUuY29udGFpbmVyLFxuICAgIG1heEhlaWdodDogJzEwMCUnLFxuICAgIGJhY2tncm91bmQ6ICdyZ2JhKDAsIDAsIDAsIDAuNyknLFxuICB9LFxuICBoZWFkOiB7XG4gICAgLi4uc3R5bGUuaGVhZCxcbiAgICBiYWNrZ3JvdW5kOiAnIzAwMCcsXG4gIH0sXG4gIHJvdzoge1xuICAgIC4uLnN0eWxlLnJvdyxcbiAgICAnOjphZnRlcic6IHt9LFxuICAgICc6OmJlZm9yZSc6IHtcbiAgICAgIC4uLnN0eWxlLnJvd1snOjphZnRlciddLFxuICAgICAgbWFyZ2luTGVmdDogJzAnLFxuICAgICAgbWFyZ2luUmlnaHQ6ICc0cHgnLFxuICAgIH0sXG4gIH0sXG4gIGhhc09wdGlvbnM6IHtcbiAgICAnOjpiZWZvcmUnOiB7XG4gICAgICBiYWNrZ3JvdW5kSW1hZ2U6IGB1cmwoJHtpY29uLmFycm93VG9wfSlgLFxuICAgICAgdHJhbnNmb3JtOiAncm90YXRlKDkwZGVnKScsXG4gICAgfSxcbiAgfSxcbiAgc2VsZWN0ZWQ6IHtcbiAgICAnOjpiZWZvcmUnOiB7XG4gICAgICBiYWNrZ3JvdW5kSW1hZ2U6IGB1cmwoJHtpY29uLmNoZWNrfSlgLFxuICAgIH0sXG4gIH0sXG59XG5cbmNvbnN0IE1lbnVJdGVtVGV4dCA9ICh7dGV4dH0pID0+IChcbiAgPEZvcm1hdHRlZE1lc3NhZ2UgaWQ9e2BLS1MuU0VUVElORy4ke3RleHR9YH0gZ2V0RGVmYXVsdD17KCkgPT4gdGV4dH0gLz5cbilcblxuTWVudUl0ZW1UZXh0LnByb3BUeXBlcyA9IHtcbiAgdGV4dDogUHJvcFR5cGVzLnN0cmluZyxcbn1cblxuY29uc3QgTWVudVNlY3Rpb24gPSAoe3NoYXJlZFN0eWxlLCBpdGVtcyA9IFtdLCBzZWxlY3RlZFZhbHVlLCBvblNlbGVjdH0pID0+IChcbiAgPGRpdiBjbGFzc05hbWU9XCJra3MtcGxheWVyX19tZW51LWNvbnRlbnRcIj5cbiAgICB7aXRlbXMubWFwKCh7dmFsdWUsIGxhYmVsfSkgPT4gKFxuICAgICAgPGRpdlxuICAgICAgICBrZXk9e3ZhbHVlfVxuICAgICAgICBjbGFzc05hbWU9e2NsYXNzbmFtZXMoJ2trcy1wbGF5ZXJfX21lbnUtaXRlbScsIHtcbiAgICAgICAgICAna2tzLXBsYXllcl9fbWVudS1pdGVtLS1zZWxlY3RlZCc6IHNlbGVjdGVkVmFsdWUgPT09IHZhbHVlLFxuICAgICAgICB9KX1cbiAgICAgICAgY3NzPXtbc2hhcmVkU3R5bGUucm93LCBzZWxlY3RlZFZhbHVlID09PSB2YWx1ZSAmJiBzaGFyZWRTdHlsZS5zZWxlY3RlZF19XG4gICAgICAgIG9uQ2xpY2s9eygpID0+IG9uU2VsZWN0KHZhbHVlKX1cbiAgICAgID5cbiAgICAgICAgPE1lbnVJdGVtVGV4dCB0ZXh0PXtsYWJlbCB8fCB2YWx1ZX0gLz5cbiAgICAgICAgPGRpdiBjc3M9e1tzdHlsZS5zcGFjZV19IC8+XG4gICAgICA8L2Rpdj5cbiAgICApKX1cbiAgPC9kaXY+XG4pXG5cbk1lbnVTZWN0aW9uLnByb3BUeXBlcyA9IHtcbiAgc2hhcmVkU3R5bGU6IFByb3BUeXBlcy5vYmplY3QsXG4gIGl0ZW1zOiBQcm9wVHlwZXMuYXJyYXksXG4gIHNlbGVjdGVkVmFsdWU6IFByb3BUeXBlcy5zdHJpbmcsXG4gIE1lbnVJdGVtOiBQcm9wVHlwZXMuZWxlbWVudFR5cGUsXG4gIG9uU2VsZWN0OiBQcm9wVHlwZXMuZnVuYyxcbn1cblxuY29uc3QgUGxheWVyU2V0dGluZ3MgPSAoe2Rlc2t0b3AsIGhhc0JvdHRvbVBhbmVsfSkgPT4ge1xuICBjb25zdCBzaGFyZWRTdHlsZSA9IGRlc2t0b3AgPyBkZWtzdG9wU3R5bGUgOiBzdHlsZVxuICBjb25zdCB7XG4gICAgc3RhdGU6IHtpc1NldHRpbmdzT3Blbn0sXG4gICAgZGlzcGF0Y2gsXG4gIH0gPSB1c2VDb250ZXh0KENvbnRleHQuVUkpXG4gIGNvbnN0IFtwYXRoLCBzZXRQYXRoXSA9IHVzZVN0YXRlKCcvJylcbiAgY29uc3QgbWVudVNlY3Rpb25zID0gdXNlU2V0dGluZ3MoKVxuICBjb25zdCBjaGFuZ2VTZXR0aW5ncyA9IHVzZUNoYW5nZVNldHRpbmdzKClcblxuICB1c2VFZmZlY3QoKCkgPT4ge1xuICAgIGlmICghaXNTZXR0aW5nc09wZW4pIHtcbiAgICAgIHNldFBhdGgoJy8nKVxuICAgIH1cbiAgfSwgW2lzU2V0dGluZ3NPcGVuXSlcblxuICBjb25zdCByZWYgPSB1c2VSZWYoKVxuICB1c2VPbmNsaWNrT3V0c2lkZShcbiAgICAoKSA9PiB7XG4gICAgICBpZiAoaXNTZXR0aW5nc09wZW4pIHtcbiAgICAgICAgZGlzcGF0Y2goQWN0aW9uLmhpZGVNZW51KCkpXG4gICAgICB9XG4gICAgfSxcbiAgICB7XG4gICAgICByZWZzOiBbcmVmXSxcbiAgICAgIGV2ZW50VHlwZXM6IFsnY2xpY2snXSxcbiAgICB9XG4gIClcblxuICByZXR1cm4gKFxuICAgIDxkaXZcbiAgICAgIGNzcz17W1xuICAgICAgICBzaGFyZWRTdHlsZS5vdmVybGF5LFxuICAgICAgICBpc1NldHRpbmdzT3BlbiAmJiBzdHlsZS5vcGVuaW5nLFxuICAgICAgICBoYXNCb3R0b21QYW5lbCAmJiB7XG4gICAgICAgICAgYm90dG9tOiAnOGVtJyxcbiAgICAgICAgfSxcbiAgICAgIF19XG4gICAgPlxuICAgICAgPGRpdiByZWY9e3JlZn0gY2xhc3NOYW1lPVwia2tzLXBsYXllcl9fbWVudVwiIGNzcz17c2hhcmVkU3R5bGUuY29udGFpbmVyfT5cbiAgICAgICAge3BhdGggPT09ICcvJyAmJiAoXG4gICAgICAgICAgPEZyYWdtZW50PlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJra3MtcGxheWVyX19tZW51LWhlYWRcIiBjc3M9e3NoYXJlZFN0eWxlLmhlYWR9PlxuICAgICAgICAgICAgICB7IWRlc2t0b3AgJiYgKFxuICAgICAgICAgICAgICAgIDxidXR0b25cbiAgICAgICAgICAgICAgICAgIGNzcz17c3R5bGUuZGlzbWlzc31cbiAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IGRpc3BhdGNoKEFjdGlvbi5oaWRlTWVudSgpKX1cbiAgICAgICAgICAgICAgICAvPlxuICAgICAgICAgICAgICApfVxuICAgICAgICAgICAgICA8Rm9ybWF0dGVkTWVzc2FnZSBpZD1cIktLUy5TRVRUSU5HXCIgLz5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAge21lbnVTZWN0aW9ucy5tYXAoKHtzZWN0aW9uLCB0aXRsZSwgaXRlbXMsIHNlbGVjdGVkVmFsdWV9KSA9PiB7XG4gICAgICAgICAgICAgIGNvbnN0IHNlbGVjdGVkTmFtZSA9XG4gICAgICAgICAgICAgICAgaXRlbXMuZmluZChpdGVtID0+IGl0ZW0udmFsdWUgPT09IHNlbGVjdGVkVmFsdWUpPy5sYWJlbCB8fFxuICAgICAgICAgICAgICAgIHNlbGVjdGVkVmFsdWVcblxuICAgICAgICAgICAgICByZXR1cm4gKFxuICAgICAgICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgICAgICAgIGNzcz17W3N0eWxlLnJvdywgc3R5bGUuaGFzT3B0aW9uc119XG4gICAgICAgICAgICAgICAgICBrZXk9e3NlY3Rpb259XG4gICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZXRUaW1lb3V0KCgpID0+IHNldFBhdGgoYC8ke3NlY3Rpb259YCksIDEpfVxuICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgIDxGb3JtYXR0ZWRNZXNzYWdlIGlkPXt0aXRsZX0gLz5cbiAgICAgICAgICAgICAgICAgIDxkaXYgY3NzPXtbc3R5bGUuc3BhY2VdfSAvPlxuICAgICAgICAgICAgICAgICAgPE1lbnVJdGVtVGV4dCB0ZXh0PXtzZWxlY3RlZE5hbWV9IC8+XG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgIClcbiAgICAgICAgICAgIH0pfVxuICAgICAgICAgIDwvRnJhZ21lbnQ+XG4gICAgICAgICl9XG4gICAgICAgIHttZW51U2VjdGlvbnMubWFwKFxuICAgICAgICAgICh7c2VjdGlvbiwgdGl0bGUsIGl0ZW1zLCBzZWxlY3RlZFZhbHVlfSkgPT5cbiAgICAgICAgICAgIHBhdGggPT09IGAvJHtzZWN0aW9ufWAgJiYgKFxuICAgICAgICAgICAgICA8RnJhZ21lbnQga2V5PXtzZWN0aW9ufT5cbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX21lbnUtaGVhZFwiIGNzcz17c2hhcmVkU3R5bGUuaGVhZH0+XG4gICAgICAgICAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICAgICAgICAgIGNzcz17c3R5bGUuYmFja31cbiAgICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gc2V0VGltZW91dCgoKSA9PiBzZXRQYXRoKCcvJyksIDEpfVxuICAgICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICAgICAgIDxGb3JtYXR0ZWRNZXNzYWdlIGlkPXt0aXRsZX0gLz5cbiAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICA8TWVudVNlY3Rpb25cbiAgICAgICAgICAgICAgICAgIGtleT17c2VjdGlvbn1cbiAgICAgICAgICAgICAgICAgIHNoYXJlZFN0eWxlPXtzaGFyZWRTdHlsZX1cbiAgICAgICAgICAgICAgICAgIHsuLi57aXRlbXMsIHNlbGVjdGVkVmFsdWV9fVxuICAgICAgICAgICAgICAgICAgb25TZWxlY3Q9e3ZhbHVlID0+IHtcbiAgICAgICAgICAgICAgICAgICAgZGlzcGF0Y2goQWN0aW9uLmhpZGVNZW51KCkpXG4gICAgICAgICAgICAgICAgICAgIGlmICh2YWx1ZSAhPT0gc2VsZWN0ZWRWYWx1ZSkge1xuICAgICAgICAgICAgICAgICAgICAgIGNoYW5nZVNldHRpbmdzKHtzZWN0aW9uLCB2YWx1ZX0pXG4gICAgICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgICAgICAgIH19XG4gICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICAgPC9GcmFnbWVudD5cbiAgICAgICAgICAgIClcbiAgICAgICAgKX1cbiAgICAgIDwvZGl2PlxuICAgIDwvZGl2PlxuICApXG59XG5cblBsYXllclNldHRpbmdzLnByb3BUeXBlcyA9IHtcbiAgZGVza3RvcDogUHJvcFR5cGVzLmJvb2wsXG4gIGhhc0JvdHRvbVBhbmVsOiBQcm9wVHlwZXMuYm9vbCxcbn1cblxuZXhwb3J0IGRlZmF1bHQgUGxheWVyU2V0dGluZ3NcbiJdfQ== */',
     ],
-    children: jsxRuntime$1.jsxs('div', {
+    children: jsxs('div', {
       ref: ref,
       className: 'kks-player__menu',
       css: sharedStyle.container,
       children: [
         path === '/' &&
-          jsxRuntime$1.jsxs(React.Fragment, {
+          jsxs(Fragment$2, {
             children: [
-              jsxRuntime$1.jsxs('div', {
+              jsxs('div', {
                 className: 'kks-player__menu-head',
                 css: sharedStyle.head,
                 children: [
                   !desktop &&
-                    jsxRuntime$1.jsx('button', {
-                      css: style$2.dismiss,
+                    jsx$1('button', {
+                      css: style$1.dismiss,
                       onClick: () => dispatch(UiAction.hideMenu()),
                     }),
-                  jsxRuntime$1.jsx(FormattedMessage, {
+                  jsx$1(FormattedMessage, {
                     id: 'KKS.SETTING',
                   }),
                 ],
@@ -10099,12 +9588,12 @@ const PlayerSettings = ({desktop, hasBottomPanel}) => {
                   )) === null || _items$find === void 0
                     ? void 0
                     : _items$find.label) || selectedValue
-                return jsxRuntime$1.jsxs(
+                return jsxs(
                   'div',
                   {
                     css: [
-                      style$2.row,
-                      style$2.hasOptions,
+                      style$1.row,
+                      style$1.hasOptions,
                       process.env.NODE_ENV === 'production'
                         ? ''
                         : ';label:PlayerSettings;',
@@ -10114,12 +9603,12 @@ const PlayerSettings = ({desktop, hasBottomPanel}) => {
                     ],
                     onClick: () => setTimeout(() => setPath(`/${section}`), 1),
                     children: [
-                      jsxRuntime$1.jsx(FormattedMessage, {
+                      jsx$1(FormattedMessage, {
                         id: title,
                       }),
-                      jsxRuntime$1.jsx('div', {
+                      jsx$1('div', {
                         css: [
-                          style$2.space,
+                          style$1.space,
                           process.env.NODE_ENV === 'production'
                             ? ''
                             : ';label:PlayerSettings;',
@@ -10128,7 +9617,7 @@ const PlayerSettings = ({desktop, hasBottomPanel}) => {
                             : '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlBsYXllclNldHRpbmdzLmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQWtQdUIiLCJmaWxlIjoiUGxheWVyU2V0dGluZ3MuanMiLCJzb3VyY2VzQ29udGVudCI6WyIvKiBAanN4SW1wb3J0U291cmNlIEBlbW90aW9uL3JlYWN0ICovXG5pbXBvcnQge3VzZVN0YXRlLCB1c2VFZmZlY3QsIHVzZUNvbnRleHQsIHVzZVJlZiwgRnJhZ21lbnR9IGZyb20gJ3JlYWN0J1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJ1xuaW1wb3J0IGNsYXNzbmFtZXMgZnJvbSAnY2xhc3NuYW1lcydcbmltcG9ydCB1c2VPbmNsaWNrT3V0c2lkZSBmcm9tICdyZWFjdC1jb29sLW9uY2xpY2tvdXRzaWRlJ1xuXG5pbXBvcnQge3VzZUNoYW5nZVNldHRpbmdzLCB1c2VTZXR0aW5nc30gZnJvbSAncGxheWVyL3NldHRpbmdzJ1xuaW1wb3J0IHtDb250ZXh0fSBmcm9tICdwbGF5ZXIvc3RvcmUnXG5pbXBvcnQgQWN0aW9uIGZyb20gJ3BsYXllci9zdG9yZS9hY3Rpb24vVUknXG5pbXBvcnQgaWNvbiBmcm9tICdzdHlsZS9pY29uJ1xuaW1wb3J0IHtGb3JtYXR0ZWRNZXNzYWdlfSBmcm9tICdjb250ZXh0L0kxOG4nXG5cbmNvbnN0IHN0eWxlID0ge1xuICBoZWFkOiB7XG4gICAgcG9zaXRpb246ICdzdGlja3knLFxuICAgIHpJbmRleDogJzEnLFxuICAgIHRvcDogJzAnLFxuICAgIGRpc3BsYXk6ICdmbGV4JyxcbiAgICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgICBwYWRkaW5nOiAnMXJlbSAxLjVyZW0nLFxuICAgIGNvbG9yOiAnd2hpdGUnLFxuICAgIGJhY2tncm91bmRDb2xvcjogJ2luaGVyaXQnLFxuICAgIGZvbnRTaXplOiAnMTZweCcsXG4gICAgZm9udFdlaWdodDogJ2JvbGQnLFxuICAgIGJ1dHRvbjoge1xuICAgICAgbWFyZ2luUmlnaHQ6ICcxcmVtJyxcbiAgICAgIHBhZGRpbmc6ICcwJyxcbiAgICAgIHdpZHRoOiAnMXJlbScsXG4gICAgICBoZWlnaHQ6ICcxcmVtJyxcbiAgICAgIGJvcmRlcjogJ25vbmUnLFxuICAgIH0sXG4gIH0sXG4gIG92ZXJsYXk6IHtcbiAgICBwb3NpdGlvbjogJ2Fic29sdXRlJyxcbiAgICB6SW5kZXg6ICctMicsXG4gICAgdG9wOiAnMCcsXG4gICAgd2lkdGg6ICcxMDAlJyxcbiAgICBoZWlnaHQ6ICcxMDAlJyxcbiAgICBkaXNwbGF5OiAnZmxleCcsXG4gICAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gICAganVzdGlmeUNvbnRlbnQ6ICdjZW50ZXInLFxuICAgIGJhY2tncm91bmRDb2xvcjogJ3JnYmEoMCwgMCwgMCwgMC42KScsXG4gICAgb3BhY2l0eTogJzAnLFxuICAgIHRyYW5zaXRpb246ICdvcGFjaXR5IDAuMnMgZWFzZSwgdHJhbnNmb3JtIDBzIGVhc2UgMC4ycycsXG4gIH0sXG4gIGNvbnRhaW5lcjoge1xuICAgIGZsZXg6ICcwIDE4cmVtJyxcbiAgICBtYXhIZWlnaHQ6ICdjYWxjKDEwMCUgLSAycmVtKScsXG4gICAgY29sb3I6ICcjY2NjJyxcbiAgICBiYWNrZ3JvdW5kOiAnIzMzMzMzMycsXG4gICAgd2hpdGVTcGFjZTogJ25vd3JhcCcsXG4gICAgYm9yZGVyUmFkaXVzOiAnNHB4JyxcbiAgICB1c2VyU2VsZWN0OiAnbm9uZScsXG4gICAgb3ZlcmZsb3c6ICdhdXRvJyxcbiAgfSxcbiAgb3BlbmluZzoge1xuICAgIHpJbmRleDogJzAnLFxuICAgIG9wYWNpdHk6ICcxJyxcbiAgICB0cmFuc2Zvcm06ICd0cmFuc2xhdGVZKDApJyxcbiAgICB0cmFuc2l0aW9uOiAnb3BhY2l0eSAwLjJzIGVhc2UnLFxuICB9LFxuICB0aXRsZToge1xuICAgIHBhZGRpbmc6ICcxMnB4IDE4cHgnLFxuICB9LFxuICBkaXNtaXNzOiB7XG4gICAgYmFja2dyb3VuZDogYGNlbnRlciAvIDFyZW0gbm8tcmVwZWF0IHVybCgke2ljb24uY2xvc2V9KSwgdHJhbnNwYXJlbnRgLFxuICB9LFxuICBiYWNrOiB7XG4gICAgYmFja2dyb3VuZDogYGNlbnRlciAvIDFyZW0gbm8tcmVwZWF0IHVybCgke2ljb24uYmFja30pLCB0cmFuc3BhcmVudGAsXG4gIH0sXG4gIHJvdzoge1xuICAgIGN1cnNvcjogJ3BvaW50ZXInLFxuICAgIGRpc3BsYXk6ICdmbGV4JyxcbiAgICBwYWRkaW5nOiAnMXJlbSAxLjVyZW0nLFxuICAgIGZvbnRTaXplOiAnMTZweCcsXG4gICAgJzo6YWZ0ZXInOiB7XG4gICAgICBjb250ZW50OiAnXCIgXCInLFxuICAgICAgbWFyZ2luTGVmdDogJzFyZW0nLFxuICAgICAgd2lkdGg6ICcyMHB4JyxcbiAgICAgIGhlaWdodDogJzIwcHgnLFxuICAgICAgZGlzcGxheTogJ2lubGluZS1ibG9jaycsXG4gICAgICBjb2xvcjogJ3doaXRlJyxcbiAgICAgIGJhY2tncm91bmRQb3NpdGlvbjogJ2NlbnRlcicsXG4gICAgICBiYWNrZ3JvdW5kU2l6ZTogJ2NvdmVyJyxcbiAgICB9LFxuICB9LFxuICBzcGFjZToge1xuICAgIGZsZXg6ICcxJyxcbiAgfSxcbiAgaGFzT3B0aW9uczoge1xuICAgICc6OmFmdGVyJzoge1xuICAgICAgYmFja2dyb3VuZEltYWdlOiBgdXJsKCR7aWNvbi5hcnJvd1RvcH0pYCxcbiAgICAgIHRyYW5zZm9ybTogJ3JvdGF0ZSg5MGRlZyknLFxuICAgIH0sXG4gIH0sXG4gIHNlbGVjdGVkOiB7XG4gICAgJzo6YWZ0ZXInOiB7XG4gICAgICBiYWNrZ3JvdW5kSW1hZ2U6IGB1cmwoJHtpY29uLmNoZWNrfSlgLFxuICAgIH0sXG4gIH0sXG59XG5cbmNvbnN0IGRla3N0b3BTdHlsZSA9IHtcbiAgb3ZlcmxheToge1xuICAgIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICAgIGJvdHRvbTogJzVlbScsXG4gICAgcmlnaHQ6ICczcmVtJyxcbiAgICBkaXNwbGF5OiAnZmxleCcsXG4gICAgYWxpZ25JdGVtczogJ2ZsZXgtZW5kJyxcbiAgICB3aWR0aDogJzE1cmVtJyxcbiAgICBoZWlnaHQ6ICdjYWxjKDEwMCUgLSA4cmVtKScsXG4gICAgb3BhY2l0eTogJzAnLFxuICAgIHRyYW5zZm9ybTogJ3RyYW5zbGF0ZVkoLTEwMHZoKScsXG4gIH0sXG4gIGNvbnRhaW5lcjoge1xuICAgIC4uLnN0eWxlLmNvbnRhaW5lcixcbiAgICBtYXhIZWlnaHQ6ICcxMDAlJyxcbiAgICBiYWNrZ3JvdW5kOiAncmdiYSgwLCAwLCAwLCAwLjcpJyxcbiAgfSxcbiAgaGVhZDoge1xuICAgIC4uLnN0eWxlLmhlYWQsXG4gICAgYmFja2dyb3VuZDogJyMwMDAnLFxuICB9LFxuICByb3c6IHtcbiAgICAuLi5zdHlsZS5yb3csXG4gICAgJzo6YWZ0ZXInOiB7fSxcbiAgICAnOjpiZWZvcmUnOiB7XG4gICAgICAuLi5zdHlsZS5yb3dbJzo6YWZ0ZXInXSxcbiAgICAgIG1hcmdpbkxlZnQ6ICcwJyxcbiAgICAgIG1hcmdpblJpZ2h0OiAnNHB4JyxcbiAgICB9LFxuICB9LFxuICBoYXNPcHRpb25zOiB7XG4gICAgJzo6YmVmb3JlJzoge1xuICAgICAgYmFja2dyb3VuZEltYWdlOiBgdXJsKCR7aWNvbi5hcnJvd1RvcH0pYCxcbiAgICAgIHRyYW5zZm9ybTogJ3JvdGF0ZSg5MGRlZyknLFxuICAgIH0sXG4gIH0sXG4gIHNlbGVjdGVkOiB7XG4gICAgJzo6YmVmb3JlJzoge1xuICAgICAgYmFja2dyb3VuZEltYWdlOiBgdXJsKCR7aWNvbi5jaGVja30pYCxcbiAgICB9LFxuICB9LFxufVxuXG5jb25zdCBNZW51SXRlbVRleHQgPSAoe3RleHR9KSA9PiAoXG4gIDxGb3JtYXR0ZWRNZXNzYWdlIGlkPXtgS0tTLlNFVFRJTkcuJHt0ZXh0fWB9IGdldERlZmF1bHQ9eygpID0+IHRleHR9IC8+XG4pXG5cbk1lbnVJdGVtVGV4dC5wcm9wVHlwZXMgPSB7XG4gIHRleHQ6IFByb3BUeXBlcy5zdHJpbmcsXG59XG5cbmNvbnN0IE1lbnVTZWN0aW9uID0gKHtzaGFyZWRTdHlsZSwgaXRlbXMgPSBbXSwgc2VsZWN0ZWRWYWx1ZSwgb25TZWxlY3R9KSA9PiAoXG4gIDxkaXYgY2xhc3NOYW1lPVwia2tzLXBsYXllcl9fbWVudS1jb250ZW50XCI+XG4gICAge2l0ZW1zLm1hcCgoe3ZhbHVlLCBsYWJlbH0pID0+IChcbiAgICAgIDxkaXZcbiAgICAgICAga2V5PXt2YWx1ZX1cbiAgICAgICAgY2xhc3NOYW1lPXtjbGFzc25hbWVzKCdra3MtcGxheWVyX19tZW51LWl0ZW0nLCB7XG4gICAgICAgICAgJ2trcy1wbGF5ZXJfX21lbnUtaXRlbS0tc2VsZWN0ZWQnOiBzZWxlY3RlZFZhbHVlID09PSB2YWx1ZSxcbiAgICAgICAgfSl9XG4gICAgICAgIGNzcz17W3NoYXJlZFN0eWxlLnJvdywgc2VsZWN0ZWRWYWx1ZSA9PT0gdmFsdWUgJiYgc2hhcmVkU3R5bGUuc2VsZWN0ZWRdfVxuICAgICAgICBvbkNsaWNrPXsoKSA9PiBvblNlbGVjdCh2YWx1ZSl9XG4gICAgICA+XG4gICAgICAgIDxNZW51SXRlbVRleHQgdGV4dD17bGFiZWwgfHwgdmFsdWV9IC8+XG4gICAgICAgIDxkaXYgY3NzPXtbc3R5bGUuc3BhY2VdfSAvPlxuICAgICAgPC9kaXY+XG4gICAgKSl9XG4gIDwvZGl2PlxuKVxuXG5NZW51U2VjdGlvbi5wcm9wVHlwZXMgPSB7XG4gIHNoYXJlZFN0eWxlOiBQcm9wVHlwZXMub2JqZWN0LFxuICBpdGVtczogUHJvcFR5cGVzLmFycmF5LFxuICBzZWxlY3RlZFZhbHVlOiBQcm9wVHlwZXMuc3RyaW5nLFxuICBNZW51SXRlbTogUHJvcFR5cGVzLmVsZW1lbnRUeXBlLFxuICBvblNlbGVjdDogUHJvcFR5cGVzLmZ1bmMsXG59XG5cbmNvbnN0IFBsYXllclNldHRpbmdzID0gKHtkZXNrdG9wLCBoYXNCb3R0b21QYW5lbH0pID0+IHtcbiAgY29uc3Qgc2hhcmVkU3R5bGUgPSBkZXNrdG9wID8gZGVrc3RvcFN0eWxlIDogc3R5bGVcbiAgY29uc3Qge1xuICAgIHN0YXRlOiB7aXNTZXR0aW5nc09wZW59LFxuICAgIGRpc3BhdGNoLFxuICB9ID0gdXNlQ29udGV4dChDb250ZXh0LlVJKVxuICBjb25zdCBbcGF0aCwgc2V0UGF0aF0gPSB1c2VTdGF0ZSgnLycpXG4gIGNvbnN0IG1lbnVTZWN0aW9ucyA9IHVzZVNldHRpbmdzKClcbiAgY29uc3QgY2hhbmdlU2V0dGluZ3MgPSB1c2VDaGFuZ2VTZXR0aW5ncygpXG5cbiAgdXNlRWZmZWN0KCgpID0+IHtcbiAgICBpZiAoIWlzU2V0dGluZ3NPcGVuKSB7XG4gICAgICBzZXRQYXRoKCcvJylcbiAgICB9XG4gIH0sIFtpc1NldHRpbmdzT3Blbl0pXG5cbiAgY29uc3QgcmVmID0gdXNlUmVmKClcbiAgdXNlT25jbGlja091dHNpZGUoXG4gICAgKCkgPT4ge1xuICAgICAgaWYgKGlzU2V0dGluZ3NPcGVuKSB7XG4gICAgICAgIGRpc3BhdGNoKEFjdGlvbi5oaWRlTWVudSgpKVxuICAgICAgfVxuICAgIH0sXG4gICAge1xuICAgICAgcmVmczogW3JlZl0sXG4gICAgICBldmVudFR5cGVzOiBbJ2NsaWNrJ10sXG4gICAgfVxuICApXG5cbiAgcmV0dXJuIChcbiAgICA8ZGl2XG4gICAgICBjc3M9e1tcbiAgICAgICAgc2hhcmVkU3R5bGUub3ZlcmxheSxcbiAgICAgICAgaXNTZXR0aW5nc09wZW4gJiYgc3R5bGUub3BlbmluZyxcbiAgICAgICAgaGFzQm90dG9tUGFuZWwgJiYge1xuICAgICAgICAgIGJvdHRvbTogJzhlbScsXG4gICAgICAgIH0sXG4gICAgICBdfVxuICAgID5cbiAgICAgIDxkaXYgcmVmPXtyZWZ9IGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX21lbnVcIiBjc3M9e3NoYXJlZFN0eWxlLmNvbnRhaW5lcn0+XG4gICAgICAgIHtwYXRoID09PSAnLycgJiYgKFxuICAgICAgICAgIDxGcmFnbWVudD5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwia2tzLXBsYXllcl9fbWVudS1oZWFkXCIgY3NzPXtzaGFyZWRTdHlsZS5oZWFkfT5cbiAgICAgICAgICAgICAgeyFkZXNrdG9wICYmIChcbiAgICAgICAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICAgICAgICBjc3M9e3N0eWxlLmRpc21pc3N9XG4gICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBkaXNwYXRjaChBY3Rpb24uaGlkZU1lbnUoKSl9XG4gICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICAgKX1cbiAgICAgICAgICAgICAgPEZvcm1hdHRlZE1lc3NhZ2UgaWQ9XCJLS1MuU0VUVElOR1wiIC8+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgIHttZW51U2VjdGlvbnMubWFwKCh7c2VjdGlvbiwgdGl0bGUsIGl0ZW1zLCBzZWxlY3RlZFZhbHVlfSkgPT4ge1xuICAgICAgICAgICAgICBjb25zdCBzZWxlY3RlZE5hbWUgPVxuICAgICAgICAgICAgICAgIGl0ZW1zLmZpbmQoaXRlbSA9PiBpdGVtLnZhbHVlID09PSBzZWxlY3RlZFZhbHVlKT8ubGFiZWwgfHxcbiAgICAgICAgICAgICAgICBzZWxlY3RlZFZhbHVlXG5cbiAgICAgICAgICAgICAgcmV0dXJuIChcbiAgICAgICAgICAgICAgICA8ZGl2XG4gICAgICAgICAgICAgICAgICBjc3M9e1tzdHlsZS5yb3csIHN0eWxlLmhhc09wdGlvbnNdfVxuICAgICAgICAgICAgICAgICAga2V5PXtzZWN0aW9ufVxuICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gc2V0VGltZW91dCgoKSA9PiBzZXRQYXRoKGAvJHtzZWN0aW9ufWApLCAxKX1cbiAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICA8Rm9ybWF0dGVkTWVzc2FnZSBpZD17dGl0bGV9IC8+XG4gICAgICAgICAgICAgICAgICA8ZGl2IGNzcz17W3N0eWxlLnNwYWNlXX0gLz5cbiAgICAgICAgICAgICAgICAgIDxNZW51SXRlbVRleHQgdGV4dD17c2VsZWN0ZWROYW1lfSAvPlxuICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICApXG4gICAgICAgICAgICB9KX1cbiAgICAgICAgICA8L0ZyYWdtZW50PlxuICAgICAgICApfVxuICAgICAgICB7bWVudVNlY3Rpb25zLm1hcChcbiAgICAgICAgICAoe3NlY3Rpb24sIHRpdGxlLCBpdGVtcywgc2VsZWN0ZWRWYWx1ZX0pID0+XG4gICAgICAgICAgICBwYXRoID09PSBgLyR7c2VjdGlvbn1gICYmIChcbiAgICAgICAgICAgICAgPEZyYWdtZW50IGtleT17c2VjdGlvbn0+XG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJra3MtcGxheWVyX19tZW51LWhlYWRcIiBjc3M9e3NoYXJlZFN0eWxlLmhlYWR9PlxuICAgICAgICAgICAgICAgICAgPGJ1dHRvblxuICAgICAgICAgICAgICAgICAgICBjc3M9e3N0eWxlLmJhY2t9XG4gICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHNldFRpbWVvdXQoKCkgPT4gc2V0UGF0aCgnLycpLCAxKX1cbiAgICAgICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgICAgICA8Rm9ybWF0dGVkTWVzc2FnZSBpZD17dGl0bGV9IC8+XG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgPE1lbnVTZWN0aW9uXG4gICAgICAgICAgICAgICAgICBrZXk9e3NlY3Rpb259XG4gICAgICAgICAgICAgICAgICBzaGFyZWRTdHlsZT17c2hhcmVkU3R5bGV9XG4gICAgICAgICAgICAgICAgICB7Li4ue2l0ZW1zLCBzZWxlY3RlZFZhbHVlfX1cbiAgICAgICAgICAgICAgICAgIG9uU2VsZWN0PXt2YWx1ZSA9PiB7XG4gICAgICAgICAgICAgICAgICAgIGRpc3BhdGNoKEFjdGlvbi5oaWRlTWVudSgpKVxuICAgICAgICAgICAgICAgICAgICBpZiAodmFsdWUgIT09IHNlbGVjdGVkVmFsdWUpIHtcbiAgICAgICAgICAgICAgICAgICAgICBjaGFuZ2VTZXR0aW5ncyh7c2VjdGlvbiwgdmFsdWV9KVxuICAgICAgICAgICAgICAgICAgICB9XG4gICAgICAgICAgICAgICAgICB9fVxuICAgICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgIDwvRnJhZ21lbnQ+XG4gICAgICAgICAgICApXG4gICAgICAgICl9XG4gICAgICA8L2Rpdj5cbiAgICA8L2Rpdj5cbiAgKVxufVxuXG5QbGF5ZXJTZXR0aW5ncy5wcm9wVHlwZXMgPSB7XG4gIGRlc2t0b3A6IFByb3BUeXBlcy5ib29sLFxuICBoYXNCb3R0b21QYW5lbDogUHJvcFR5cGVzLmJvb2wsXG59XG5cbmV4cG9ydCBkZWZhdWx0IFBsYXllclNldHRpbmdzXG4iXX0= */',
                         ],
                       }),
-                      jsxRuntime$1.jsx(MenuItemText, {
+                      jsx$1(MenuItemText, {
                         text: selectedName,
                       }),
                     ],
@@ -10141,24 +9630,24 @@ const PlayerSettings = ({desktop, hasBottomPanel}) => {
         menuSections.map(
           ({section, title, items, selectedValue}) =>
             path === `/${section}` &&
-            jsxRuntime$1.jsxs(
-              React.Fragment,
+            jsxs(
+              Fragment$2,
               {
                 children: [
-                  jsxRuntime$1.jsxs('div', {
+                  jsxs('div', {
                     className: 'kks-player__menu-head',
                     css: sharedStyle.head,
                     children: [
-                      jsxRuntime$1.jsx('button', {
-                        css: style$2.back,
+                      jsx$1('button', {
+                        css: style$1.back,
                         onClick: () => setTimeout(() => setPath('/'), 1),
                       }),
-                      jsxRuntime$1.jsx(FormattedMessage, {
+                      jsx$1(FormattedMessage, {
                         id: title,
                       }),
                     ],
                   }),
-                  jsxRuntime$1.jsx(
+                  jsx$1(
                     MenuSection,
                     {
                       sharedStyle: sharedStyle,
@@ -10208,9 +9697,9 @@ const subtitlesStyle = {
 }
 
 const Subtitles = ({text}) =>
-  jsxRuntime$1.jsx('div', {
+  jsx$1('div', {
     css: subtitlesStyle,
-    children: jsxRuntime$1.jsx('span', {
+    children: jsx$1('span', {
       children: text,
     }),
   })
@@ -10247,14 +9736,14 @@ const contentHiddenStyle = {
 }
 
 const RecommendationBox = ({opening, title, children = '', toggle}) =>
-  jsxRuntime$1.jsxs(jsxRuntime$1.Fragment, {
+  jsxs(Fragment, {
     children: [
-      jsxRuntime$1.jsxs('div', {
+      jsxs('div', {
         css: titleStyle,
         onClick: opening && toggle,
         children: [
           title,
-          jsxRuntime$1.jsx('div', {
+          jsx$1('div', {
             css: [
               opening ? closeIcon : openIcon,
               process.env.NODE_ENV === 'production'
@@ -10267,7 +9756,7 @@ const RecommendationBox = ({opening, title, children = '', toggle}) =>
           }),
         ],
       }),
-      jsxRuntime$1.jsx('div', {
+      jsx$1('div', {
         css: [
           contentStyle,
           !opening && contentHiddenStyle,
@@ -10290,7 +9779,7 @@ RecommendationBox.propTypes = {
   children: propTypes.node,
 }
 const foldedHeight = '5rem'
-const style$1 = {
+const style = {
   container: {
     position: 'absolute',
     bottom: '0',
@@ -10307,11 +9796,11 @@ const style$1 = {
 const RecommendationPanel = ({opening, toggle, title, children = null}) => {
   return (
     children &&
-    jsxRuntime$1.jsx('div', {
+    jsx$1('div', {
       className: 'kks-player__recommendation',
       css: [
-        style$1.container,
-        !opening && style$1.folded,
+        style.container,
+        !opening && style.folded,
         process.env.NODE_ENV === 'production'
           ? ''
           : ';label:RecommendationPanel;',
@@ -10324,7 +9813,7 @@ const RecommendationPanel = ({opening, toggle, title, children = null}) => {
           toggle()
         }
       },
-      children: jsxRuntime$1.jsx(RecommendationBox, {
+      children: jsx$1(RecommendationBox, {
         opening: opening,
         title: title,
         toggle: toggle,
@@ -10394,18 +9883,18 @@ const BottomPanels = ({
   hidePanel,
   toggleRecommendationPanel,
 }) =>
-  jsxRuntime$1.jsxs(jsxRuntime$1.Fragment, {
+  jsxs(Fragment, {
     children: [
       recommendation &&
         type === 'desktop' &&
-        jsxRuntime$1.jsxs(jsxRuntime$1.Fragment, {
+        jsxs(Fragment, {
           children: [
-            jsxRuntime$1.jsx('div', {
+            jsx$1('div', {
               style: {
                 height: '4rem',
               },
             }),
-            jsxRuntime$1.jsx(RecommendationPanel, {
+            jsx$1(RecommendationPanel, {
               title: recommendation.title,
               opening: activePanel === 'recommendation',
               toggle: toggleRecommendationPanel,
@@ -10426,7 +9915,7 @@ const BottomPanels = ({
           index
         ) => {
           const panelOpen = open || index === activePanel
-          return jsxRuntime$1.jsxs('div', {
+          return jsxs('div', {
             css: [
               panelStyle,
               panelOpen ? panelOpenStyle : panelClosedStyle(foldedHeight),
@@ -10442,7 +9931,7 @@ const BottomPanels = ({
             className: pinned && 'pinned',
             children: [
               hasBackdrop &&
-                jsxRuntime$1.jsx('div', {
+                jsx$1('div', {
                   style: {
                     flex: 1,
                   },
@@ -10451,7 +9940,7 @@ const BottomPanels = ({
                     hidePanel(event)
                   },
                 }),
-              /*#__PURE__*/ React.cloneElement(content[0] || content, {
+              /*#__PURE__*/ cloneElement(content[0] || content, {
                 active: panelOpen,
                 close: hidePanel,
               }),
@@ -10550,12 +10039,12 @@ const imageStyle = {
 }
 
 const VideoThumbnail = ({className, style, time, image, x, y, width, height}) =>
-  jsxRuntime$1.jsxs('div', {
+  jsxs('div', {
     css: containerStyle$1,
     className: className,
     style: style,
     children: [
-      jsxRuntime$1.jsx('div', {
+      jsx$1('div', {
         css: imageStyle,
         style: {
           width: `${width}px`,
@@ -10578,7 +10067,7 @@ VideoThumbnail.propTypes = {
   width: propTypes.number,
   height: propTypes.number,
 }
-var VideoThumbnail$1 = /*#__PURE__*/ React.memo(VideoThumbnail)
+var VideoThumbnail$1 = /*#__PURE__*/ memo(VideoThumbnail)
 
 /* @jsxImportSource @emotion/react */
 const thumbnailStyle = {
@@ -10605,7 +10094,7 @@ const SeekPreview = ({time}) => {
     thumbnails.slice(-1)[0] ||
     ''
   return displayThumbnail
-    ? jsxRuntime$1.jsx(VideoThumbnail$1, {
+    ? jsx$1(VideoThumbnail$1, {
         css: thumbnailStyle,
         time: time,
         image: thumbnail.image,
@@ -10624,11 +10113,11 @@ const useSyncLivesInfo = () => {
   const {
     state: {apiState, content},
     dispatch,
-  } = React.useContext(Context.API)
+  } = useContext(Context.API)
   const [setTimeout, clearTimer] = useTimeout()
-  React.useEffect(() => {
+  useEffect(() => {
     if (apiState === APIState.READY && content.contentType === 'lives') {
-      if (_get__default['default'](content, 'end')) {
+      if (_get(content, 'end')) {
         dispatch(PlayerAction.pause())
       } else {
         setTimeout(() => dispatch(APIAction.refreshContent()), SYNC_INTERVAL)
@@ -10703,7 +10192,7 @@ const getUiElements = (
   const controlButtons = {
     playButton:
       type === 'mobile' && status === 'buffering'
-        ? jsxRuntime$1.jsx(Loading, {
+        ? jsx$1(Loading, {
             styles: {
               position: 'static',
               width: '3em',
@@ -10711,37 +10200,37 @@ const getUiElements = (
               backgroundColor: 'transparent',
             },
           })
-        : jsxRuntime$1.jsx(PlayButton, {}),
+        : jsx$1(PlayButton, {}),
     ...(!adStatus &&
       seekable &&
       ready &&
       (type === 'mobile' || width >= sizes['tablet-portrait']) && {
-        previousEpisodeButton: jsxRuntime$1.jsx(PreviousEpisodeButton, {}),
-        nextEpisodeButton: jsxRuntime$1.jsx(NextEpisodeButton, {}),
-        rewindButton: jsxRuntime$1.jsx(RewindButton, {}),
-        forwardButton: jsxRuntime$1.jsx(ForwardButton, {}),
+        previousEpisodeButton: jsx$1(PreviousEpisodeButton, {}),
+        nextEpisodeButton: jsx$1(NextEpisodeButton, {}),
+        rewindButton: jsx$1(RewindButton, {}),
+        forwardButton: jsx$1(ForwardButton, {}),
       }),
   }
 
   const backItems =
     status !== 'buffering' &&
     controlsDisplay !== 'hidden' &&
-    jsxRuntime$1.jsx(PlayPane, {})
+    jsx$1(PlayPane, {})
 
   const uiElements = adStatus
     ? {
         adLink:
           adUrl &&
-          jsxRuntime$1.jsx('a', {
+          jsx$1('a', {
             href: adUrl,
             rel: 'noreferrer',
             target: '_blank',
-            children: jsxRuntime$1.jsx(Translate, {
+            children: jsx$1(Translate, {
               code: 'KKS.SSAI.LEARN.MORE',
             }),
           }),
         adStatus,
-        adSkipButton: jsxRuntime$1.jsx(AdSkipButton, {}),
+        adSkipButton: jsx$1(AdSkipButton, {}),
         seekbar: '',
       }
     : {
@@ -10750,7 +10239,7 @@ const getUiElements = (
         functionButtons:
           ready &&
           (type === 'mobile' || width >= sizes['small-embed']) &&
-          jsxRuntime$1.jsx(FunctionButtons, {
+          jsx$1(FunctionButtons, {
             full: type === 'mobile' || width >= sizes.embed,
           }),
       }
@@ -10761,11 +10250,11 @@ const getUiElements = (
     controlButtons,
     volumeControl:
       width >= sizes['small-embed'] &&
-      jsxRuntime$1.jsx(VolumeControl, {
+      jsx$1(VolumeControl, {
         displaySlider: width >= 300,
       }),
-    fullscreenButton: ready && jsxRuntime$1.jsx(FullScreenButton, {}),
-    backButton: jsxRuntime$1.jsx(BackButton, {}),
+    fullscreenButton: ready && jsx$1(FullScreenButton, {}),
+    backButton: jsx$1(BackButton, {}),
     backItems,
     backRef,
   }
@@ -10798,22 +10287,16 @@ const getLivesMeta = content => {
 const PlayerUi = ({options, coverImageUrl, backRef, videoRef, playerRef}) => {
   var _options$quality
 
-  const {manifests, lastPlaybackTime} = useStore(
-    getSourceState,
-    shallow__default['default']
-  )
+  const {manifests, lastPlaybackTime} = useStore(getSourceState, shallow)
   const {autoplayNext, recommendation, toolPanels} = useOptions()
   const uiType = isDesktop() ? 'desktop' : 'mobile'
-  const livesMeta = useStore(
-    ({API}) => getLivesMeta(API.content),
-    shallow__default['default']
-  )
+  const livesMeta = useStore(({API}) => getLivesMeta(API.content), shallow)
   const playbackInfo = useStore(
     state =>
       getPlaybackInfo(state, {
         autoplayNext,
       }),
-    shallow__default['default']
+    shallow
   )
   const {
     status,
@@ -10825,16 +10308,16 @@ const PlayerUi = ({options, coverImageUrl, backRef, videoRef, playerRef}) => {
   } = playbackInfo
   const {ErrorOverlay, LinearEndedOverlay, CastingOverlay} = getComponents()
   const {toggleRecommendationPanel, hidePanel} = useUiActions()
-  const {getState, dispatch} = React.useContext(Context.Adapter)
+  const {getState, dispatch} = useContext(Context.Adapter)
   const selectedQualityName = useStore(getSelectedQuailty)
   const defaultQuality =
     ((_options$quality = options.quality) === null ||
     _options$quality === void 0
       ? void 0
       : _options$quality.default) || options.quality
-  const [hlsOverride, setHlsOverride] = React.useState()
-  const [widevineLevel, setWidevineLevel] = React.useState()
-  React.useEffect(async () => {
+  const [hlsOverride, setHlsOverride] = useState()
+  const [widevineLevel, setWidevineLevel] = useState()
+  useEffect(async () => {
     if (manifests) {
       var _options$quality2
 
@@ -10852,7 +10335,7 @@ const PlayerUi = ({options, coverImageUrl, backRef, videoRef, playerRef}) => {
     manifests === null || manifests === void 0 ? void 0 : manifests.hls.url,
     selectedQualityName,
   ])
-  React.useEffect(() => {
+  useEffect(() => {
     getWidevineLevel().then(setWidevineLevel)
   }, [])
   const drm = useStore(state => {
@@ -10879,8 +10362,8 @@ const PlayerUi = ({options, coverImageUrl, backRef, videoRef, playerRef}) => {
             },
           }))
     )
-  }, shallow__default['default'])
-  const source = React.useMemo(
+  }, shallow)
+  const source = useMemo(
     () =>
       manifests &&
       hlsOverride && {
@@ -10895,14 +10378,14 @@ const PlayerUi = ({options, coverImageUrl, backRef, videoRef, playerRef}) => {
       },
     [manifests, hlsOverride]
   )
-  const linearTimeRewrite = React.useMemo(() => LinearTimeRewrite(), [])
-  React.useEffect(() => {
+  const linearTimeRewrite = useMemo(() => LinearTimeRewrite(), [])
+  useEffect(() => {
     linearTimeRewrite.handleContentChange(livesMeta)
   }, [livesMeta.startTime, livesMeta.endTime])
-  return jsxRuntime$1.jsxs(CoverImageWrap, {
+  return jsxs(CoverImageWrap, {
     url: coverImageUrl,
     children: [
-      jsxRuntime$1.jsxs(VideoPlayer, {
+      jsxs(VideoPlayer, {
         source: source,
         getLayoutProps: s =>
           getUiElements(s, playbackInfo, {
@@ -10927,14 +10410,14 @@ const PlayerUi = ({options, coverImageUrl, backRef, videoRef, playerRef}) => {
           dispatch(operator.initialize)
         },
         children: [
-          jsxRuntime$1.jsx(Subtitles, {
+          jsx$1(Subtitles, {
             text:
               subtitlesContent === null || subtitlesContent === void 0
                 ? void 0
                 : subtitlesContent.text,
           }),
           !adStatus &&
-            jsxRuntime$1.jsx(BottomPanels, {
+            jsx$1(BottomPanels, {
               type: uiType,
               toolPanels: toolPanels,
               recommendation: recommendation,
@@ -10943,19 +10426,19 @@ const PlayerUi = ({options, coverImageUrl, backRef, videoRef, playerRef}) => {
               toggleRecommendationPanel: toggleRecommendationPanel,
             }),
           status === 'error'
-            ? jsxRuntime$1.jsx(ErrorOverlay, {})
+            ? jsx$1(ErrorOverlay, {})
             : status === 'casting'
-            ? jsxRuntime$1.jsx(CastingOverlay, {})
+            ? jsx$1(CastingOverlay, {})
             : status === 'linearEnded'
-            ? jsxRuntime$1.jsx(LinearEndedOverlay, {})
+            ? jsx$1(LinearEndedOverlay, {})
             : '',
-          jsxRuntime$1.jsx(PlayerSettings, {
+          jsx$1(PlayerSettings, {
             desktop: isDesktop(),
             hasBottomPanel: Boolean(recommendation),
           }),
         ],
       }),
-      jsxRuntime$1.jsx(AutoplayDialog, {}),
+      jsx$1(AutoplayDialog, {}),
     ],
   })
 }
@@ -10991,8 +10474,8 @@ const useUpdateLastPlayed = () => {
         : _API$content.contentType) === 'videos'
     )
   })
-  const store = React.useContext(Context.Adapter)
-  React.useEffect(() => {
+  const store = useContext(Context.Adapter)
+  useEffect(() => {
     if (isVod && playStatus !== 'seeking') {
       store.dispatch(
         APIAction.updateLastPlayedTime(
@@ -11005,8 +10488,8 @@ const useUpdateLastPlayed = () => {
 
 const useUpdateEnded = () => {
   const ended = useStore(state => state.Player.ended)
-  const store = React.useContext(Context.Adapter)
-  React.useEffect(() => {
+  const store = useContext(Context.Adapter)
+  useEffect(() => {
     if (ended) {
       store.dispatch(APIAction.updatePlayedEnd())
     }
@@ -11059,27 +10542,27 @@ const PlaybackHooks = ({
   onSectionChange,
 }) => {
   const {castState} = useCastContext().state
-  const {dispatch} = React.useContext(Context.Module)
+  const {dispatch} = useContext(Context.Module)
   useSyncLivesInfo()
   useVideosHandlers()
-  React.useEffect(() => {
+  useEffect(() => {
     if (recommendation) {
       dispatch(UiAction.enableRecommendationPanel())
     } else {
       dispatch(UiAction.disableRecommendationPanel())
     }
   }, [Boolean(recommendation)])
-  React.useEffect(() => {
+  useEffect(() => {
     if (thumbnailSeeking) {
       dispatch(UiAction.enableThumbnailSeeking())
     } else {
       dispatch(UiAction.disableThumbnailSeeking())
     }
   }, [Boolean(thumbnailSeeking)])
-  return jsxRuntime$1.jsxs(React.Fragment, {
+  return jsxs(Fragment$2, {
     children: [
       castState !== CastState.CONNECTED &&
-        jsxRuntime$1.jsx(API$1, {
+        jsx$1(API$1, {
           host: host,
           accessToken: accessToken,
           deviceId: deviceId,
@@ -11091,11 +10574,11 @@ const PlaybackHooks = ({
             preferredMediaSource: mediaSource,
           },
         }),
-      jsxRuntime$1.jsx(LocalStorage$1, {}),
-      jsxRuntime$1.jsx(LimitOnePlayback, {
+      jsx$1(LocalStorage$1, {}),
+      jsx$1(LimitOnePlayback, {
         enabled: limitOnePlaybackAtSameTime,
       }),
-      jsxRuntime$1.jsx(Event$1, {
+      jsx$1(Event$1, {
         content: content,
         onError: onError,
         onBack: onBack,
@@ -11108,41 +10591,41 @@ const PlaybackHooks = ({
         onSectionChange: onSectionChange,
       }),
       castState !== CastState.CONNECTED &&
-        jsxRuntime$1.jsx(Agent, {
+        jsx$1(Agent, {
           preload: preload,
           playerRef: playerRef,
         }),
-      jsxRuntime$1.jsx(EnvironmentValidator, {
+      jsx$1(EnvironmentValidator, {
         supportEnvironmentList: supportEnvironmentList,
       }),
-      jsxRuntime$1.jsx(CastAdapter, {
+      jsx$1(CastAdapter, {
         content: content,
         mediaSource: mediaSource,
         customQuery: customQuery,
       }),
-      jsxRuntime$1.jsx(DeviceDetector, {
+      jsx$1(DeviceDetector, {
         children: ({os: {name}}) =>
           name === 'iOS' &&
-          jsxRuntime$1.jsx(MobileSafariPlugin, {
+          jsx$1(MobileSafariPlugin, {
             containerRef: containerRef,
             onViewModeChange: onViewModeChange,
             onEnterFullscreen: onEnterFullscreen,
             onExitFullscreen: onExitFullscreen,
           }),
       }),
-      jsxRuntime$1.jsx(DeviceDetector, {
+      jsx$1(DeviceDetector, {
         children: ({os: {name}, touchable}) =>
-          name === 'Mac OS' && touchable && jsxRuntime$1.jsx(OTP_1878, {}),
+          name === 'Mac OS' && touchable && jsx$1(OTP_1878, {}),
       }),
     ],
   })
 } // eslint-disable-next-line react/display-name
 
-const Player = /*#__PURE__*/ React.forwardRef(
+const Player = /*#__PURE__*/ forwardRef(
   (
     {
       licenseKey,
-      config: config$1 = config.BitmovinConfig,
+      config = defaultConfig.BitmovinConfig,
       host,
       accessToken,
       deviceId,
@@ -11198,10 +10681,10 @@ const Player = /*#__PURE__*/ React.forwardRef(
     },
     ref
   ) => {
-    const playerRef = React.useRef()
-    const videoRef = React.useRef()
-    const containerRef = React.useRef()
-    const adContainerRef = React.useRef()
+    const playerRef = useRef()
+    const videoRef = useRef()
+    const containerRef = useRef()
+    const adContainerRef = useRef()
     const options = {
       host,
       accessToken,
@@ -11223,22 +10706,22 @@ const Player = /*#__PURE__*/ React.forwardRef(
       toolPanels,
       plugins,
     }
-    const store = React.useMemo(() => createStore(), [])
-    return jsxRuntime$1.jsx('div', {
+    const store = useMemo(() => createStore(), [])
+    return jsx$1('div', {
       className: 'kks-player',
       css: containerStyle,
       ref: containerRef,
-      children: jsxRuntime$1.jsx(PlayerProvider, {
+      children: jsx$1(PlayerProvider, {
         videoRef: videoRef,
         content: content,
         options: options,
         uiRef: containerRef,
         sendLog: onLogging,
-        children: jsxRuntime$1.jsxs(StoreProvider, {
+        children: jsxs(StoreProvider, {
           store: store,
           options: options,
           children: [
-            jsxRuntime$1.jsx(
+            jsx$1(
               PlayerVideo, // for bitmovin bindings, previously <PlayerVideo>, no longer renders video now
               {
                 plugins: plugins,
@@ -11264,10 +10747,10 @@ const Player = /*#__PURE__*/ React.forwardRef(
                 adContainerRef: adContainerRef,
               }
             ),
-            jsxRuntime$1.jsx(I18n.Provider, {
+            jsx$1(I18n.Provider, {
               lang: lang,
               langCustomCode: langCustomCode,
-              children: jsxRuntime$1.jsx(PlayerUi, {
+              children: jsx$1(PlayerUi, {
                 videoRef: videoRef,
                 playerRef: playerRef,
                 coverImageUrl: coverImageUrl,
@@ -11281,12 +10764,12 @@ const Player = /*#__PURE__*/ React.forwardRef(
                   plugins,
                   bitmovin: {
                     key: licenseKey,
-                    ...config$1,
+                    ...config,
                   },
                 },
               }),
             }),
-            jsxRuntime$1.jsx(PlaybackHooks, {
+            jsx$1(PlaybackHooks, {
               ...options,
               playerRef: ref,
               containerRef,
@@ -11364,1571 +10847,12 @@ Player.propTypes = {
   onLogging: propTypes.func,
 }
 
-const EnterprisePlayer = /*#__PURE__*/ React.forwardRef((props, ref) =>
-  /*#__PURE__*/ jsxRuntime.jsx(Player, {
+const EnterprisePlayer = /*#__PURE__*/ forwardRef((props, ref) =>
+  /*#__PURE__*/ jsx(Player, {
     drm: getEnterpriseDrmConfig,
     ...props,
     ref: ref,
   })
 )
 
-/** @param {string} m3u8Manifest */
-const getManifestUrl = ({url, data}) => {
-  const lines = data.split('\n')
-  const i = lines.findIndex(line => line.startsWith('#EXT-X-STREAM-INF'))
-  return i >= 0 ? new URL(lines[i + 1], url) : ''
-}
-/** @param {string} url */
-
-const fetchManifests = async url => {
-  if (!url.toString().split('?')[0].endsWith('.m3u8')) {
-    return fetch(url)
-  }
-
-  const data = await fetch(url).then(result => result.text())
-  const innerUrl = getManifestUrl({
-    url,
-    data,
-  })
-  return innerUrl && fetchManifests(innerUrl)
-}
-
-/* eslint-disable class-methods-use-this */
-
-/* eslint-disable no-underscore-dangle */
-const _IsNumber = value => typeof value === 'number' && value >= 0
-
-const AD_TIME_EVENT_TYPE = [
-  'impression',
-  'start',
-  'firstQuartile',
-  'midpoint',
-  'thirdQuartile',
-  'complete',
-]
-
-const doNothing = () => {}
-
-const getSkipTimeOffset = ad => {
-  var _ad$skipOffset, _ad$skipOffset$match, _ad$skipOffset2
-
-  if (!ad.skipOffset) {
-    return
-  }
-
-  const percentageOffset =
-    (((_ad$skipOffset = ad.skipOffset) === null || _ad$skipOffset === void 0
-      ? void 0
-      : (_ad$skipOffset$match = _ad$skipOffset.match(/\d+/)) === null ||
-        _ad$skipOffset$match === void 0
-      ? void 0
-      : _ad$skipOffset$match[0]) || 0) / 100 // 00:01:07 -> 67
-
-  const timeOffset = (
-    ((_ad$skipOffset2 = ad.skipOffset) === null || _ad$skipOffset2 === void 0
-      ? void 0
-      : _ad$skipOffset2.match(/(\d+):(\d+):(\d+)/)) || []
-  )
-    .slice(1, 4)
-    .reduce((last, time) => last * 60 + +time, 0)
-  return (
-    ad.startTimeInSeconds + timeOffset + ad.durationInSeconds * percentageOffset
-  )
-}
-
-const inRange = ({startTimeInSeconds, durationInSeconds}, time) =>
-  startTimeInSeconds <= time && time <= startTimeInSeconds + durationInSeconds
-
-const getCurrentAd = (adBreak, streamTime) =>
-  (
-    (adBreak === null || adBreak === void 0 ? void 0 : adBreak.ads) || []
-  ).find(ad => inRange(ad, streamTime)) || {}
-
-const adEventData = (instance, ad) => {
-  const streamTime = instance._common.currentPosition
-  const currentAd = getCurrentAd(ad, streamTime)
-  return {
-    getAd: () => ({
-      getSkipTimeOffset: () => getSkipTimeOffset(currentAd),
-    }),
-    getStreamData: () => {
-      var _currentAd$trackingEv, _currentAd$trackingEv2
-
-      const adItems = [].concat(
-        ...instance.waitingForPlayAds.map(avail => avail.ads)
-      )
-      const adPosition =
-        1 + adItems.findIndex(item => inRange(item, streamTime))
-      const adProgressData = {
-        adPosition,
-        totalAds: adItems.length,
-        currentTime: streamTime - currentAd.startTimeInSeconds,
-        duration: currentAd.durationInSeconds,
-        clickThroughUrl:
-          (_currentAd$trackingEv = currentAd.trackingEvents) === null ||
-          _currentAd$trackingEv === void 0
-            ? void 0
-            : (_currentAd$trackingEv2 = _currentAd$trackingEv.find(
-                event => event.eventType === 'clickThrough'
-              )) === null || _currentAd$trackingEv2 === void 0
-            ? void 0
-            : _currentAd$trackingEv2.beaconUrls[0],
-      }
-      return {
-        adProgressData,
-      }
-    },
-  }
-}
-
-class Impression {
-  constructor({
-    seek,
-    onAdBreakStarted = doNothing,
-    onAdProgress = doNothing,
-    onAdBreakEnded = doNothing,
-    onSkippableStateChanged = doNothing,
-  } = {}) {
-    this._common = {
-      adBreaks: [],
-      currentPosition: -1,
-      seek,
-      onAdBreakStarted,
-      onAdProgress,
-      onSkippableStateChanged,
-      onAdBreakEnded,
-    }
-    this.currentAd = null
-    this.waitingForPlayAds = []
-    this.waitingForPlayAdIndex = null
-    this.resumeUserSeekTime = null
-    this.resumeAdStartTime = null
-    this.isResumed = null
-    this.checkAdEventProcess = null
-  }
-  /**
-   * @description
-   * @param {object[]} value
-   */
-
-  set adBreaks(value) {
-    this._common.adBreaks = value
-    if (_IsNumber(value.length)) this.checkAdCueTone()
-  }
-  /**
-   * @description when position is updated, check if ad is started or ended
-   * @param {number} value current position in seconds
-   */
-
-  set currentPosition(value) {
-    this._common.currentPosition = value
-    if (_IsNumber(this._common.adBreaks.length)) this.checkAdCueTone()
-  } // TODO: send ad status (current ad index, count, total duration)
-
-  getAdIndex(target) {
-    if (!target) return null
-    return this._common.adBreaks.findIndex(ad => ad.availId === target.availId)
-  } // 取得播放時間是在哪個廣告區間
-
-  getActiveAdIndex(time) {
-    var _adBreaks$index
-
-    const {adBreaks = []} = this._common
-    const index = adBreaks.findIndex(ad => {
-      const {startTime, endTime} = this.getAdTimingInfo(ad)
-      return time >= startTime && time <= endTime
-    })
-    const position = (
-      ((_adBreaks$index = adBreaks[index]) === null ||
-      _adBreaks$index === void 0
-        ? void 0
-        : _adBreaks$index.ads) || []
-    ).findIndex(ad => inRange(ad, time))
-    return {
-      index,
-      position,
-    }
-  } // 檢查播放時間是否在所提供的區間
-
-  isWithinTimeRange(target, startTime, endTime) {
-    return target >= startTime && target <= endTime
-  } // 取得該廣告的起始/結束時間
-
-  getAdTimingInfo(adInfo = {}) {
-    const adStartTime = adInfo.startTimeInSeconds || 0
-    const adDuration = adInfo.durationInSeconds || 0
-    return {
-      startTime: adStartTime,
-      endTime: adStartTime + adDuration,
-    }
-  } // 取得跳過的廣告
-
-  getSkippedAds(time) {
-    return this._common.adBreaks.filter(
-      ad =>
-        this._common.currentPosition <= ad.startTimeInSeconds &&
-        ad.startTimeInSeconds <= time &&
-        !ad.isFired
-    )
-  }
-
-  setAdIsFiredByIndex() {}
-
-  checkAdCueTone() {
-    const {adBreaks, currentPosition, seek} = this._common
-    const {index: activeAdIndex, position} = this.getActiveAdIndex(
-      currentPosition
-    )
-
-    if (this.currentAd) {
-      if (!this.checkAdEventProcess) {
-        this.checkAdEventProcess = this.checkAdEvent()
-      }
-
-      this.checkAdEventProcess({
-        index: activeAdIndex,
-        position,
-      })
-    }
-
-    if (this.waitingForPlayAds.length > 0) {
-      const {
-        startTime: currentAdStartTime,
-        endTime: currentAdEndTime,
-      } = this.getAdTimingInfo(this.currentAd)
-      const isAdStillPlaying = this.isWithinTimeRange(
-        currentPosition,
-        currentAdStartTime,
-        currentAdEndTime
-      )
-
-      if (!isAdStillPlaying) {
-        // Ad finished
-        const nextAd = this.waitingForPlayAds[
-          `${this.waitingForPlayAdIndex + 1}`
-        ]
-        if (
-          currentPosition <
-          this.currentAd.startTimeInSeconds + this.currentAd.durationInSeconds
-        )
-          return
-
-        if (nextAd) {
-          // have non-played & skipped Ad
-          const adIndex = this.getAdIndex(this.currentAd)
-          const {startTime: nextAdStartTime} = this.getAdTimingInfo(nextAd)
-          this.setAdIsFiredByIndex(adIndex)
-          this.updateWaitingForPlayIndex(this.waitingForPlayAdIndex + 1)
-          this.updateCurrentAd(nextAd)
-          seek === null || seek === void 0 ? void 0 : seek(nextAdStartTime)
-        } else {
-          // don't have non-played Ad
-          const adIndex = this.getAdIndex(this.currentAd)
-          this.setAdIsFiredByIndex(adIndex)
-          this.updateWaitingForPlayAds([])
-          this.updateWaitingForPlayIndex(null)
-          this.updateCurrentAd(null)
-          _IsNumber(this.resumeUserSeekTime) &&
-            (seek === null || seek === void 0
-              ? void 0
-              : seek(this.resumeUserSeekTime))
-          this.resumeUserSeekTime = null
-        }
-      }
-    } else if (activeAdIndex !== -1) {
-      if (!adBreaks[activeAdIndex].isFired) {
-        this.updateWaitingForPlayIndex(0)
-        this.updateWaitingForPlayAds(
-          adBreaks.slice(activeAdIndex, activeAdIndex + 1)
-        )
-        this.updateCurrentAd(adBreaks[activeAdIndex])
-      } else {
-        // in Ad duration but Ad was played
-        this.updateCurrentAd(adBreaks[`${activeAdIndex}`] || {})
-      }
-    } else {
-      // not in Ad duration
-      this.updateCurrentAd(null)
-    }
-  }
-
-  checkAdEvent() {
-    const state = {
-      lastPosition: undefined,
-      isSkippableEventFired: false,
-    }
-    return ({index, position}) => {
-      var _currentAd$trackingEv3, _currentAd$trackingEv4
-
-      const streamTime = this._common.currentPosition
-      const currentBreak = this._common.adBreaks[index]
-      const currentAd =
-        currentBreak === null || currentBreak === void 0
-          ? void 0
-          : currentBreak.ads[position]
-
-      if (!currentAd) {
-        return
-      }
-
-      if (position !== state.lastPosition) {
-        var _this$_common$onAdPro, _this$_common
-
-        ;(_this$_common$onAdPro = (_this$_common = this._common)
-          .onAdProgress) === null || _this$_common$onAdPro === void 0
-          ? void 0
-          : _this$_common$onAdPro.call(
-              _this$_common,
-              adEventData(this, currentBreak)
-            )
-        Object.assign(state, {
-          lastPosition: position,
-          isSkippableEventFired: false,
-          trackingTypes: AD_TIME_EVENT_TYPE.slice(),
-        })
-      }
-
-      if (
-        !state.isSkippableEventFired &&
-        streamTime >= getSkipTimeOffset(currentAd)
-      ) {
-        state.isSkippableEventFired = true
-
-        this._common.onSkippableStateChanged({
-          getAd: () => ({
-            isSkippable: () => true,
-          }),
-        })
-      }
-
-      if (
-        !_IsNumber(streamTime) ||
-        ((_currentAd$trackingEv3 = currentAd.trackingEvents) === null ||
-        _currentAd$trackingEv3 === void 0
-          ? void 0
-          : _currentAd$trackingEv3.length) <= 0
-      )
-        return
-      ;(_currentAd$trackingEv4 = currentAd.trackingEvents) === null ||
-      _currentAd$trackingEv4 === void 0
-        ? void 0
-        : _currentAd$trackingEv4.forEach(e => {
-            const {
-              eventType = '',
-              beaconUrls = [],
-              startTimeInSeconds = 0,
-              isFired,
-            } = e
-            const adEventIndex = state.trackingTypes.findIndex(
-              type => type === eventType
-            )
-
-            if (
-              !isFired &&
-              beaconUrls.length > 0 &&
-              streamTime >= startTimeInSeconds &&
-              adEventIndex !== -1
-            ) {
-              beaconUrls.forEach(url => {
-                fetch(url)
-              })
-              state.trackingTypes.splice(adEventIndex, 1)
-            }
-          })
-    }
-  }
-  /**
-   * @description To snapback if seeking over some ads
-   * @param {number} to
-   */
-
-  onSeek(to) {
-    const {adBreaks} = this._common
-    const skippedAds = this.getSkippedAds(to)
-    const seekTargetAdIndex = this.getActiveAdIndex(to)
-    if (!adBreaks || adBreaks.length <= 0) return
-
-    if (this.currentAd);
-    else if (skippedAds.length > 0) {
-      this.updateWaitingForPlayAds(skippedAds)
-      this.updateWaitingForPlayIndex(0)
-      this.resumeUserSeekTime = seekTargetAdIndex === -1 ? to : null
-    } else if (
-      seekTargetAdIndex !== -1 &&
-      !_IsNumber(this.resumeAdStartTime) &&
-      !this.isResumed
-    ) {
-      const {startTime} = this.getAdTimingInfo(adBreaks[seekTargetAdIndex])
-      this.resumeAdStartTime = startTime
-    }
-  }
-  /** @description to seek to next ad after snapback */
-
-  onSeeked() {
-    const {adBreaks, seek} = this._common
-    if (!adBreaks || adBreaks.length <= 0) return
-
-    if (this.waitingForPlayAds.length > 0 && !this.currentAd) {
-      const nextAd =
-        this.waitingForPlayAds[`${this.waitingForPlayAdIndex}`] || {}
-      const {startTime: nextAdStartTime} = this.getAdTimingInfo(nextAd)
-      seek === null || seek === void 0 ? void 0 : seek(nextAdStartTime)
-      this.updateCurrentAd(nextAd)
-    } else if (this.currentAd);
-    else if (_IsNumber(this.resumeAdStartTime)) {
-      _IsNumber(this.resumeAdStartTime) &&
-        (seek === null || seek === void 0
-          ? void 0
-          : seek(this.resumeAdStartTime))
-      this.resumeAdStartTime = null
-      this.isResumed = true
-    } else {
-      this.isResumed = false
-    }
-  }
-
-  updateCurrentAd(ad) {
-    if (!this.currentAd && ad) {
-      var _this$_common$onAdBre, _this$_common2
-
-      ;(_this$_common$onAdBre = (_this$_common2 = this._common)
-        .onAdBreakStarted) === null || _this$_common$onAdBre === void 0
-        ? void 0
-        : _this$_common$onAdBre.call(_this$_common2, adEventData(this, ad))
-    } else if (this.currentAd && !ad) {
-      var _this$_common$onAdBre2, _this$_common3
-
-      ;(_this$_common$onAdBre2 = (_this$_common3 = this._common)
-        .onAdBreakEnded) === null || _this$_common$onAdBre2 === void 0
-        ? void 0
-        : _this$_common$onAdBre2.call(_this$_common3, {
-            getStreamData: () => this.getStreamData(),
-          })
-    }
-
-    this.currentAd = ad
-
-    if (!ad) {
-      this.checkAdEventProcess = null
-    }
-  }
-
-  updateWaitingForPlayAds(ads) {
-    this.waitingForPlayAds = ads.slice()
-  }
-
-  updateWaitingForPlayIndex(index) {
-    this.waitingForPlayAdIndex = index
-  }
-  /** @description mark all ads as played */
-
-  setAllAdsFired() {
-    this._common.adBreaks = this._common.adBreaks.map(ad => ({
-      ...ad,
-      isFired: true,
-    }))
-    this.updateWaitingForPlayAds([])
-    this.updateWaitingForPlayIndex(null)
-    this.updateCurrentAd(null)
-  }
-  /** @description clear data */
-
-  reset() {
-    this._common = {
-      adBreaks: [],
-      currentPosition: -1,
-      seek: null,
-    }
-    this.currentAd = null
-    this.waitingForPlayAds = []
-    this.waitingForPlayAdIndex = null
-    this.resumeUserSeekTime = null
-    this.resumeAdStartTime = null
-    this.isResumed = null
-    this.checkAdEventProcess = null
-  }
-  /** @description clear ad status */
-
-  resetSession() {
-    this._common = {...this._common, currentPosition: 0}
-    this.resumeUserSeekTime = null
-    this.resumeAdStartTime = null
-    this.isResumed = null
-    this.updateWaitingForPlayAds([])
-    this.updateWaitingForPlayIndex(null)
-    this.updateCurrentAd(null)
-  }
-}
-
-const getLastAd = (avails, streamTime) =>
-  avails.reduce(
-    (current, item) =>
-      current.startTimeInSeconds <= item.startTimeInSeconds &&
-      item.startTimeInSeconds <= streamTime
-        ? item
-        : current,
-    {
-      startTimeInSeconds: 0,
-      durationInSeconds: 0,
-    }
-  )
-
-const getStreamTime = (avails, contentTime) =>
-  avails.reduce(
-    (time, item) =>
-      time + (time > item.startTimeInSeconds ? item.durationInSeconds : 0),
-    contentTime
-  )
-
-const getContentTime = (avails, streamTime) =>
-  streamTime -
-  avails
-    .filter(item => item.startTimeInSeconds <= streamTime)
-    .map(item =>
-      Math.min(streamTime - item.startTimeInSeconds, item.durationInSeconds)
-    )
-    .reduce((a, b) => a + b, 0)
-
-const seekingHandler = handleSeeking => {
-  const ref = {}
-  return video => {
-    if (
-      !(Math.abs(video.currentTime - ref.originTime) > 0.5) ||
-      video.webkitPresentationMode !== 'fullscreen'
-    ) {
-      ref.originTime = video.currentTime
-      return
-    }
-
-    handleSeeking({
-      originTime: ref.originTime,
-      seekTime: video.currentTime,
-    })
-    ref.originTime = video.currentTime
-  }
-}
-
-const addFetchPolyfill = () => {
-  window.fetch = async (url, {method} = {}) => {
-    const result = await axios__default['default'](url, {
-      method,
-    })
-    return Promise.resolve({
-      json: () => result.data,
-    })
-  }
-}
-
-const fetchStreamInfo = async (url, adsParams) =>
-  fetch(url, {
-    method: 'POST',
-    body: JSON.stringify({
-      adsParams,
-    }),
-  }).then(result => result.json())
-
-const on = (eventTarget, eventName, handler) => {
-  eventTarget.addEventListener(eventName, handler)
-  return () => eventTarget.removeEventListener(eventName, handler)
-}
-
-const once = (eventTarget, eventName, handler) => {
-  const listener = (...args) => {
-    eventTarget.removeEventListener(eventName, listener)
-    return handler(...args)
-  }
-
-  eventTarget.addEventListener(eventName, listener)
-}
-
-const seekVideo = (videoElement, streamTime) => {
-  // eslint-disable-next-line no-param-reassign
-  videoElement.currentTime = streamTime
-}
-
-const initialState = {
-  currentTime: 0,
-  adBreaks: [],
-  mpdStartTime: 0,
-  isUserSkipAd: false,
-  skipAdEndTime: 0,
-}
-
-const getAdEndTime = (streamData, videoElement) => {
-  const {currentTime, duration} = streamData.adProgressData
-  return videoElement.currentTime + duration - currentTime
-}
-
-const pipeEvent = (emitter, type) => event =>
-  emitter.emit(type, {
-    type,
-    getAd: () => event.getAd(),
-    getStreamData: () => event.getStreamData(),
-  })
-
-const getMpdStartTime = manifest => {
-  const mpdDocument = new DOMParser().parseFromString(manifest, 'text/xml')
-  const availabilityStartTime = mpdDocument.firstChild.getAttribute(
-    'availabilityStartTime'
-  )
-  return new Date(availabilityStartTime).getTime() / 1000
-}
-
-const snapback = ({streamManager, originTime, seekTime, seek}) => {
-  const cuePoint =
-    streamManager === null || streamManager === void 0
-      ? void 0
-      : streamManager.previousCuePointForStreamTime(seekTime)
-
-  if (
-    seekTime >
-      (cuePoint === null || cuePoint === void 0 ? void 0 : cuePoint.end) &&
-    seekTime > originTime
-  ) {
-    once(streamManager, 'adBreakEnded', async () => {
-      // wait for ad playing flag to clear before resuming, TODO seek earlier
-      await new Promise(resolve => setTimeout(resolve, 20))
-      seek(seekTime)
-    })
-  }
-
-  seek(
-    (cuePoint === null || cuePoint === void 0 ? void 0 : cuePoint.start) >
-      originTime
-      ? cuePoint.start
-      : seekTime
-  )
-} // Align to Google DAI StreamManager
-
-const createStreamManager = (videoElement, {player, emitter}) => {
-  let state = initialState
-  const streamData = {}
-  const impression = new Impression({
-    seek: streamTime => seekVideo(videoElement, streamTime),
-    onAdBreakStarted: pipeEvent(emitter, 'adBreakStarted'),
-    onAdProgress: event => {
-      state.adEndTime = getAdEndTime(event.getStreamData(), videoElement)
-      pipeEvent(emitter, 'adProgress')(event)
-    },
-    onSkippableStateChanged: pipeEvent(emitter, 'skippableStateChanged'),
-    onAdBreakEnded: pipeEvent(emitter, 'adBreakEnded'),
-  })
-
-  const previousCuePointForStreamTime = streamTime => {
-    const ad = getLastAd(state.adBreaks, streamTime - 0.1 - state.mpdStartTime)
-
-    if (ad.durationInSeconds > 0) {
-      const start = ad.startTimeInSeconds
-      const end = start + ad.durationInSeconds
-      return {
-        start,
-        end,
-        played: state.played[ad.availId],
-      }
-    }
-
-    return undefined
-  }
-
-  emitter.on('adBreakEnded', () => {
-    state.adEndTime = -1
-    const ad = getLastAd(state.adBreaks, videoElement.currentTime)
-    state.played[ad.availId] = true
-  })
-
-  const refreshTrackingData = async () => {
-    if (!streamData.trackingUrl) {
-      return
-    }
-
-    const trackingData = (await fetch(streamData.trackingUrl).then(result =>
-      result.json()
-    )) || {
-      avails: [],
-    }
-    state.adBreaks = trackingData.avails || []
-
-    if (trackingData.avails.length > 0) {
-      impression.adBreaks = state.adBreaks
-      emitter.emit('cuepointsChanged', {
-        getStreamData: () => ({
-          cuepoints: state.adBreaks.map(item => ({
-            start: getContentTime(state.adBreaks, item.startTimeInSeconds),
-          })),
-        }),
-      })
-    }
-  }
-
-  const handleTimeUpdate = streamTime => {
-    // TODO get tracking events with actual buffer length
-    if (player.isLive() && streamTime > state.currentTime + 5) {
-      state.currentTime = streamTime
-      refreshTrackingData()
-    } // workaround_OTP_2813
-
-    if (state.isUserSkipAd) {
-      // 0.1 is magic number for float-point
-      if (state.skipAdEndTime + 0.1 >= streamTime) {
-        return
-      }
-
-      state.isUserSkipAd = false
-      state.skipAdEndTime = -1
-    }
-
-    impression.currentPosition = streamTime - state.mpdStartTime
-  }
-
-  const streamManager = {
-    requestStream: async (options = {}) => {
-      const reportingUrl = options.client_side_reporting_url
-      const info = await fetchStreamInfo(reportingUrl, options.adParams).catch(
-        error => ({
-          error,
-        })
-      )
-
-      if (!info || info.error) {
-        return
-      }
-
-      streamData.trackingUrl = new URL(
-        info.trackingUrl,
-        reportingUrl
-      ).toString()
-      streamData.url = new URL(info.manifestUrl, reportingUrl).toString() // tracking events are available only after manifests are requested
-
-      await fetchManifests(streamData.url)
-      await refreshTrackingData()
-      emitter.emit('loaded', {
-        getStreamData: () => streamData,
-      })
-      state.played = {}
-    },
-    addEventListener: (eventName, handler) => emitter.on(eventName, handler),
-    removeEventListener: (eventName, handler) =>
-      emitter.off(eventName, handler),
-    streamTimeForContentTime: contentTime =>
-      getStreamTime(state.adBreaks, contentTime),
-    contentTimeForStreamTime: streamTime =>
-      getContentTime(state.adBreaks, streamTime),
-    previousCuePointForStreamTime,
-    skipAd: () => {
-      if (state.adEndTime > 0) {
-        // workaround_OTP_2813
-        const seekTime = state.adEndTime
-        handleTimeUpdate(state.adEndTime)
-        state.isUserSkipAd = true
-        state.skipAdEndTime = seekTime
-        player === null || player === void 0
-          ? void 0
-          : player.seek(seekTime, 'internal')
-      }
-    },
-    setMpdStartTime: time => {
-      state.mpdStartTime = time
-    },
-    getVastAvails: () => state.adBreaks,
-    reset: () => {
-      state.registered.forEach(removeListener => removeListener())
-      impression.reset()
-      state = initialState
-      streamData.trackingUrl = ''
-    },
-  }
-  const handleSeeking = seekingHandler(({originTime, seekTime}) => {
-    if (state.adEndTime > 0) {
-      seekVideo(videoElement, originTime)
-      return
-    }
-
-    const diff = seekTime - originTime
-
-    if (Math.abs(diff + 15) <= 0.25) {
-      seekVideo(
-        videoElement,
-        getStreamTime(
-          state.adBreaks,
-          getContentTime(state.adBreaks, originTime) + diff
-        )
-      )
-      return
-    }
-
-    snapback({
-      streamManager,
-      originTime,
-      seekTime,
-      seek: streamTime => {
-        if (Math.abs(videoElement.currentTime - streamTime) > 0.5) {
-          seekVideo(videoElement, streamTime)
-        }
-      },
-    })
-  })
-  state.registered = [
-    on(videoElement, 'timeupdate', () => {
-      handleSeeking(videoElement)
-
-      if (!videoElement.paused) {
-        handleTimeUpdate(videoElement.currentTime)
-      }
-    }),
-    on(videoElement, 'ended', () => handleTimeUpdate(Infinity)),
-  ]
-  return streamManager
-}
-
-const init = (options, {skipWatched}) => {
-  var _player$on
-
-  const {player, video, streamManager} = options
-  const ref = {
-    player,
-    video,
-    streamManager,
-  }
-  streamManager.addEventListener('adProgress', event => {
-    ref.adEndTime = getAdEndTime(event.getStreamData(), ref.video)
-  })
-  streamManager.addEventListener('adBreakEnded', () => {
-    ref.adEndTime = -1
-  })
-  player === null || player === void 0
-    ? void 0
-    : (_player$on = player.on) === null || _player$on === void 0
-    ? void 0
-    : _player$on.call(player, 'sourceloaded', () => {
-        ref.isLive = player.isLive()
-
-        if (player.manifest.dash && player.isLive()) {
-          // ad start / end time is based on availabilityStartTime in MPD manifest
-          streamManager.setMpdStartTime(getMpdStartTime(player.getManifest()))
-        }
-      })
-
-  if (skipWatched) {
-    video.addEventListener('timeupdate', () => {
-      const streamTime = video.currentTime
-      const cuePoint = streamManager.previousCuePointForStreamTime(
-        streamTime + 0.5
-      )
-
-      if (
-        (cuePoint === null || cuePoint === void 0 ? void 0 : cuePoint.end) >
-          streamTime &&
-        cuePoint.played
-      ) {
-        player === null || player === void 0
-          ? void 0
-          : player.seek(cuePoint.end, 'internal')
-      }
-    })
-  }
-
-  return ref
-}
-
-const MediaTailorPlugin = ({adParams, skipWatched} = {}) => {
-  const emitter = mitt__default['default']()
-  let ref = {}
-  let options = {
-    adParams,
-  }
-  return {
-    load: async (manifestItem, {player, video} = {}) => {
-      var _ref$streamManager, _manifestItem$ssai
-
-      if (typeof fetch !== 'function') {
-        addFetchPolyfill()
-      }
-
-      ;(_ref$streamManager = ref.streamManager) === null ||
-      _ref$streamManager === void 0
-        ? void 0
-        : _ref$streamManager.reset()
-      const mediaTailorOptions =
-        (_manifestItem$ssai = manifestItem.ssai) === null ||
-        _manifestItem$ssai === void 0
-          ? void 0
-          : _manifestItem$ssai.media_tailor
-
-      if (!mediaTailorOptions) {
-        return manifestItem
-      }
-
-      mediaTailorOptions.adParams = options.adParams
-      const streamManager = createStreamManager(video, {
-        player,
-        emitter,
-      })
-      ref = init(
-        {
-          player,
-          video,
-          streamManager,
-        },
-        {
-          skipWatched,
-        }
-      )
-      streamManager.requestStream(mediaTailorOptions)
-      const {url} = await new Promise(resolve =>
-        once(streamManager, 'loaded', event => resolve(event.getStreamData()))
-      )
-
-      if (!url) {
-        console.warn('Ad stream is not available, use fallback stream instead')
-        return manifestItem
-      }
-
-      return {
-        ...manifestItem,
-        ssaiProvider: 'AWS',
-        url,
-        vastAvails: streamManager.getVastAvails(),
-        startTime: streamManager.streamTimeForContentTime(
-          manifestItem.startTime
-        ),
-      }
-    },
-    handleSeek: (contentTime, seek) => {
-      if (!ref.streamManager) {
-        return seek(contentTime)
-      }
-
-      snapback({
-        streamManager: ref.streamManager,
-        originTime: ref.video.currentTime,
-        seekTime: ref.streamManager.streamTimeForContentTime(contentTime),
-        seek,
-      })
-    },
-    skipAd: () => ref.streamManager.skipAd(),
-    getPlaybackStatus: () =>
-      ref.streamManager && {
-        ...(!ref.isLive && {
-          currentTime: ref.streamManager.contentTimeForStreamTime(
-            ref.video.currentTime
-          ),
-          duration: ref.streamManager.contentTimeForStreamTime(
-            ref.video.duration
-          ),
-        }),
-        ...(ref.adEndTime > 0 && {
-          adRemainingTime: ref.adEndTime - ref.video.currentTime,
-        }),
-      },
-    on: (name, listener) => emitter.on(name, listener),
-    reset: () => {
-      var _ref$streamManager2
-
-      ;(_ref$streamManager2 = ref.streamManager) === null ||
-      _ref$streamManager2 === void 0
-        ? void 0
-        : _ref$streamManager2.reset()
-      ref.streamManager = undefined
-    },
-    setOptions: updatedOptions => {
-      options = updatedOptions
-    },
-  }
-}
-
-/* @jsxImportSource @emotion/react */
-const barStyle = {
-  padding: '36px 18px',
-  // Prevent overflow when content text is too long
-  minWidth: 0,
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'center',
-  '> *': {
-    // margin: '0 18px' might override seekbar margin
-    marginLeft: '18px',
-    marginRight: '18px',
-  },
-  opacity: '1',
-  transition: 'opacity 0.5s ease',
-}
-const fadeStyle = {
-  opacity: '0',
-  // disable all UI interactions while hidden
-  pointerEvents: 'none',
-  touchAction: 'none',
-}
-
-const FunctionBar = ({style, fade, children}) =>
-  jsxRuntime$1.jsx('div', {
-    className: 'kks-player__function-bar',
-    css: [
-      barStyle,
-      fade && fadeStyle,
-      style,
-      {
-        button,
-      },
-      process.env.NODE_ENV === 'production' ? '' : ';label:FunctionBar;',
-      process.env.NODE_ENV === 'production'
-        ? ''
-        : '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkZ1bmN0aW9uQmFyLmpzeCJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiQUErQkkiLCJmaWxlIjoiRnVuY3Rpb25CYXIuanN4Iiwic291cmNlc0NvbnRlbnQiOlsiLyogQGpzeEltcG9ydFNvdXJjZSBAZW1vdGlvbi9yZWFjdCAqL1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJ1xuXG5pbXBvcnQge2J1dHRvbn0gZnJvbSAnc3R5bGUnXG5cbmNvbnN0IGJhclN0eWxlID0ge1xuICBwYWRkaW5nOiAnMzZweCAxOHB4JyxcbiAgLy8gUHJldmVudCBvdmVyZmxvdyB3aGVuIGNvbnRlbnQgdGV4dCBpcyB0b28gbG9uZ1xuICBtaW5XaWR0aDogMCxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBmbGV4V3JhcDogJ3dyYXAnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgJz4gKic6IHtcbiAgICAvLyBtYXJnaW46ICcwIDE4cHgnIG1pZ2h0IG92ZXJyaWRlIHNlZWtiYXIgbWFyZ2luXG4gICAgbWFyZ2luTGVmdDogJzE4cHgnLFxuICAgIG1hcmdpblJpZ2h0OiAnMThweCcsXG4gIH0sXG4gIG9wYWNpdHk6ICcxJyxcbiAgdHJhbnNpdGlvbjogJ29wYWNpdHkgMC41cyBlYXNlJyxcbn1cblxuY29uc3QgZmFkZVN0eWxlID0ge1xuICBvcGFjaXR5OiAnMCcsXG4gIC8vIGRpc2FibGUgYWxsIFVJIGludGVyYWN0aW9ucyB3aGlsZSBoaWRkZW5cbiAgcG9pbnRlckV2ZW50czogJ25vbmUnLFxuICB0b3VjaEFjdGlvbjogJ25vbmUnLFxufVxuXG5jb25zdCBGdW5jdGlvbkJhciA9ICh7c3R5bGUsIGZhZGUsIGNoaWxkcmVufSkgPT4gKFxuICA8ZGl2XG4gICAgY2xhc3NOYW1lPVwia2tzLXBsYXllcl9fZnVuY3Rpb24tYmFyXCJcbiAgICBjc3M9e1tiYXJTdHlsZSwgZmFkZSAmJiBmYWRlU3R5bGUsIHN0eWxlLCB7YnV0dG9ufV19XG4gID5cbiAgICB7Y2hpbGRyZW59XG4gIDwvZGl2PlxuKVxuXG5GdW5jdGlvbkJhci5wcm9wVHlwZXMgPSB7XG4gIHN0eWxlOiBQcm9wVHlwZXMub2JqZWN0LFxuICBmYWRlOiBQcm9wVHlwZXMuYm9vbCxcbiAgY2hpbGRyZW46IFByb3BUeXBlcy5ub2RlLFxufVxuRnVuY3Rpb25CYXIuZGVmYXVsdFByb3BzID0ge1xuICBzdHlsZToge30sXG59XG5cbmV4cG9ydCBjb25zdCBzdHlsZSA9IHtcbiAgdG9wOiB7XG4gICAgZmxleFdyYXA6ICdub3dyYXAnLFxuICAgIGJhY2tncm91bmRJbWFnZTogYFxuICAgICAgbGluZWFyLWdyYWRpZW50KFxuICAgICAgICB0byB0b3AsXG4gICAgICAgIHJnYmEoMCwgMCwgMCwgMCksXG4gICAgICAgIHJnYmEoMCwgMCwgMCwgMC44KVxuICAgICAgKVxuICAgIGAsXG4gIH0sXG4gIGJvdHRvbToge1xuICAgIHBhZGRpbmc6ICcwIDE4cHggMzZweCcsXG4gIH0sXG59XG5cbmV4cG9ydCBkZWZhdWx0IEZ1bmN0aW9uQmFyXG4iXX0= */',
-    ],
-    children: children,
-  })
-
-FunctionBar.propTypes = {
-  style: propTypes.object,
-  fade: propTypes.bool,
-  children: propTypes.node,
-}
-FunctionBar.defaultProps = {
-  style: {},
-}
-
-/* @jsxImportSource @emotion/react */
-const _css = {
-  userSelect: 'none',
-  color: 'white',
-  fontSize: 20,
-  whiteSpace: 'nowrap',
-  display: 'inline-flex',
-  alignItems: 'center',
-  part: {
-    width: 26,
-    display: 'inline-block',
-    textAlign: 'center',
-  },
-}
-
-const FormattedTime = ({time, showHour, style}) => {
-  time = Math.floor(time)
-  const second = time % 60
-  const minute = ((time - second) / 60) % 60
-  const hour = (time - second - minute * 60) / 60 / 60
-  return jsxRuntime$1.jsxs('span', {
-    className: 'kks-player__formatted-time',
-    css: [
-      _css,
-      style,
-      process.env.NODE_ENV === 'production' ? '' : ';label:FormattedTime;',
-      process.env.NODE_ENV === 'production'
-        ? ''
-        : '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkZvcm1hdHRlZFRpbWUuanN4Il0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQXdCaUQiLCJmaWxlIjoiRm9ybWF0dGVkVGltZS5qc3giLCJzb3VyY2VzQ29udGVudCI6WyIvKiBAanN4SW1wb3J0U291cmNlIEBlbW90aW9uL3JlYWN0ICovXG5pbXBvcnQge0ZyYWdtZW50fSBmcm9tICdyZWFjdCdcbmltcG9ydCBQcm9wVHlwZXMgZnJvbSAncHJvcC10eXBlcydcblxuY29uc3QgX2NzcyA9IHtcbiAgdXNlclNlbGVjdDogJ25vbmUnLFxuICBjb2xvcjogJ3doaXRlJyxcbiAgZm9udFNpemU6IDIwLFxuICB3aGl0ZVNwYWNlOiAnbm93cmFwJyxcbiAgZGlzcGxheTogJ2lubGluZS1mbGV4JyxcbiAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gIHBhcnQ6IHtcbiAgICB3aWR0aDogMjYsXG4gICAgZGlzcGxheTogJ2lubGluZS1ibG9jaycsXG4gICAgdGV4dEFsaWduOiAnY2VudGVyJyxcbiAgfSxcbn1cblxuY29uc3QgRm9ybWF0dGVkVGltZSA9ICh7dGltZSwgc2hvd0hvdXIsIHN0eWxlfSkgPT4ge1xuICB0aW1lID0gTWF0aC5mbG9vcih0aW1lKVxuICBjb25zdCBzZWNvbmQgPSB0aW1lICUgNjBcbiAgY29uc3QgbWludXRlID0gKCh0aW1lIC0gc2Vjb25kKSAvIDYwKSAlIDYwXG4gIGNvbnN0IGhvdXIgPSAodGltZSAtIHNlY29uZCAtIG1pbnV0ZSAqIDYwKSAvIDYwIC8gNjBcbiAgcmV0dXJuIChcbiAgICA8c3BhbiBjbGFzc05hbWU9XCJra3MtcGxheWVyX19mb3JtYXR0ZWQtdGltZVwiIGNzcz17W19jc3MsIHN0eWxlXX0+XG4gICAgICB7KHNob3dIb3VyIHx8IGhvdXIgIT09IDApICYmIChcbiAgICAgICAgPEZyYWdtZW50PlxuICAgICAgICAgIDxzcGFuXG4gICAgICAgICAgICBjbGFzc05hbWU9XCJra3MtcGxheWVyX19mb3JtYXR0ZWQtdGltZV9fcGFydFwiXG4gICAgICAgICAgICBjc3M9e1tfY3NzLnBhcnQsIHN0eWxlLnBhcnRdfVxuICAgICAgICAgID5cbiAgICAgICAgICAgIHtTdHJpbmcoaG91cikucGFkU3RhcnQoMiwgJzAnKX1cbiAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgOlxuICAgICAgICA8L0ZyYWdtZW50PlxuICAgICAgKX1cbiAgICAgIDxzcGFuXG4gICAgICAgIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lX19wYXJ0XCJcbiAgICAgICAgY3NzPXtbX2Nzcy5wYXJ0LCBzdHlsZS5wYXJ0XX1cbiAgICAgID5cbiAgICAgICAge1N0cmluZyhtaW51dGUpLnBhZFN0YXJ0KDIsICcwJyl9XG4gICAgICA8L3NwYW4+XG4gICAgICA6XG4gICAgICA8c3BhblxuICAgICAgICBjbGFzc05hbWU9XCJra3MtcGxheWVyX19mb3JtYXR0ZWQtdGltZV9fcGFydFwiXG4gICAgICAgIGNzcz17W19jc3MucGFydCwgc3R5bGUucGFydF19XG4gICAgICA+XG4gICAgICAgIHtTdHJpbmcoc2Vjb25kKS5wYWRTdGFydCgyLCAnMCcpfVxuICAgICAgPC9zcGFuPlxuICAgIDwvc3Bhbj5cbiAgKVxufVxuRm9ybWF0dGVkVGltZS5wcm9wVHlwZXMgPSB7XG4gIHRpbWU6IFByb3BUeXBlcy5udW1iZXIsXG4gIHNob3dIb3VyOiBQcm9wVHlwZXMuYm9vbCxcbiAgc3R5bGU6IFByb3BUeXBlcy5zaGFwZSh7XG4gICAgcGFydDogUHJvcFR5cGVzLm9iamVjdCxcbiAgfSksXG59XG5Gb3JtYXR0ZWRUaW1lLmRlZmF1bHRQcm9wcyA9IHtcbiAgc3R5bGU6IHt9LFxufVxuXG5leHBvcnQgZGVmYXVsdCBGb3JtYXR0ZWRUaW1lXG4iXX0= */',
-    ],
-    children: [
-      (showHour || hour !== 0) &&
-        jsxRuntime$1.jsxs(React.Fragment, {
-          children: [
-            jsxRuntime$1.jsx('span', {
-              className: 'kks-player__formatted-time__part',
-              css: [
-                _css.part,
-                style.part,
-                process.env.NODE_ENV === 'production'
-                  ? ''
-                  : ';label:FormattedTime;',
-                process.env.NODE_ENV === 'production'
-                  ? ''
-                  : '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkZvcm1hdHRlZFRpbWUuanN4Il0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQTZCWSIsImZpbGUiOiJGb3JtYXR0ZWRUaW1lLmpzeCIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCB7RnJhZ21lbnR9IGZyb20gJ3JlYWN0J1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJ1xuXG5jb25zdCBfY3NzID0ge1xuICB1c2VyU2VsZWN0OiAnbm9uZScsXG4gIGNvbG9yOiAnd2hpdGUnLFxuICBmb250U2l6ZTogMjAsXG4gIHdoaXRlU3BhY2U6ICdub3dyYXAnLFxuICBkaXNwbGF5OiAnaW5saW5lLWZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgcGFydDoge1xuICAgIHdpZHRoOiAyNixcbiAgICBkaXNwbGF5OiAnaW5saW5lLWJsb2NrJyxcbiAgICB0ZXh0QWxpZ246ICdjZW50ZXInLFxuICB9LFxufVxuXG5jb25zdCBGb3JtYXR0ZWRUaW1lID0gKHt0aW1lLCBzaG93SG91ciwgc3R5bGV9KSA9PiB7XG4gIHRpbWUgPSBNYXRoLmZsb29yKHRpbWUpXG4gIGNvbnN0IHNlY29uZCA9IHRpbWUgJSA2MFxuICBjb25zdCBtaW51dGUgPSAoKHRpbWUgLSBzZWNvbmQpIC8gNjApICUgNjBcbiAgY29uc3QgaG91ciA9ICh0aW1lIC0gc2Vjb25kIC0gbWludXRlICogNjApIC8gNjAgLyA2MFxuICByZXR1cm4gKFxuICAgIDxzcGFuIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lXCIgY3NzPXtbX2Nzcywgc3R5bGVdfT5cbiAgICAgIHsoc2hvd0hvdXIgfHwgaG91ciAhPT0gMCkgJiYgKFxuICAgICAgICA8RnJhZ21lbnQ+XG4gICAgICAgICAgPHNwYW5cbiAgICAgICAgICAgIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lX19wYXJ0XCJcbiAgICAgICAgICAgIGNzcz17W19jc3MucGFydCwgc3R5bGUucGFydF19XG4gICAgICAgICAgPlxuICAgICAgICAgICAge1N0cmluZyhob3VyKS5wYWRTdGFydCgyLCAnMCcpfVxuICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICA6XG4gICAgICAgIDwvRnJhZ21lbnQ+XG4gICAgICApfVxuICAgICAgPHNwYW5cbiAgICAgICAgY2xhc3NOYW1lPVwia2tzLXBsYXllcl9fZm9ybWF0dGVkLXRpbWVfX3BhcnRcIlxuICAgICAgICBjc3M9e1tfY3NzLnBhcnQsIHN0eWxlLnBhcnRdfVxuICAgICAgPlxuICAgICAgICB7U3RyaW5nKG1pbnV0ZSkucGFkU3RhcnQoMiwgJzAnKX1cbiAgICAgIDwvc3Bhbj5cbiAgICAgIDpcbiAgICAgIDxzcGFuXG4gICAgICAgIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lX19wYXJ0XCJcbiAgICAgICAgY3NzPXtbX2Nzcy5wYXJ0LCBzdHlsZS5wYXJ0XX1cbiAgICAgID5cbiAgICAgICAge1N0cmluZyhzZWNvbmQpLnBhZFN0YXJ0KDIsICcwJyl9XG4gICAgICA8L3NwYW4+XG4gICAgPC9zcGFuPlxuICApXG59XG5Gb3JtYXR0ZWRUaW1lLnByb3BUeXBlcyA9IHtcbiAgdGltZTogUHJvcFR5cGVzLm51bWJlcixcbiAgc2hvd0hvdXI6IFByb3BUeXBlcy5ib29sLFxuICBzdHlsZTogUHJvcFR5cGVzLnNoYXBlKHtcbiAgICBwYXJ0OiBQcm9wVHlwZXMub2JqZWN0LFxuICB9KSxcbn1cbkZvcm1hdHRlZFRpbWUuZGVmYXVsdFByb3BzID0ge1xuICBzdHlsZToge30sXG59XG5cbmV4cG9ydCBkZWZhdWx0IEZvcm1hdHRlZFRpbWVcbiJdfQ== */',
-              ],
-              children: String(hour).padStart(2, '0'),
-            }),
-            ':',
-          ],
-        }),
-      jsxRuntime$1.jsx('span', {
-        className: 'kks-player__formatted-time__part',
-        css: [
-          _css.part,
-          style.part,
-          process.env.NODE_ENV === 'production' ? '' : ';label:FormattedTime;',
-          process.env.NODE_ENV === 'production'
-            ? ''
-            : '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkZvcm1hdHRlZFRpbWUuanN4Il0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQXNDUSIsImZpbGUiOiJGb3JtYXR0ZWRUaW1lLmpzeCIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCB7RnJhZ21lbnR9IGZyb20gJ3JlYWN0J1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJ1xuXG5jb25zdCBfY3NzID0ge1xuICB1c2VyU2VsZWN0OiAnbm9uZScsXG4gIGNvbG9yOiAnd2hpdGUnLFxuICBmb250U2l6ZTogMjAsXG4gIHdoaXRlU3BhY2U6ICdub3dyYXAnLFxuICBkaXNwbGF5OiAnaW5saW5lLWZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgcGFydDoge1xuICAgIHdpZHRoOiAyNixcbiAgICBkaXNwbGF5OiAnaW5saW5lLWJsb2NrJyxcbiAgICB0ZXh0QWxpZ246ICdjZW50ZXInLFxuICB9LFxufVxuXG5jb25zdCBGb3JtYXR0ZWRUaW1lID0gKHt0aW1lLCBzaG93SG91ciwgc3R5bGV9KSA9PiB7XG4gIHRpbWUgPSBNYXRoLmZsb29yKHRpbWUpXG4gIGNvbnN0IHNlY29uZCA9IHRpbWUgJSA2MFxuICBjb25zdCBtaW51dGUgPSAoKHRpbWUgLSBzZWNvbmQpIC8gNjApICUgNjBcbiAgY29uc3QgaG91ciA9ICh0aW1lIC0gc2Vjb25kIC0gbWludXRlICogNjApIC8gNjAgLyA2MFxuICByZXR1cm4gKFxuICAgIDxzcGFuIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lXCIgY3NzPXtbX2Nzcywgc3R5bGVdfT5cbiAgICAgIHsoc2hvd0hvdXIgfHwgaG91ciAhPT0gMCkgJiYgKFxuICAgICAgICA8RnJhZ21lbnQ+XG4gICAgICAgICAgPHNwYW5cbiAgICAgICAgICAgIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lX19wYXJ0XCJcbiAgICAgICAgICAgIGNzcz17W19jc3MucGFydCwgc3R5bGUucGFydF19XG4gICAgICAgICAgPlxuICAgICAgICAgICAge1N0cmluZyhob3VyKS5wYWRTdGFydCgyLCAnMCcpfVxuICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICA6XG4gICAgICAgIDwvRnJhZ21lbnQ+XG4gICAgICApfVxuICAgICAgPHNwYW5cbiAgICAgICAgY2xhc3NOYW1lPVwia2tzLXBsYXllcl9fZm9ybWF0dGVkLXRpbWVfX3BhcnRcIlxuICAgICAgICBjc3M9e1tfY3NzLnBhcnQsIHN0eWxlLnBhcnRdfVxuICAgICAgPlxuICAgICAgICB7U3RyaW5nKG1pbnV0ZSkucGFkU3RhcnQoMiwgJzAnKX1cbiAgICAgIDwvc3Bhbj5cbiAgICAgIDpcbiAgICAgIDxzcGFuXG4gICAgICAgIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lX19wYXJ0XCJcbiAgICAgICAgY3NzPXtbX2Nzcy5wYXJ0LCBzdHlsZS5wYXJ0XX1cbiAgICAgID5cbiAgICAgICAge1N0cmluZyhzZWNvbmQpLnBhZFN0YXJ0KDIsICcwJyl9XG4gICAgICA8L3NwYW4+XG4gICAgPC9zcGFuPlxuICApXG59XG5Gb3JtYXR0ZWRUaW1lLnByb3BUeXBlcyA9IHtcbiAgdGltZTogUHJvcFR5cGVzLm51bWJlcixcbiAgc2hvd0hvdXI6IFByb3BUeXBlcy5ib29sLFxuICBzdHlsZTogUHJvcFR5cGVzLnNoYXBlKHtcbiAgICBwYXJ0OiBQcm9wVHlwZXMub2JqZWN0LFxuICB9KSxcbn1cbkZvcm1hdHRlZFRpbWUuZGVmYXVsdFByb3BzID0ge1xuICBzdHlsZToge30sXG59XG5cbmV4cG9ydCBkZWZhdWx0IEZvcm1hdHRlZFRpbWVcbiJdfQ== */',
-        ],
-        children: String(minute).padStart(2, '0'),
-      }),
-      ':',
-      jsxRuntime$1.jsx('span', {
-        className: 'kks-player__formatted-time__part',
-        css: [
-          _css.part,
-          style.part,
-          process.env.NODE_ENV === 'production' ? '' : ';label:FormattedTime;',
-          process.env.NODE_ENV === 'production'
-            ? ''
-            : '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkZvcm1hdHRlZFRpbWUuanN4Il0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQTZDUSIsImZpbGUiOiJGb3JtYXR0ZWRUaW1lLmpzeCIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCB7RnJhZ21lbnR9IGZyb20gJ3JlYWN0J1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJ1xuXG5jb25zdCBfY3NzID0ge1xuICB1c2VyU2VsZWN0OiAnbm9uZScsXG4gIGNvbG9yOiAnd2hpdGUnLFxuICBmb250U2l6ZTogMjAsXG4gIHdoaXRlU3BhY2U6ICdub3dyYXAnLFxuICBkaXNwbGF5OiAnaW5saW5lLWZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgcGFydDoge1xuICAgIHdpZHRoOiAyNixcbiAgICBkaXNwbGF5OiAnaW5saW5lLWJsb2NrJyxcbiAgICB0ZXh0QWxpZ246ICdjZW50ZXInLFxuICB9LFxufVxuXG5jb25zdCBGb3JtYXR0ZWRUaW1lID0gKHt0aW1lLCBzaG93SG91ciwgc3R5bGV9KSA9PiB7XG4gIHRpbWUgPSBNYXRoLmZsb29yKHRpbWUpXG4gIGNvbnN0IHNlY29uZCA9IHRpbWUgJSA2MFxuICBjb25zdCBtaW51dGUgPSAoKHRpbWUgLSBzZWNvbmQpIC8gNjApICUgNjBcbiAgY29uc3QgaG91ciA9ICh0aW1lIC0gc2Vjb25kIC0gbWludXRlICogNjApIC8gNjAgLyA2MFxuICByZXR1cm4gKFxuICAgIDxzcGFuIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lXCIgY3NzPXtbX2Nzcywgc3R5bGVdfT5cbiAgICAgIHsoc2hvd0hvdXIgfHwgaG91ciAhPT0gMCkgJiYgKFxuICAgICAgICA8RnJhZ21lbnQ+XG4gICAgICAgICAgPHNwYW5cbiAgICAgICAgICAgIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lX19wYXJ0XCJcbiAgICAgICAgICAgIGNzcz17W19jc3MucGFydCwgc3R5bGUucGFydF19XG4gICAgICAgICAgPlxuICAgICAgICAgICAge1N0cmluZyhob3VyKS5wYWRTdGFydCgyLCAnMCcpfVxuICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICA6XG4gICAgICAgIDwvRnJhZ21lbnQ+XG4gICAgICApfVxuICAgICAgPHNwYW5cbiAgICAgICAgY2xhc3NOYW1lPVwia2tzLXBsYXllcl9fZm9ybWF0dGVkLXRpbWVfX3BhcnRcIlxuICAgICAgICBjc3M9e1tfY3NzLnBhcnQsIHN0eWxlLnBhcnRdfVxuICAgICAgPlxuICAgICAgICB7U3RyaW5nKG1pbnV0ZSkucGFkU3RhcnQoMiwgJzAnKX1cbiAgICAgIDwvc3Bhbj5cbiAgICAgIDpcbiAgICAgIDxzcGFuXG4gICAgICAgIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lX19wYXJ0XCJcbiAgICAgICAgY3NzPXtbX2Nzcy5wYXJ0LCBzdHlsZS5wYXJ0XX1cbiAgICAgID5cbiAgICAgICAge1N0cmluZyhzZWNvbmQpLnBhZFN0YXJ0KDIsICcwJyl9XG4gICAgICA8L3NwYW4+XG4gICAgPC9zcGFuPlxuICApXG59XG5Gb3JtYXR0ZWRUaW1lLnByb3BUeXBlcyA9IHtcbiAgdGltZTogUHJvcFR5cGVzLm51bWJlcixcbiAgc2hvd0hvdXI6IFByb3BUeXBlcy5ib29sLFxuICBzdHlsZTogUHJvcFR5cGVzLnNoYXBlKHtcbiAgICBwYXJ0OiBQcm9wVHlwZXMub2JqZWN0LFxuICB9KSxcbn1cbkZvcm1hdHRlZFRpbWUuZGVmYXVsdFByb3BzID0ge1xuICBzdHlsZToge30sXG59XG5cbmV4cG9ydCBkZWZhdWx0IEZvcm1hdHRlZFRpbWVcbiJdfQ== */',
-        ],
-        children: String(second).padStart(2, '0'),
-      }),
-    ],
-  })
-}
-
-FormattedTime.propTypes = {
-  time: propTypes.number,
-  showHour: propTypes.bool,
-  style: propTypes.shape({
-    part: propTypes.object,
-  }),
-}
-FormattedTime.defaultProps = {
-  style: {},
-}
-
-function _EMOTION_STRINGIFIED_CSS_ERROR__() {
-  return "You have tried to stringify object returned from `css` function. It isn't supposed to be used directly (e.g. as value of the `className` prop), but rather handed to emotion so it can handle it (e.g. as value of `css` prop)."
-}
-const sliderStyle = {
-  flex: 1,
-  margin: '0 0.5rem',
-  height: '4px',
-  backgroundColor: 'red',
-}
-
-var _ref =
-  process.env.NODE_ENV === 'production'
-    ? {
-        name: '125yws0',
-        styles: 'flex:100%;display:flex;align-items:center;margin-bottom:18px',
-      }
-    : {
-        name: '8x1f7q-Seekbar',
-        styles:
-          'flex:100%;display:flex;align-items:center;margin-bottom:18px;label:Seekbar;',
-        map:
-          '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlNlZWtiYXIuanN4Il0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQTZCTSIsImZpbGUiOiJTZWVrYmFyLmpzeCIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCBfZ2V0IGZyb20gJ2RsdidcblxuaW1wb3J0IHtnZXRMaXZlc0luZm99IGZyb20gJ3BsYXllci9saXZlcydcbmltcG9ydCBGb3JtYXR0ZWRUaW1lIGZyb20gJ2NvbXBvbmVudC9Gb3JtYXR0ZWRUaW1lJ1xuaW1wb3J0IFNpbXBsZVNsaWRlciBmcm9tICdwbGF5ZXJVaS9TaW1wbGVTbGlkZXInXG5pbXBvcnQge3VzZUNhc3RDb250ZXh0fSBmcm9tICdjYXN0L2NvbnRleHQnXG5pbXBvcnQge1NlZWtPcmlnaW59IGZyb20gJ0VudW0nXG5cbmNvbnN0IHNsaWRlclN0eWxlID0ge1xuICBmbGV4OiAxLFxuICBtYXJnaW46ICcwIDAuNXJlbScsXG4gIGhlaWdodDogJzRweCcsXG4gIGJhY2tncm91bmRDb2xvcjogJ3JlZCcsXG59XG5cbmNvbnN0IFNlZWtiYXIgPSAoKSA9PiB7XG4gIGNvbnN0IHtcbiAgICBzdGF0ZSxcbiAgICBhY3Rpb25zOiB7c2Vla30sXG4gIH0gPSB1c2VDYXN0Q29udGV4dCgpXG4gIGNvbnN0IHtjdXJyZW50VGltZSwgcHJvZ3Jlc3NUaW1lID0gY3VycmVudFRpbWUsIGR1cmF0aW9ufSA9XG4gICAgc3RhdGUuc3RyZWFtVHlwZSA9PT0gJ0xJVkUnXG4gICAgICA/IGdldExpdmVzSW5mbyhfZ2V0KHN0YXRlLCAnY3VzdG9tRGF0YScpIHx8IHt9KVxuICAgICAgOiBzdGF0ZVxuXG4gIHJldHVybiAoXG4gICAgPGRpdlxuICAgICAgY2xhc3NOYW1lPVwia2tzLXBsYXllcl9fc2Vlay1iYXJcIlxuICAgICAgY3NzPXt7XG4gICAgICAgIGZsZXg6ICcxMDAlJyxcbiAgICAgICAgZGlzcGxheTogJ2ZsZXgnLFxuICAgICAgICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgICAgICAgbWFyZ2luQm90dG9tOiAnMThweCcsXG4gICAgICB9fVxuICAgID5cbiAgICAgIDxGb3JtYXR0ZWRUaW1lIHRpbWU9e3Byb2dyZXNzVGltZX0gLz5cbiAgICAgIHtzdGF0ZS5zdHJlYW1UeXBlID09PSAnTElWRScgPyAoXG4gICAgICAgIDxkaXYgY3NzPXtzbGlkZXJTdHlsZX0gLz5cbiAgICAgICkgOiAoXG4gICAgICAgIDxTaW1wbGVTbGlkZXJcbiAgICAgICAgICBjc3M9e3ttYXJnaW46ICcwIDFyZW0nLCBmbGV4OiAxfX1cbiAgICAgICAgICB2YWx1ZT17cHJvZ3Jlc3NUaW1lfVxuICAgICAgICAgIG1heD17ZHVyYXRpb259XG4gICAgICAgICAgb25DaGFuZ2VDb21taXR0ZWQ9eyhfLCB7dmFsdWV9KSA9PlxuICAgICAgICAgICAgc2Vlayh7b3JpZ2luOiBTZWVrT3JpZ2luLlNUQVJULCBzZWNvbmRzOiB2YWx1ZX0pXG4gICAgICAgICAgfVxuICAgICAgICAvPlxuICAgICAgKX1cbiAgICAgIDxGb3JtYXR0ZWRUaW1lIHRpbWU9e01hdGgubWF4KGR1cmF0aW9uLCBwcm9ncmVzc1RpbWUpfSAvPlxuICAgIDwvZGl2PlxuICApXG59XG5cbmV4cG9ydCBkZWZhdWx0IFNlZWtiYXJcbiJdfQ== */',
-        toString: _EMOTION_STRINGIFIED_CSS_ERROR__,
-      }
-
-var _ref2 =
-  process.env.NODE_ENV === 'production'
-    ? {
-        name: 'tuqmq3',
-        styles: 'margin:0 1rem;flex:1',
-      }
-    : {
-        name: '1ysiwxm-Seekbar',
-        styles: 'margin:0 1rem;flex:1;label:Seekbar;',
-        map:
-          '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlNlZWtiYXIuanN4Il0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQXlDVSIsImZpbGUiOiJTZWVrYmFyLmpzeCIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCBfZ2V0IGZyb20gJ2RsdidcblxuaW1wb3J0IHtnZXRMaXZlc0luZm99IGZyb20gJ3BsYXllci9saXZlcydcbmltcG9ydCBGb3JtYXR0ZWRUaW1lIGZyb20gJ2NvbXBvbmVudC9Gb3JtYXR0ZWRUaW1lJ1xuaW1wb3J0IFNpbXBsZVNsaWRlciBmcm9tICdwbGF5ZXJVaS9TaW1wbGVTbGlkZXInXG5pbXBvcnQge3VzZUNhc3RDb250ZXh0fSBmcm9tICdjYXN0L2NvbnRleHQnXG5pbXBvcnQge1NlZWtPcmlnaW59IGZyb20gJ0VudW0nXG5cbmNvbnN0IHNsaWRlclN0eWxlID0ge1xuICBmbGV4OiAxLFxuICBtYXJnaW46ICcwIDAuNXJlbScsXG4gIGhlaWdodDogJzRweCcsXG4gIGJhY2tncm91bmRDb2xvcjogJ3JlZCcsXG59XG5cbmNvbnN0IFNlZWtiYXIgPSAoKSA9PiB7XG4gIGNvbnN0IHtcbiAgICBzdGF0ZSxcbiAgICBhY3Rpb25zOiB7c2Vla30sXG4gIH0gPSB1c2VDYXN0Q29udGV4dCgpXG4gIGNvbnN0IHtjdXJyZW50VGltZSwgcHJvZ3Jlc3NUaW1lID0gY3VycmVudFRpbWUsIGR1cmF0aW9ufSA9XG4gICAgc3RhdGUuc3RyZWFtVHlwZSA9PT0gJ0xJVkUnXG4gICAgICA/IGdldExpdmVzSW5mbyhfZ2V0KHN0YXRlLCAnY3VzdG9tRGF0YScpIHx8IHt9KVxuICAgICAgOiBzdGF0ZVxuXG4gIHJldHVybiAoXG4gICAgPGRpdlxuICAgICAgY2xhc3NOYW1lPVwia2tzLXBsYXllcl9fc2Vlay1iYXJcIlxuICAgICAgY3NzPXt7XG4gICAgICAgIGZsZXg6ICcxMDAlJyxcbiAgICAgICAgZGlzcGxheTogJ2ZsZXgnLFxuICAgICAgICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgICAgICAgbWFyZ2luQm90dG9tOiAnMThweCcsXG4gICAgICB9fVxuICAgID5cbiAgICAgIDxGb3JtYXR0ZWRUaW1lIHRpbWU9e3Byb2dyZXNzVGltZX0gLz5cbiAgICAgIHtzdGF0ZS5zdHJlYW1UeXBlID09PSAnTElWRScgPyAoXG4gICAgICAgIDxkaXYgY3NzPXtzbGlkZXJTdHlsZX0gLz5cbiAgICAgICkgOiAoXG4gICAgICAgIDxTaW1wbGVTbGlkZXJcbiAgICAgICAgICBjc3M9e3ttYXJnaW46ICcwIDFyZW0nLCBmbGV4OiAxfX1cbiAgICAgICAgICB2YWx1ZT17cHJvZ3Jlc3NUaW1lfVxuICAgICAgICAgIG1heD17ZHVyYXRpb259XG4gICAgICAgICAgb25DaGFuZ2VDb21taXR0ZWQ9eyhfLCB7dmFsdWV9KSA9PlxuICAgICAgICAgICAgc2Vlayh7b3JpZ2luOiBTZWVrT3JpZ2luLlNUQVJULCBzZWNvbmRzOiB2YWx1ZX0pXG4gICAgICAgICAgfVxuICAgICAgICAvPlxuICAgICAgKX1cbiAgICAgIDxGb3JtYXR0ZWRUaW1lIHRpbWU9e01hdGgubWF4KGR1cmF0aW9uLCBwcm9ncmVzc1RpbWUpfSAvPlxuICAgIDwvZGl2PlxuICApXG59XG5cbmV4cG9ydCBkZWZhdWx0IFNlZWtiYXJcbiJdfQ== */',
-        toString: _EMOTION_STRINGIFIED_CSS_ERROR__,
-      }
-
-const Seekbar = () => {
-  const {
-    state,
-    actions: {seek},
-  } = useCastContext()
-  const {currentTime, progressTime = currentTime, duration} =
-    state.streamType === 'LIVE'
-      ? getLivesInfo(_get__default['default'](state, 'customData') || {})
-      : state
-  return jsxRuntime$1.jsxs('div', {
-    className: 'kks-player__seek-bar',
-    css: _ref,
-    children: [
-      jsxRuntime$1.jsx(FormattedTime, {
-        time: progressTime,
-      }),
-      state.streamType === 'LIVE'
-        ? jsxRuntime$1.jsx('div', {
-            css: sliderStyle,
-          })
-        : jsxRuntime$1.jsx(SimpleSlider, {
-            css: _ref2,
-            value: progressTime,
-            max: duration,
-            onChangeCommitted: (_, {value}) =>
-              seek({
-                origin: SeekOrigin.START,
-                seconds: value,
-              }),
-          }),
-      jsxRuntime$1.jsx(FormattedTime, {
-        time: Math.max(duration, progressTime),
-      }),
-    ],
-  })
-}
-
-/* @jsxImportSource @emotion/react */
-
-const IconButton = ({name, src, tooltip, onClick}) => {
-  const {translate} = React.useContext(I18n.Context)
-  return jsxRuntime$1.jsx(Tooltip, {
-    title: translate(tooltip),
-    bottom: '24px',
-    children: jsxRuntime$1.jsx(SquareButton, {
-      name: name,
-      onClick: onClick,
-      children: jsxRuntime$1.jsx(Icon, {
-        src: src,
-      }),
-    }),
-  })
-}
-
-IconButton.propTypes = {
-  name: propTypes.string,
-  src: propTypes.string,
-  tooltip: propTypes.string,
-  onClick: propTypes.func,
-}
-
-const PlayButton = () => {
-  const {
-    state: {playerState},
-    actions: {play, pause},
-  } = useCastContext()
-  const action = playerState !== 'PLAYING' ? 'play' : 'pause'
-  const tooltip =
-    playerState !== 'PLAYING' ? 'KKS.PLAYER.PLAY' : 'KKS.PLAYER.PAUSE'
-  return /*#__PURE__*/ jsxRuntime.jsx(IconButton, {
-    src: icon[action],
-    tooltip: tooltip,
-    onClick: action === 'play' ? play : pause,
-  })
-}
-
-const RewindButton = () => {
-  const {
-    actions: {seek},
-  } = useCastContext()
-  return /*#__PURE__*/ jsxRuntime.jsx(IconButton, {
-    src: icon.rewind10,
-    tooltip: 'KKS.PLAYER.REWIND',
-    onClick: () =>
-      seek({
-        origin: SeekOrigin.CURRENT,
-        seconds: -10,
-      }),
-  })
-}
-
-const ForwardButton = () => {
-  const {
-    actions: {seek},
-  } = useCastContext()
-  return /*#__PURE__*/ jsxRuntime.jsx(IconButton, {
-    src: icon.forward10,
-    tooltip: 'KKS.PLAYER.FORWARD',
-    onClick: () =>
-      seek({
-        origin: SeekOrigin.CURRENT,
-        seconds: 10,
-      }),
-  })
-}
-
-const PreviousEpisodeButton = () => {
-  const {
-    actions: {hasPrevious, changePreviousEpisode},
-  } = useCastContext()
-  return (
-    hasPrevious() &&
-    /*#__PURE__*/ jsxRuntime.jsx(IconButton, {
-      src: icon.previousEpisode,
-      tooltip: 'KKS.PLAYER.PREVIOUS',
-      onClick: changePreviousEpisode,
-    })
-  )
-}
-
-const NextEpisodeButton = () => {
-  const {
-    actions: {hasNext, changeNextEpisode},
-  } = useCastContext()
-  return (
-    hasNext() &&
-    /*#__PURE__*/ jsxRuntime.jsx(IconButton, {
-      src: icon.nextEpisode,
-      tooltip: 'KKS.PLAYER.NEXT',
-      onClick: changeNextEpisode,
-    })
-  )
-}
-
-/* eslint-disable react/jsx-no-target-blank */
-const style = {
-  position: 'fixed',
-  bottom: '0',
-  zIndex: '3',
-  width: '100%',
-  height: '72px',
-  alignItems: 'center',
-  backgroundColor: 'rgba(34, 34, 34, 0.75)',
-  color: '#fff',
-  '> *': {
-    flex: '1',
-  },
-}
-const controlStyle = {
-  padding: '0 18px 6px',
-  '> *': {
-    margin: '0 8px',
-  },
-  '> div:first-child': {
-    // seekbar
-    margin: '0 0 6px',
-  },
-}
-const messageStyle = {
-  flex: '1',
-  minWidth: '0',
-  textAlign: 'center',
-  whiteSpace: 'nowrap',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-}
-const adStatusStyle = {
-  flex: '1',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'flex-end',
-  a: {
-    display: 'block',
-    textDecoration: 'underline',
-    '&:visited': {
-      color: 'inherit',
-    },
-  },
-  button: {
-    margin: '0 1.5rem',
-    padding: '0.2rem 0.5rem',
-    width: 'auto',
-    border: '2px solid rgba(255, 255, 255, 0.7)',
-    fontSize: '120%',
-  },
-}
-const castButtonTooltip = {
-  [CastState.CONNECTED]: 'KKS.PLAYER.CAST.DISCONNECT',
-  [CastState.NOT_CONNECTED]: 'KKS.PLAYER.CAST',
-}
-
-const MiniControl = () => {
-  const {translate} = React.useContext(I18n.Context)
-  const {
-    state: {
-      castState,
-      deviceName,
-      mediaTitle,
-      playerState,
-      streamType,
-      isPlayingBreak,
-      currentBreakTime,
-      whenSkippable,
-      clickThroughUrl,
-    },
-    actions: {skipAd},
-  } = useCastContext()
-  const secondsToSkip = Math.ceil(whenSkippable - currentBreakTime)
-  const isIdle =
-    castState === 'CONNECTED' && (!playerState || playerState === 'IDLE')
-  const showIfConnected = {
-    display: castState === 'CONNECTED' ? 'flex' : 'none',
-  }
-  const messageProperties = {
-    VIDEO: mediaTitle,
-    CHROMECAST: deviceName,
-  }
-  const connectedMessage = translate('KKS.CAST.CONNTECTED', messageProperties)
-  const castingMessage = translate('KKS.CAST.STATUS', messageProperties)
-  return jsxRuntime$1.jsx('div', {
-    className: classnames__default['default']('kks-player__minictrl', {
-      'kks-player__minictrl--show': castState === 'CONNECTED',
-    }),
-    css: [
-      showIfConnected,
-      style,
-      process.env.NODE_ENV === 'production' ? '' : ';label:MiniControl;',
-      process.env.NODE_ENV === 'production'
-        ? ''
-        : '/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIk1pbmlDb250cm9sLmpzeCJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiQUFrSE0iLCJmaWxlIjoiTWluaUNvbnRyb2wuanN4Iiwic291cmNlc0NvbnRlbnQiOlsiLyogZXNsaW50LWRpc2FibGUgcmVhY3QvanN4LW5vLXRhcmdldC1ibGFuayAqL1xuLyogQGpzeEltcG9ydFNvdXJjZSBAZW1vdGlvbi9yZWFjdCAqL1xuaW1wb3J0IHt1c2VDb250ZXh0fSBmcm9tICdyZWFjdCdcbmltcG9ydCBjbGFzc25hbWVzIGZyb20gJ2NsYXNzbmFtZXMnXG5cbmltcG9ydCB7Q2FzdFN0YXRlfSBmcm9tICdFbnVtJ1xuaW1wb3J0IHt1c2VDYXN0Q29udGV4dCwgdXNlQ2FzdFZvbHVtZX0gZnJvbSAnY2FzdC9jb250ZXh0J1xuaW1wb3J0IEZ1bmN0aW9uQmFyIGZyb20gJ2NvbXBvbmVudC9QYW5lbC9GdW5jdGlvbkJhcidcbmltcG9ydCBUb29sdGlwIGZyb20gJ2NvbXBvbmVudC9Ub29sdGlwJ1xuaW1wb3J0IFZvbHVtZUNvbnRyb2wgZnJvbSAnY29tcG9uZW50L1ZvbHVtZUNvbnRyb2wnXG5pbXBvcnQgU2tpcEJ1dHRvbiBmcm9tICdjb21wb25lbnQvQnV0dG9uL1NraXBCdXR0b24nXG5pbXBvcnQgQ2FzdEJ1dHRvbiBmcm9tICdwbGF5ZXIvY29udGFpbmVyL0J1dHRvbi9DYXN0QnV0dG9uJ1xuaW1wb3J0IEkxOG4gZnJvbSAnY29udGV4dC9JMThuJ1xuaW1wb3J0IFNlZWtiYXIgZnJvbSAnLi9TZWVrYmFyJ1xuaW1wb3J0IFBsYXlCdXR0b24gZnJvbSAnLi9QbGF5QnV0dG9uJ1xuaW1wb3J0IFJld2luZEJ1dHRvbiBmcm9tICcuL1Jld2luZEJ1dHRvbidcbmltcG9ydCBGb3J3YXJkQnV0dG9uIGZyb20gJy4vRm9yd2FyZEJ1dHRvbidcbmltcG9ydCBQcmV2aW91c0VwaXNvZGVCdXR0b24gZnJvbSAnLi9QcmVFcGlzb2RlQnV0dG9uJ1xuaW1wb3J0IE5leHRWaWRlb0J1dHRvbiBmcm9tICcuL05leHRWaWRlb0J1dHRvbidcblxuY29uc3Qgc3R5bGUgPSB7XG4gIHBvc2l0aW9uOiAnZml4ZWQnLFxuICBib3R0b206ICcwJyxcbiAgekluZGV4OiAnMycsXG4gIHdpZHRoOiAnMTAwJScsXG4gIGhlaWdodDogJzcycHgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgYmFja2dyb3VuZENvbG9yOiAncmdiYSgzNCwgMzQsIDM0LCAwLjc1KScsXG4gIGNvbG9yOiAnI2ZmZicsXG4gICc+IConOiB7XG4gICAgZmxleDogJzEnLFxuICB9LFxufVxuXG5jb25zdCBjb250cm9sU3R5bGUgPSB7XG4gIHBhZGRpbmc6ICcwIDE4cHggNnB4JyxcbiAgJz4gKic6IHtcbiAgICBtYXJnaW46ICcwIDhweCcsXG4gIH0sXG4gICc+IGRpdjpmaXJzdC1jaGlsZCc6IHtcbiAgICAvLyBzZWVrYmFyXG4gICAgbWFyZ2luOiAnMCAwIDZweCcsXG4gIH0sXG59XG5cbmNvbnN0IG1lc3NhZ2VTdHlsZSA9IHtcbiAgZmxleDogJzEnLFxuICBtaW5XaWR0aDogJzAnLFxuICB0ZXh0QWxpZ246ICdjZW50ZXInLFxuICB3aGl0ZVNwYWNlOiAnbm93cmFwJyxcbiAgb3ZlcmZsb3c6ICdoaWRkZW4nLFxuICB0ZXh0T3ZlcmZsb3c6ICdlbGxpcHNpcycsXG59XG5cbmNvbnN0IGFkU3RhdHVzU3R5bGUgPSB7XG4gIGZsZXg6ICcxJyxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAganVzdGlmeUNvbnRlbnQ6ICdmbGV4LWVuZCcsXG4gIGE6IHtcbiAgICBkaXNwbGF5OiAnYmxvY2snLFxuICAgIHRleHREZWNvcmF0aW9uOiAndW5kZXJsaW5lJyxcbiAgICAnJjp2aXNpdGVkJzoge1xuICAgICAgY29sb3I6ICdpbmhlcml0JyxcbiAgICB9LFxuICB9LFxuICBidXR0b246IHtcbiAgICBtYXJnaW46ICcwIDEuNXJlbScsXG4gICAgcGFkZGluZzogJzAuMnJlbSAwLjVyZW0nLFxuICAgIHdpZHRoOiAnYXV0bycsXG4gICAgYm9yZGVyOiAnMnB4IHNvbGlkIHJnYmEoMjU1LCAyNTUsIDI1NSwgMC43KScsXG4gICAgZm9udFNpemU6ICcxMjAlJyxcbiAgfSxcbn1cblxuY29uc3QgY2FzdEJ1dHRvblRvb2x0aXAgPSB7XG4gIFtDYXN0U3RhdGUuQ09OTkVDVEVEXTogJ0tLUy5QTEFZRVIuQ0FTVC5ESVNDT05ORUNUJyxcbiAgW0Nhc3RTdGF0ZS5OT1RfQ09OTkVDVEVEXTogJ0tLUy5QTEFZRVIuQ0FTVCcsXG59XG5cbmNvbnN0IE1pbmlDb250cm9sID0gKCkgPT4ge1xuICBjb25zdCB7dHJhbnNsYXRlfSA9IHVzZUNvbnRleHQoSTE4bi5Db250ZXh0KVxuICBjb25zdCB7XG4gICAgc3RhdGU6IHtcbiAgICAgIGNhc3RTdGF0ZSxcbiAgICAgIGRldmljZU5hbWUsXG4gICAgICBtZWRpYVRpdGxlLFxuICAgICAgcGxheWVyU3RhdGUsXG4gICAgICBzdHJlYW1UeXBlLFxuICAgICAgaXNQbGF5aW5nQnJlYWssXG4gICAgICBjdXJyZW50QnJlYWtUaW1lLFxuICAgICAgd2hlblNraXBwYWJsZSxcbiAgICAgIGNsaWNrVGhyb3VnaFVybCxcbiAgICB9LFxuICAgIGFjdGlvbnM6IHtza2lwQWR9LFxuICB9ID0gdXNlQ2FzdENvbnRleHQoKVxuICBjb25zdCBzZWNvbmRzVG9Ta2lwID0gTWF0aC5jZWlsKHdoZW5Ta2lwcGFibGUgLSBjdXJyZW50QnJlYWtUaW1lKVxuICBjb25zdCBpc0lkbGUgPVxuICAgIGNhc3RTdGF0ZSA9PT0gJ0NPTk5FQ1RFRCcgJiYgKCFwbGF5ZXJTdGF0ZSB8fCBwbGF5ZXJTdGF0ZSA9PT0gJ0lETEUnKVxuICBjb25zdCBzaG93SWZDb25uZWN0ZWQgPSB7XG4gICAgZGlzcGxheTogY2FzdFN0YXRlID09PSAnQ09OTkVDVEVEJyA/ICdmbGV4JyA6ICdub25lJyxcbiAgfVxuICBjb25zdCBtZXNzYWdlUHJvcGVydGllcyA9IHtcbiAgICBWSURFTzogbWVkaWFUaXRsZSxcbiAgICBDSFJPTUVDQVNUOiBkZXZpY2VOYW1lLFxuICB9XG4gIGNvbnN0IGNvbm5lY3RlZE1lc3NhZ2UgPSB0cmFuc2xhdGUoJ0tLUy5DQVNULkNPTk5URUNURUQnLCBtZXNzYWdlUHJvcGVydGllcylcbiAgY29uc3QgY2FzdGluZ01lc3NhZ2UgPSB0cmFuc2xhdGUoJ0tLUy5DQVNULlNUQVRVUycsIG1lc3NhZ2VQcm9wZXJ0aWVzKVxuXG4gIHJldHVybiAoXG4gICAgPGRpdlxuICAgICAgY2xhc3NOYW1lPXtjbGFzc25hbWVzKCdra3MtcGxheWVyX19taW5pY3RybCcsIHtcbiAgICAgICAgJ2trcy1wbGF5ZXJfX21pbmljdHJsLS1zaG93JzogY2FzdFN0YXRlID09PSAnQ09OTkVDVEVEJyxcbiAgICAgIH0pfVxuICAgICAgY3NzPXtbc2hvd0lmQ29ubmVjdGVkLCBzdHlsZV19XG4gICAgPlxuICAgICAge2lzSWRsZSA/IChcbiAgICAgICAgPFRvb2x0aXAgb3ZlcmZsb3dPbmx5IHRpdGxlPXtjb25uZWN0ZWRNZXNzYWdlfT5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX21pbmljdHJsX19jYXN0LW5hbWVcIiBjc3M9e21lc3NhZ2VTdHlsZX0+XG4gICAgICAgICAgICB7Y29ubmVjdGVkTWVzc2FnZX1cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgPC9Ub29sdGlwPlxuICAgICAgKSA6IChcbiAgICAgICAgPEZ1bmN0aW9uQmFyIHN0eWxlPXtjb250cm9sU3R5bGV9PlxuICAgICAgICAgIHshaXNQbGF5aW5nQnJlYWsgJiYgPFNlZWtiYXIgLz59XG4gICAgICAgICAgPFByZXZpb3VzRXBpc29kZUJ1dHRvbiAvPlxuICAgICAgICAgIDxQbGF5QnV0dG9uIC8+XG4gICAgICAgICAgPE5leHRWaWRlb0J1dHRvbiAvPlxuICAgICAgICAgIHtpc1BsYXlpbmdCcmVhayA/IChcbiAgICAgICAgICAgIDxkaXYgY3NzPXthZFN0YXR1c1N0eWxlfT5cbiAgICAgICAgICAgICAgPGEgaHJlZj17Y2xpY2tUaHJvdWdoVXJsfSByZWw9XCJub29wZW5lclwiIHRhcmdldD1cIl9ibGFua1wiPlxuICAgICAgICAgICAgICAgIDxJMThuLk1lc3NhZ2UgY29kZT1cIktLUy5TU0FJLkxFQVJOLk1PUkVcIiB3cmFwPXtmYWxzZX0gLz5cbiAgICAgICAgICAgICAgPC9hPlxuICAgICAgICAgICAgICB7d2hlblNraXBwYWJsZSA+IDAgJiYgKFxuICAgICAgICAgICAgICAgIDxTa2lwQnV0dG9uIHJlbWFpbmluZ1RpbWU9e3NlY29uZHNUb1NraXB9IG9uQ2xpY2s9e3NraXBBZH0gLz5cbiAgICAgICAgICAgICAgKX1cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICkgOiAoXG4gICAgICAgICAgICA8PlxuICAgICAgICAgICAgICB7c3RyZWFtVHlwZSAhPT0gJ0xJVkUnICYmIDxSZXdpbmRCdXR0b24gLz59XG4gICAgICAgICAgICAgIHtzdHJlYW1UeXBlICE9PSAnTElWRScgJiYgPEZvcndhcmRCdXR0b24gLz59XG4gICAgICAgICAgICAgIDxUb29sdGlwIG92ZXJmbG93T25seSB0aXRsZT17Y2FzdGluZ01lc3NhZ2V9PlxuICAgICAgICAgICAgICAgIDxkaXYgY3NzPXttZXNzYWdlU3R5bGV9PntjYXN0aW5nTWVzc2FnZX08L2Rpdj5cbiAgICAgICAgICAgICAgPC9Ub29sdGlwPlxuICAgICAgICAgICAgPC8+XG4gICAgICAgICAgKX1cbiAgICAgICAgICA8Vm9sdW1lQ29udHJvbCBkaXNwbGF5U2xpZGVyIHVzZVZvbHVtZVN0YXRlPXt1c2VDYXN0Vm9sdW1lfSAvPlxuICAgICAgICAgIDxUb29sdGlwXG4gICAgICAgICAgICB0aXRsZT17dHJhbnNsYXRlKGNhc3RCdXR0b25Ub29sdGlwW2Nhc3RTdGF0ZV0pfVxuICAgICAgICAgICAgYm90dG9tPVwiMjRweFwiXG4gICAgICAgICAgPlxuICAgICAgICAgICAgPENhc3RCdXR0b24gLz5cbiAgICAgICAgICA8L1Rvb2x0aXA+XG4gICAgICAgIDwvRnVuY3Rpb25CYXI+XG4gICAgICApfVxuICAgIDwvZGl2PlxuICApXG59XG5cbmV4cG9ydCBkZWZhdWx0IE1pbmlDb250cm9sXG4iXX0= */',
-    ],
-    children: isIdle
-      ? jsxRuntime$1.jsx(Tooltip, {
-          overflowOnly: true,
-          title: connectedMessage,
-          children: jsxRuntime$1.jsx('div', {
-            className: 'kks-player__minictrl__cast-name',
-            css: messageStyle,
-            children: connectedMessage,
-          }),
-        })
-      : jsxRuntime$1.jsxs(FunctionBar, {
-          style: controlStyle,
-          children: [
-            !isPlayingBreak && jsxRuntime$1.jsx(Seekbar, {}),
-            jsxRuntime$1.jsx(PreviousEpisodeButton, {}),
-            jsxRuntime$1.jsx(PlayButton, {}),
-            jsxRuntime$1.jsx(NextEpisodeButton, {}),
-            isPlayingBreak
-              ? jsxRuntime$1.jsxs('div', {
-                  css: adStatusStyle,
-                  children: [
-                    jsxRuntime$1.jsx('a', {
-                      href: clickThroughUrl,
-                      rel: 'noopener',
-                      target: '_blank',
-                      children: jsxRuntime$1.jsx(I18n.Message, {
-                        code: 'KKS.SSAI.LEARN.MORE',
-                        wrap: false,
-                      }),
-                    }),
-                    whenSkippable > 0 &&
-                      jsxRuntime$1.jsx(SkipButton, {
-                        remainingTime: secondsToSkip,
-                        onClick: skipAd,
-                      }),
-                  ],
-                })
-              : jsxRuntime$1.jsxs(jsxRuntime$1.Fragment, {
-                  children: [
-                    streamType !== 'LIVE' && jsxRuntime$1.jsx(RewindButton, {}),
-                    streamType !== 'LIVE' &&
-                      jsxRuntime$1.jsx(ForwardButton, {}),
-                    jsxRuntime$1.jsx(Tooltip, {
-                      overflowOnly: true,
-                      title: castingMessage,
-                      children: jsxRuntime$1.jsx('div', {
-                        css: messageStyle,
-                        children: castingMessage,
-                      }),
-                    }),
-                  ],
-                }),
-            jsxRuntime$1.jsx(VolumeControl$1, {
-              displaySlider: true,
-              useVolumeState: useCastVolume,
-            }),
-            jsxRuntime$1.jsx(Tooltip, {
-              title: translate(castButtonTooltip[castState]),
-              bottom: '24px',
-              children: jsxRuntime$1.jsx(CastVideoButton, {}),
-            }),
-          ],
-        }),
-  })
-}
-
-const CastSender = ({lang, langCustomCode, children, ...other}) =>
-  /*#__PURE__*/ jsxRuntime.jsx(CastProvider, {
-    lang: lang,
-    ...other,
-    children: /*#__PURE__*/ jsxRuntime.jsxs(I18n.Provider, {
-      lang: lang,
-      langCustomCode: langCustomCode,
-      children: [children, /*#__PURE__*/ jsxRuntime.jsx(MiniControl, {})],
-    }),
-  })
-
-CastSender.propTypes = {
-  appId: propTypes.string,
-  host: propTypes.string,
-  accessToken: propTypes.string,
-  deviceId: propTypes.string,
-  lang: Types.LanguageCode,
-  langCustomCode: propTypes.object,
-  customHeaders: propTypes.object,
-  onConnected: propTypes.func,
-  onCasting: propTypes.func,
-  onError: propTypes.func,
-  children: propTypes.node,
-}
-
-/**
- * @description Unplugging / disconnecting headphones will pause video in iOS,
- * and in some iOS versions, video is paused without firing a pause event.
- * Pause the video if paused by iOS in this case.
- * @param {HTMLMediaElement} video
- */
-
-const handleIOSHeadphonesDisconnection = ({maxStuckSeconds = 1} = {}) => {
-  const video = document.querySelector('video')
-
-  if (video && getOS().name === 'iOS') {
-    let playState = {
-      playing: false,
-    }
-
-    const saveState = ({playing = playState.playing} = {}) => {
-      playState = {
-        playing,
-        ...(playing && {
-          lastTimeUpdate: Date.now(),
-        }),
-      }
-    }
-
-    video.addEventListener('pause', () => {
-      playState = {
-        playing: false,
-      }
-    })
-    video.addEventListener('seeking', () => {
-      playState = {
-        playing: false,
-      }
-    })
-    video.addEventListener('waiting', () => {
-      playState = {
-        playing: false,
-      }
-    })
-    video.addEventListener('webkitpresentationmodechanged', () => {
-      playState = {
-        playing: false,
-        pauseDetection: Date.now() + 5000,
-      }
-    })
-    video.addEventListener('timeupdate', () => {
-      if (!video.paused) {
-        const delta = Date.now() - playState.lastTimeUpdate
-        playState.lastTimeUpdate = Date.now()
-
-        if (delta > 0 && delta < 1000) {
-          playState.playing = true
-        }
-      }
-
-      saveState({
-        playing: !video.paused,
-      })
-    })
-    video.addEventListener('ratechange', saveState)
-    setInterval(() => {
-      if (
-        video.paused ||
-        !playState.playing ||
-        playState.pauseDetection >= Date.now()
-      ) {
-        return
-      }
-
-      const secondsStuck = (Date.now() - playState.lastTimeUpdate) / 1000
-
-      if (secondsStuck >= maxStuckSeconds) {
-        console.log(
-          'Video is not playing, pause to workaround iOS unpluging headphones'
-        )
-        video.pause()
-      }
-    }, 200)
-  }
-}
-
-const {SupportEnvironment} = config
-
-exports.CastButton = CastVideoButton
-exports.CastConsumer = CastConsumer
-exports.CastSender = CastSender
-exports.MediaTailorPlugin = MediaTailorPlugin
-exports.Player = EnterprisePlayer
-exports.SupportEnvironment = SupportEnvironment
-exports.getDefaultDrmConfig = getDefaultDrmConfig
-exports.getEnterpriseDrmConfig = getEnterpriseDrmConfig
-exports.getVersion = getVersion
-exports.handleIOSHeadphonesDisconnection = handleIOSHeadphonesDisconnection
-//# sourceMappingURL=playcraft.js.map
+export {EnterprisePlayer as Player}
