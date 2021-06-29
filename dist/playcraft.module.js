@@ -240,7 +240,7 @@ function isInScope(min, value, max) {
 function getVersion() {
   try {
     // eslint-disable-next-line no-undef
-    return "1.3.3";
+    return "1.3.4";
   } catch (e) {
     return undefined;
   }
@@ -2365,7 +2365,7 @@ const PlayerProvider = ({
     const logTarget = mapLogEvents({
       session: instance.current.session,
       playerName: 'bitmovin',
-      version: "1.3.3",
+      version: "1.3.4",
       video: videoRef.current,
       getPlaybackStatus: () => getPlaybackStatus$1(videoRef.current, options.plugins)
     });
@@ -4994,6 +4994,7 @@ const loadStream = async (player, store, props, self) => {
     };
 
     self.changeQuality = async () => {
+      store.dispatch(PlayerAction.stalling());
       const startTime = player.getCurrentTime();
       await player.unload();
       return player.load({ ...loadOptions,
@@ -5201,10 +5202,13 @@ class BitmovinPlayer extends Component {
               return data;
             }
 
-            const targetBitrate = this.player.getAvailableVideoQualities().find(quality => quality.id === data.suggested);
-            return this.selectedQualities.reduce((a, b) => {
-              Math.abs(a.bitrate - targetBitrate) <= Math.abs(b.bitrate - targetBitrate) ? a : b;
-            }).id || data;
+            const target = this.player.getAvailableVideoQualities().find(quality => quality.id === data.suggested);
+
+            if (!target) {
+              return data;
+            }
+
+            return this.selectedQualities.reduce((a, b) => Math.abs(a.bitrate - target.bitrate) <= Math.abs(b.bitrate - target.bitrate) ? a : b).id;
           }
         }
       };
