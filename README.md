@@ -2,7 +2,11 @@
 
 Enjoy our latest update where we have fixed some bugs and improved our framework to provide you more stable playbacking experience.
 
-Playcraft wraps the logic of requesting video and verifying authorization, it also provides a control panel with basic control of playback, such like play, pause, seek ...etc.
+Playcraft provides core player and enterprise player.
+
+Core player has basic functionalities, and enables maximum customizations.
+
+Enterprise player wraps the logic of requesting video and verifying authorization, it also provides a control panel with basic control of playback, such like play, pause, seek ...etc.
 
 Playcraft also provides Google Cast Sender integration and mini controller UI.
 
@@ -13,43 +17,31 @@ Currently, web player is based on [Bitmovin Player](https://bitmovin.com/docs/pl
 Install this package from git repository:
 
 ```
-yarn add https://github.com:KKStream/playcraft-web-sdk#v1.2.0
+yarn add https://github.com/KKStream/playcraft-web-sdk#v1.4.0-canary.1
 ```
 
-Import, and compose `<Player>` component to your app:
+Import, and compose `<VideoPlayer>` component to your app:
 
 ```jsx
 import React from 'react'
-import {Player} from 'playcraft'
+import {VideoPlayer} from 'playcraft/react'
 
 const MyApp = () => {
   return (
     <MyContainer>
-      <Player
-        host={playbackServerUrl}
-        content={{
-          contentType: 'videos',
-          contentId: '1',
+      <VideoPlayer 
+        source={{
+          dash: 'https://dash.akamaized.net/dash264/TestCases/1a/sony/SNE_DASH_SD_CASE1A_REVISED.mpd'
         }}
-        licenseKey={bitmovinLicenseKey}
-        accessToken={accessToken}
-        deviceId={deviceId}
+        autoplay
+        bitmovin={{
+          key: 'my-license-key'
+        }}
       />
     </MyContainer>
   )
 }
 ```
-
-Minimal options are:
-
-- `host`: URL of playback server.
-- `content.contentType`: Type of content (`videos` or `lives`)
-- `content.contentId`
-- `licenseKey`: Bitmovin license key, this is bound to project site domain, this is not used in development (localhost).
-
-`accessToken`, `deviceId` are also required in most cases.
-
-To use this package with Gitlab pipelines, deploy keys should be added to allow the Gitlab runner accessing this package, please contact us to add `ci-deploy-key` of the runner to repository deploy keys.
 
 ### Legacy Browser Support
 
@@ -63,13 +55,121 @@ Currently polyfills may be required for these features :
 
 ## API Reference
 
-### `<Player>`
+### `loadPlayer`
 
-Import with: `import {Player} from 'playcraft'`.
+Load the player & return reference to player instance.
 
-The player React component to integrate with React based enterprise projects, highly customized, less flexible but easy & fast to use.
+Currently, this load Bitmovin player with necessary modules based on current browser.
 
-#### Props for Source and playback Server
+Reference to Bitmovin player object: https://bitmovin.com/docs/player/api-reference/web/web-sdk-api-reference-v8#/player/web/8/docs/interfaces/core.playerapi.html
+
+```js
+import {loadPlayer} from 'playcraft/core'
+
+const player = await loadPlayer(
+  document.querySelector('video'),
+  options
+)
+```
+
+### Plain JavaScript interface
+
+While we can use the player object directly, this package also provides functions the works with all base players.
+
+```js
+import {
+  subscribeMediaState,
+  load,
+  playOrPause,
+  seek,
+} from 'playcraft/core'
+```
+
+### `<VideoPlayer>`
+
+Import with: `import {VideoPlayer} from 'playcraft/react'`.
+
+Basic player component as a React component, a wrapper around Bitmovin player.
+
+This renders video with basic player UI.
+
+Example:
+
+```js
+<VideoPlayer 
+  source={{
+    dash: 'https://dash.akamaized.net/dash264/TestCases/1a/sony/SNE_DASH_SD_CASE1A_REVISED.mpd'
+  }}
+  autoplay
+  bitmovin={{
+    key: 'my-license-key'
+  }}
+/>
+```
+
+#### Props
+
+**`style`**
+
+Style of top level element of this component.
+
+**`source`**
+
+An object contains URLs to the MPEG-DASH manifest and HLS playlist for the video to play.
+
+**`autoplay`**
+
+Start playback when player component is mounted.
+
+Defaults to `false`.
+
+**`autohide`**
+
+Autohide player UI after no UI interaction after 3 seconds.
+
+Defaults to `false`.
+
+**`seekbar.marks`**
+
+Time points to highlight on the seekbar.
+
+**`seekbar.addons`**
+
+Components to be rendered when seekbar is hovered.
+
+**`bitmovin`**
+
+[Bitmovin config](https://bitmovin.com/docs/player/api-reference/web/web-sdk-api-reference-v8#/player/web/8/docs/interfaces/core_config.playerconfig.html).
+
+Bitmovin player will be loaded if this prop is specified.
+
+**`videoRef`**
+
+Ref to html video element, use this for custom integrations.
+
+**`playerRef`**
+
+Ref to base player instance, use this for custom integrations.
+
+**`onPlayerLoaded`**
+
+Called when the player is loaded.
+
+**Other Props**
+
+Additional props will be passed to video element.
+
+### `<Player>` for Enterprise
+
+Import with: `import {Player} from 'playcraft/enterprise'`.
+
+`import {Player} from 'playcraft'` is deprecated and will be removed in next major version.
+
+All-in-one player React component with features pre-integrated, feature rich and fast to integrate with enterprise projects.
+
+Props of `<VideoPlayer>` can also be used.
+
+#### Props for playback server
 
 **`host`**
   
@@ -88,6 +188,10 @@ Access token of current user, this is optional if access control is not needed.
 
 This will be added to header `Authorization` of playback API requests.
 
+**`deviceId`**
+
+Unique identifier of current device, needed for concurrent device count limit.
+
 #### Props for Bitmovin Player
 
 **`licenseKey`**
@@ -95,6 +199,7 @@ This will be added to header `Authorization` of playback API requests.
 Bitmovin Player license, the player will start only if the domain name is localhost or in alowed list.
 
 When starting a new project, contact core tech TPM or CPT team member to create a key in [Bitmovin Dashboard](https://bitmovin.com/dashboard/player/licenses).
+
 
 **`config`**
 
@@ -137,23 +242,11 @@ Options:
 When `preload` is set to `none` without `coverImageUrl`, user can tap play button to start playback,
 and in this case autoplay is always enabled, so `load()` calls will start playback even if `autoPlay` is set to `false`.
 
-**`autoPlay`**
+**`startTime`**
 
-Start playback when player component is mounted.
+Start playback at specified time (seconds, factorial).
 
-Defaults to `false`.
-
-**`quality`**
-
-Prefered quality to play, specify by height of resolution like `720`, `1080`, if specified height doesn't exist, a higher resolution will be used.
-
-Since the player plays with adaptive bitrate, quality is actually defined max resultion can be adoptd.
-
-#### Props for Advanced Features
-
-**`deviceId`**
-
-Unique identifier of current device, needed for concurrent device count limit.
+⚠️ Caution: Seeking is not frame accurate in major browsers at this time, and start position will be inconsistent across browsers.
 
 **`autoPlayNext`**
 
@@ -163,23 +256,91 @@ This takes effect of if the video have next episode.
 
 Defaults to `false`.
 
+**`quality`**
+
+Prefered quality to play, specify by height of resolution like `720`, `1080`, if specified height doesn't exist, a higher resolution will be used.
+
+Since the player plays with adaptive bitrate, quality is actually defined max resultion can be adoptd.
+
+On Safari or iOS Chrome which needs native HLS, this feature is disabled by default.
+
+If you want to enable it, please use object form with `qualitySelectionHack: true`.
+
+User even could define custom quality text by object form:
+
+```js
+<Player
+  quality={
+    default: 1080,
+    getQualityText: ({width, height}) => `${height}p`,
+    qualitySelectionHack: true
+  }
+/>
+```
+
 **`thumbnailSeeking`**
 
 Option to enable / disable thumbnail seeking, if enabled but not available, thumbnails won't be shown.
 
 Default is `false`.
 
+**`drm`**
+
+Strategy function to generate DRM configuration.  
+Currently, we apply two helper functions: `getDefaultDrmConfig` and `getEnterpriseDrmConfig`.  
+`getEnterpriseDrmConfig` strategy places token to X-Custom-Data header in DRM flow.  
+`getDefaultDrmConfig` strategy sets token to authorization header instead of X-Custom-Data.  
+The appropriate strategy is based on your DRM service.  
+This prop defaults to `getDefaultDrmConfig` for product player, `getEnterpriseDrmConfig` for enterprise player.
+
+**Example**
+
+Choose enterprise strategy function
+```jsx
+import { getEnterpriseDrmConfig } from 'playcraft'
+...
+    <Player
+      ...
+      drm={getEnterpriseDrmConfig}
+      ...
+    >
+```
+
 #### Props for player events
 
 **`onError`**
 
+Example:
+
+```js
+({
+  from, // The module where the error occurred. May be 'API', 'Player' and 'UI'.
+  error: {
+    code, // error code
+    message, // origin error message
+  },
+  content, // player content prop
+}) => {}
+```
+
 **`onSourceLoaded`**
+
+**`onReady`**
 
 **`onPlay`**
 
 **`onPlaying`**
 
 **`onSeek`**
+
+Example:
+
+```js
+(
+  seekTarget, // The target position (in seconds)
+  currentPosition // The current position (in seconds)
+) => {}
+```
 
 **`onSeeked`**
 
@@ -212,7 +373,34 @@ Example:
 ) => {}
 ```
 
+**`onMuted`**
+    
+**`onUnmuted`**
+
+**`onStallStarted`**
+
+**`onStallEnded`**
+
+**`onReplay`**
+
+**`onVideoQualityChanged`**
+
+Example:
+
+```js
+(
+  targetQuality, // The target quality name
+  sourceQuality, // the previous quality name
+) => {}
+```
+
+**`onMediaSourceChanged`**
+
 **`onEnded`**
+
+**`onEnterFullscreen`**
+
+**`onExitFullscreen`**
 
 **`onViewModeChange`**
 
@@ -226,7 +414,89 @@ Example:
   }) => {}
 ```
 
+**`onChangeToNextVideo`**
+
+Example:
+
+```js
+  ({
+    videoId // This is the video id that the player wants to change.
+  }) => {}
+```
+
+**`onChangeToPreviousVideo`**
+
+Example:
+
+```js
+  ({
+    videoId // This is the video id that the player wants to change.
+  }) => {}
+```
+
 **`onBack`**
+
+### Plugins
+
+Import from `playcraft/plugins`.
+
+While this library provides common features, some of features are not required in all use cases, these features are implemented as plguins, to make app package dependencies clean,
+and bundle size won't increace with unused features.
+
+⚠️ When using plugins with React UI, make sure the plugins are stored with a reference and 
+are not initialized on re-render(see React example below).
+
+Since main bundle is not [side-effect-free](https://webpack.js.org/guides/tree-shaking/#mark-the-file-as-side-effect-free) yet, plugins are in sub bundle `playcraft/plugins`.
+
+#### `MediaTailorPlugin`
+
+This plugin loads streams with server-side stitched ad from MediaTailor, and provides ad related functionalies.
+
+Ad UI is not included in this plugin.
+
+**`adParams`**
+
+⚠️ Warning: this prop is experimental.
+
+Set personalized ads for MediaTailor.
+
+This props should be inserted with `MediaTailorPlugin` contructor.
+
+Default is empty JSON.
+
+```jsx
+const adParams = { user: 'tim' }
+const plugin = MediaTailorPlugin({adParams})
+```
+
+**Features**
+
+- Load ad stitched streams from MediaTailor
+- Load ad tracking event data & send tracking events(beacons)
+- Snapback
+- Provide playback time of original content
+- Provide ad playback status
+- Provide ad events
+- Provide skip ad function
+
+**Example for React**
+
+To avoid re-initializing plugins on re-render, please wrap it with useMemo.
+
+```js
+import {Player} from 'playcraft'
+import {MediaTailorPlugin} from 'playcraft/plugins'
+
+const MyPlayerView = () => {
+  const plugins = useMemo(() => [MediaTailorPlugin()], [])
+
+  return (
+    <MyContainer>
+      <Player plugins={plugins} />
+    </MyContainer>
+  )
+}
+```
 
 **Example for Cast receiver**
 
