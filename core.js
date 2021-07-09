@@ -13,7 +13,9 @@ const loadBitmovin = async ({
   config = {},
 }) => {
   // Don't move module paths to array or other variables! they need to be resolved by bundlers
-  const {Player} = await import('bitmovin-player/modules/bitmovinplayer-core')
+  const {Player, PlayerEvent} = await import(
+    'bitmovin-player/modules/bitmovinplayer-core'
+  )
   const nativeHls = needNativeHls()
   const bitmovinModules = []
     .concat(
@@ -60,6 +62,14 @@ const loadBitmovin = async ({
   }
   const player = new Player(container, configs)
   player.setVideoElement(videoElement)
+  player.on(PlayerEvent.SourceLoaded, () => {
+    if (player.isLive()) {
+      // eslint-disable-next-line no-param-reassign
+      player.setPlaybackSpeed(1) // no video event fires when live stream loaded, fire one so that we can handle like VOD
+
+      videoElement.dispatchEvent(new Event('canplay'))
+    }
+  })
   return player
 }
 
@@ -126,9 +136,23 @@ const subscribeMediaState = (media, updateState, plugins = []) => {
     on(media, 'error', () =>
       syncState({
         playbackState: 'error',
+        waiting: false,
       })
     ),
-    on(media, 'play', syncState),
+    on(media, 'canplay', () =>
+      syncState({
+        playbackState: 'canplay',
+        waiting: false,
+      })
+    ),
+    on(
+      media,
+      'play',
+      syncState,
+      syncState({
+        paused: false,
+      })
+    ),
     on(media, 'paused', () =>
       syncState({
         playbackState: 'paused',
@@ -137,6 +161,11 @@ const subscribeMediaState = (media, updateState, plugins = []) => {
     on(media, 'seeking', () =>
       syncState({
         waiting: true,
+      })
+    ),
+    on(media, 'seeked', () =>
+      syncState({
+        waiting: false,
       })
     ),
     on(media, 'timeupdate', () =>
@@ -169,9 +198,9 @@ const subscribeMediaState = (media, updateState, plugins = []) => {
   ]
   syncState()
   return () => registered.forEach(off => off())
-}
+} // TODO maybe adContainer is too specific for core, we should find a better place for it
 
-const load = async (media, {player, plugins = []}, source) => {
+const load = async (media, {player, plugins = [], adContainer}, source) => {
   const streamFormat = player.getSupportedTech()[0].streaming
   const merged = await plugins.reduce(async (loadChain, plugin) => {
     var _plugin$load
@@ -184,6 +213,7 @@ const load = async (media, {player, plugins = []}, source) => {
       : _plugin$load.call(plugin, manifestItem, {
           video: media,
           player,
+          adContainer,
         }))
 
     if (overrides) {
@@ -208,6 +238,7 @@ const playOrPause = (media, {player}) => {
   }
 
   if (media.paused) {
+    media.play()
     return player.play()
   }
 
