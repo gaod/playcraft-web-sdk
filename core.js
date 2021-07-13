@@ -114,13 +114,15 @@ const getMediaElementState = (media, plugins) => {
 
 const subscribeMediaState = (media, updateState, plugins = []) => {
   let state = {
-    playbackState: 'loading',
-    waiting: true,
+    playbackState: 'init',
+    waiting: false,
     ...getMediaElementState(media, plugins),
   }
 
   const syncState = update => {
-    const videoElementState = getMediaElementState(media, plugins)
+    const videoElementState = getMediaElementState(media, plugins) // when playing SSAI stream,
+    // sometimes duration changes to wrong value when playing an ad
+
     const overrides =
       state.duration > 0
         ? {
@@ -137,6 +139,14 @@ const subscribeMediaState = (media, updateState, plugins = []) => {
       syncState({
         playbackState: 'error',
         waiting: false,
+      })
+    ),
+    on(media, 'loadstart', () =>
+      syncState({
+        seekEnabled: false,
+        duration: 0,
+        playbackState: 'loading',
+        waiting: true,
       })
     ),
     on(media, 'canplay', () =>
@@ -179,15 +189,6 @@ const subscribeMediaState = (media, updateState, plugins = []) => {
     on(media, 'ended', () =>
       syncState({
         playbackState: 'ended',
-      })
-    ), // when playing SSAI stream,
-    // sometimes duration changes to wrong value when playing an ad
-    on(media, 'emptied', () =>
-      syncState({
-        seekEnabled: false,
-        duration: 0,
-        playbackState: 'loading',
-        waiting: true,
       })
     ),
     on(media, 'durationchange', () => {

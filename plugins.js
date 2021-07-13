@@ -610,9 +610,8 @@ const snapback = ({streamManager, originTime, seekTime, seek}) => {
       : streamManager.previousCuePointForStreamTime(seekTime)
 
   if (
-    seekTime >
-      (cuePoint === null || cuePoint === void 0 ? void 0 : cuePoint.end) &&
-    seekTime > originTime
+    (cuePoint === null || cuePoint === void 0 ? void 0 : cuePoint.start) >
+    originTime
   ) {
     once(streamManager, 'adBreakEnded', async () => {
       // wait for ad playing flag to clear before resuming, TODO seek earlier
@@ -691,6 +690,10 @@ const createStreamManager = (videoElement, {player, emitter}) => {
 
   const handleTimeUpdate = streamTime => {
     // TODO get tracking events with actual buffer length
+    if (!Number.isFinite(streamTime)) {
+      return
+    }
+
     if (player.isLive() && streamTime > state.currentTime + 5) {
       state.currentTime = streamTime
       refreshTrackingData()
@@ -1017,9 +1020,22 @@ const ensureDaiApi = async () => {
 const ImaDaiPlugin = () => {
   const emitter = mitt()
   const ref = {}
+
+  const reset = () => {
+    var _ref$streamManager
+
+    ref.progress = undefined
+    ;(_ref$streamManager = ref.streamManager) === null ||
+    _ref$streamManager === void 0
+      ? void 0
+      : _ref$streamManager.reset()
+  }
+
   return {
     load: async (manifestItem, {player, video, adContainer}) => {
-      var _manifestItem$ssai, _ref$streamManager
+      var _manifestItem$ssai, _ref$streamManager2
+
+      reset()
 
       if (
         !(
@@ -1033,10 +1049,10 @@ const ImaDaiPlugin = () => {
 
       const {live: liveOptions, vod: vodOptions} = manifestItem.ssai.google_dai
       const daiApi = await ensureDaiApi()
-      ;(_ref$streamManager = ref.streamManager) === null ||
-      _ref$streamManager === void 0
+      ;(_ref$streamManager2 = ref.streamManager) === null ||
+      _ref$streamManager2 === void 0
         ? void 0
-        : _ref$streamManager.reset()
+        : _ref$streamManager2.reset()
       ref.streamManager = new daiApi.StreamManager(video, adContainer)
       pipeEvents(ref.streamManager, emitter, [
         'cuepointsChanged',
@@ -1093,14 +1109,7 @@ const ImaDaiPlugin = () => {
         adRemainingTime: ref.progress.duration - ref.progress.currentTime,
       },
     on: (name, listener) => emitter.on(name, listener),
-    reset: () => {
-      var _ref$streamManager2
-
-      return (_ref$streamManager2 = ref.streamManager) === null ||
-        _ref$streamManager2 === void 0
-        ? void 0
-        : _ref$streamManager2.reset()
-    },
+    reset,
   }
 }
 
