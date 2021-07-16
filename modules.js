@@ -1,4 +1,4 @@
-function mitt(n){return {all:n=n||new Map,on:function(t,e){var i=n.get(t);i&&i.push(e)||n.set(t,[e]);},off:function(t,e){var i=n.get(t);i&&i.splice(i.indexOf(e)>>>0,1);},emit:function(t,e){(n.get(t)||[]).slice().map(function(n){n(e);}),(n.get("*")||[]).slice().map(function(n){n(t,e);});}}}
+import mitt from 'mitt';
 
 const on = (target, name, handler) => {
   target.addEventListener(name, handler);
@@ -15,10 +15,10 @@ const once = (target, name, handler) => {
   return () => target.removeEventListener(name, oneTime);
 };
 
+/* eslint-disable no-bitwise */
 const uuidv4 = () => {
   const crypto = window.crypto || window.msCrypto;
-  return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => // eslint-disable-next-line no-bitwise
-  (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+  return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
 };
 
 const modes = {

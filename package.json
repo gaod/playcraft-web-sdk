@@ -1,25 +1,27 @@
 {
   "name": "playcraft",
-  "version": "1.3.4",
+  "version": "1.4.0",
   "module": "dist/playcraft.module.js",
   "main": "dist/playcraft.js",
   "types": "./index.d.ts",
+  "files": [
+    "dist",
+    "plugins.js",
+    "core.js",
+    "modules.js"
+  ],
   "repository": {
     "type": "git",
     "url": "https://gitlab.kkinternal.com/playback/web-playcraft"
   },
   "scripts": {
-    "develop": "webpack-dev-server --env.ENV=develop",
-    "start": "superstatic --port 3000",
+    "develop": "next",
+    "start": "next start",
     "test": "jest --coverage",
     "watch:test": "jest --watch",
     "build": "rollup -c",
+    "build-sample": "rollup -c && next build && next export",
     "release": "standard-version -a",
-    "build-lib": "webpack --env.ENV=build-lib",
-    "build-sample": "webpack --env.ENV=build-sample",
-    "dev-ssr": "next -p 5566",
-    "start-next": "next start",
-    "build-sample-ssr": "rollup -c && next build",
     "now-build": "mv next-build .next || echo 'Not a next build, skip moving'"
   },
   "devDependencies": {
@@ -27,6 +29,7 @@
     "@babel/eslint-parser": "^7.12.1",
     "@babel/eslint-plugin": "^7.12.1",
     "@babel/plugin-proposal-class-properties": "^7.10.4",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.14.5",
     "@babel/plugin-transform-runtime": "^7.12.10",
     "@babel/preset-env": "^7.12.11",
     "@babel/preset-react": "^7.12.10",
@@ -36,6 +39,7 @@
     "@commitlint/config-conventional": "^12.0.1",
     "@emotion/babel-plugin": "^11.1.2",
     "@emotion/eslint-plugin": "^11.0.0",
+    "@material-ui/core": "^4.11.3",
     "@rollup/plugin-babel": "^5.2.2",
     "@rollup/plugin-commonjs": "^17.0.0",
     "@rollup/plugin-json": "^4.1.0",
@@ -47,7 +51,8 @@
     "eslint": "^7.16.0",
     "eslint-config-airbnb": "^18.2.1",
     "eslint-config-airbnb-base": "^14.2.1",
-    "eslint-config-prettier": "^7.1.0",
+    "eslint-config-prettier": "^8.2.0",
+    "eslint-import-resolver-webpack": "^0.13.0",
     "eslint-plugin-compat": "^3.9.0",
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-jest": "^24.1.3",
@@ -59,20 +64,17 @@
     "jest": "^26.6.3",
     "lint-staged": ">=10",
     "msw": "^0.24.2",
-    "next": "10.0.4",
+    "next": "10.1.3",
     "node-fetch": "^2.6.1",
     "prettier": "^2.2.1",
     "prop-types": "^15.7.2",
     "react": "17.0.1",
+    "react-cool-form": "^0.1.0",
     "react-dom": "17.0.1",
     "react-hot-loader": "^3.1.1",
     "rollup": "^2.35.1",
     "rollup-plugin-includepaths": "^0.2.4",
     "standard-version": "^9.1.1",
-    "superstatic": "^6.0.4",
-    "webpack": "^4.44.2",
-    "webpack-cli": "^3.3.12",
-    "webpack-dev-server": "^3.1.14",
     "xmldom": "^0.4.0"
   },
   "dependencies": {
@@ -112,13 +114,12 @@
     "plugins": [
       "@emotion/babel-plugin",
       "@babel/proposal-class-properties",
+      "@babel/proposal-nullish-coalescing-operator",
       "@babel/proposal-optional-chaining"
     ],
     "env": {
       "test": {
         "plugins": [
-          "@babel/proposal-optional-chaining",
-          "@babel/proposal-nullish-coalescing-operator",
           "@babel/transform-modules-commonjs"
         ]
       }
@@ -130,6 +131,7 @@
       "/dist/**",
       "/demo/**/*.bundle.*",
       "/plugins.js",
+      "/core.js",
       "/modules.js"
     ],
     "parser": "@babel/eslint-parser",
@@ -145,8 +147,7 @@
       "airbnb",
       "airbnb/hooks",
       "plugin:compat/recommended",
-      "prettier",
-      "prettier/react"
+      "prettier"
     ],
     "env": {
       "browser": true,
@@ -184,10 +185,30 @@
         "URL"
       ],
       "import/resolver": {
-        "node": {
-          "paths": [
-            "src"
-          ]
+        "webpack": {
+          "config": {
+            "resolve": {
+              "extensions": [
+                "",
+                ".js",
+                ".jsx",
+                ".ts",
+                ".tsx",
+                "..."
+              ],
+              "modules": [
+                "node_modules",
+                "src"
+              ],
+              "alias": {
+                "playcraft/react": "react.js",
+                "playcraft/modules": "modules.js",
+                "playcraft/plugins": "plugins/index.js",
+                "playcraft/core": "playerCore/index.js",
+                "playcraft": "index.js"
+              }
+            }
+          }
         }
       },
       "react": {
@@ -228,6 +249,9 @@
       "<rootDir>/node_modules/",
       "<rootDir>/sample/node_modules/"
     ],
+    "coveragePathIgnorePatterns": [
+      "<rootDir>/test/mocks"
+    ],
     "testEnvironment": "node",
     "coverageReporters": [
       "json",
@@ -239,7 +263,7 @@
   },
   "standard-version": {
     "scripts": {
-      "postbump": "yarn build && git add dist plugins.js modules.js"
+      "postbump": "yarn build && git add dist plugins.js core.js modules.js"
     }
   }
 }

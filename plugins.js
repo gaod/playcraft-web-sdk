@@ -307,7 +307,7 @@ class Impression {
   }
   /**
    * @description To snapback if seeking over some ads
-   * @param {number} to 
+   * @param {number} to
    */
 
 
@@ -466,8 +466,11 @@ const addFetchPolyfill = () => {
   };
 };
 
-const fetchStreamInfo = async (url) => fetch(url, {
-  method: 'POST'
+const fetchStreamInfo = async (url, adsParams) => fetch(url, {
+  method: 'POST',
+  body: JSON.stringify({
+    adsParams
+  })
 }).then(result => result.json());
 
 const on = (eventTarget, eventName, handler) => {
@@ -525,7 +528,7 @@ const snapback = ({
 }) => {
   const cuePoint = streamManager === null || streamManager === void 0 ? void 0 : streamManager.previousCuePointForStreamTime(seekTime);
 
-  if (seekTime > (cuePoint === null || cuePoint === void 0 ? void 0 : cuePoint.end) && seekTime > originTime) {
+  if ((cuePoint === null || cuePoint === void 0 ? void 0 : cuePoint.start) > originTime) {
     once(streamManager, 'adBreakEnded', async () => {
       // wait for ad playing flag to clear before resuming, TODO seek earlier
       await new Promise(resolve => setTimeout(resolve, 20));
@@ -600,6 +603,10 @@ const createStreamManager = (videoElement, {
 
   const handleTimeUpdate = streamTime => {
     // TODO get tracking events with actual buffer length
+    if (!Number.isFinite(streamTime)) {
+      return;
+    }
+
     if (player.isLive() && streamTime > state.currentTime + 5) {
       state.currentTime = streamTime;
       refreshTrackingData();
@@ -622,7 +629,7 @@ const createStreamManager = (videoElement, {
   const streamManager = {
     requestStream: async (options = {}) => {
       const reportingUrl = options.client_side_reporting_url;
-      const info = await fetchStreamInfo(reportingUrl).catch(error => ({
+      const info = await fetchStreamInfo(reportingUrl, options.adParams).catch(error => ({
         error
       }));
 
@@ -725,6 +732,8 @@ const init = (options, {
     ref.adEndTime = -1;
   });
   player === null || player === void 0 ? void 0 : (_player$on = player.on) === null || _player$on === void 0 ? void 0 : _player$on.call(player, 'sourceloaded', () => {
+    ref.isLive = player.isLive();
+
     if (player.manifest.dash && player.isLive()) {
       // ad start / end time is based on availabilityStartTime in MPD manifest
       streamManager.setMpdStartTime(getMpdStartTime(player.getManifest()));
@@ -746,10 +755,14 @@ const init = (options, {
 };
 
 const MediaTailorPlugin = ({
+  adParams,
   skipWatched
 } = {}) => {
   const emitter = mitt();
   let ref = {};
+  let options = {
+    adParams
+  };
   return {
     load: async (manifestItem, {
       player,
@@ -768,6 +781,7 @@ const MediaTailorPlugin = ({
         return manifestItem;
       }
 
+      mediaTailorOptions.adParams = options.adParams;
       const streamManager = createStreamManager(video, {
         player,
         emitter
@@ -809,9 +823,10 @@ const MediaTailorPlugin = ({
       });
     },
     skipAd: () => ref.streamManager.skipAd(),
-    getPlaybackStatus: () => ref.streamManager && {
-      currentTime: ref.streamManager.contentTimeForStreamTime(ref.video.currentTime),
-      duration: ref.streamManager.contentTimeForStreamTime(ref.video.duration),
+    getPlaybackStatus: () => ref.streamManager && { ...(!ref.isLive && {
+        currentTime: ref.streamManager.contentTimeForStreamTime(ref.video.currentTime),
+        duration: ref.streamManager.contentTimeForStreamTime(ref.video.duration)
+      }),
       ...(ref.adEndTime > 0 && {
         adRemainingTime: ref.adEndTime - ref.video.currentTime
       })
@@ -822,6 +837,9 @@ const MediaTailorPlugin = ({
 
       (_ref$streamManager2 = ref.streamManager) === null || _ref$streamManager2 === void 0 ? void 0 : _ref$streamManager2.reset();
       ref.streamManager = undefined;
+    },
+    setOptions: updatedOptions => {
+      options = updatedOptions;
     }
   };
 };
@@ -860,13 +878,23 @@ const ensureDaiApi = async () => {
 const ImaDaiPlugin = () => {
   const emitter = mitt();
   const ref = {};
+
+  const reset = () => {
+    var _ref$streamManager;
+
+    ref.progress = undefined;
+    (_ref$streamManager = ref.streamManager) === null || _ref$streamManager === void 0 ? void 0 : _ref$streamManager.reset();
+  };
+
   return {
     load: async (manifestItem, {
       player,
       video,
       adContainer
     }) => {
-      var _manifestItem$ssai, _ref$streamManager;
+      var _manifestItem$ssai, _ref$streamManager2;
+
+      reset();
 
       if (!((_manifestItem$ssai = manifestItem.ssai) !== null && _manifestItem$ssai !== void 0 && _manifestItem$ssai.google_dai)) {
         return;
@@ -877,7 +905,7 @@ const ImaDaiPlugin = () => {
         vod: vodOptions
       } = manifestItem.ssai.google_dai;
       const daiApi = await ensureDaiApi();
-      (_ref$streamManager = ref.streamManager) === null || _ref$streamManager === void 0 ? void 0 : _ref$streamManager.reset();
+      (_ref$streamManager2 = ref.streamManager) === null || _ref$streamManager2 === void 0 ? void 0 : _ref$streamManager2.reset();
       ref.streamManager = new daiApi.StreamManager(video, adContainer);
       pipeEvents(ref.streamManager, emitter, ['cuepointsChanged', 'adBreakStarted', 'adProgress', 'skippableStateChanged', 'adBreakEnded']);
       const requestOptions = {
@@ -910,11 +938,7 @@ const ImaDaiPlugin = () => {
       adRemainingTime: ref.progress.duration - ref.progress.currentTime
     },
     on: (name, listener) => emitter.on(name, listener),
-    reset: () => {
-      var _ref$streamManager2;
-
-      return (_ref$streamManager2 = ref.streamManager) === null || _ref$streamManager2 === void 0 ? void 0 : _ref$streamManager2.reset();
-    }
+    reset
   };
 };
 
