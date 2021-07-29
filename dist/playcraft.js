@@ -1148,7 +1148,7 @@ function isInScope(min, value, max) {
 function getVersion() {
   try {
     // eslint-disable-next-line no-undef
-    return "1.4.1";
+    return "1.4.2";
   } catch (e) {
     return undefined;
   }
@@ -2410,7 +2410,7 @@ const PlayerProvider = ({
     const logTarget = mapLogEvents({
       session: instance.current.session,
       playerName: 'bitmovin',
-      version: "1.4.1",
+      version: "1.4.2",
       video: videoRef.current,
       getPlaybackStatus: () => getPlaybackStatus$1(videoRef.current, options.plugins)
     });
@@ -6737,7 +6737,8 @@ const imageStyle$1 = {
   width: '100%',
   height: '100%',
   objectFit: 'contain',
-  transform: 'translate(-50%, -50%)'
+  transform: 'translate(-50%, -50%)',
+  background: '#000'
 };
 
 const CoverImageWrap = ({
