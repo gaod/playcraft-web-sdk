@@ -1,6 +1,6 @@
 {
   "name": "playcraft",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "module": "dist/playcraft.module.js",
   "main": "dist/playcraft.js",
   "types": "./index.d.ts",
