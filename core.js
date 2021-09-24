@@ -5,8 +5,15 @@ new UAParser();
 let nativeHls = null;
 function needNativeHls() {
   if (nativeHls == null) {
-    // querying unsupported codec may cause FireFox stop decoding video
-    nativeHls = /firefox/i.test(navigator.userAgent) ? '' : document.createElement('video').canPlayType('video/mp4; codecs="hvc1"');
+    // Don't let Android phones play HLS, even if some of them report supported
+    // This covers Samsung & OPPO special cases
+    const isAndroid = /android/i.test(navigator.userAgent); // canPlayType isn't reliable across all iOS verion / device combinations, so also check user agent
+
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent); // ref: https://stackoverflow.com/a/12905122/4578017
+    // none of our supported browsers other than Safari response to this
+
+    const canPlayHls = document.createElement('video').canPlayType('application/vnd.apple.mpegURL');
+    nativeHls = isAndroid || /firefox/i.test(navigator.userAgent) ? '' : isSafari ? 'maybe' : canPlayHls;
   }
 
   return nativeHls;
@@ -28,7 +35,6 @@ const loadBitmovin = async ({
   bitmovinModules.forEach(module => Player.addModule(module.default));
   const configs = {
     tweaks: {
-      stop_download_on_pause: true,
       native_hls_parsing: true
     },
     ui: false,
@@ -73,6 +79,16 @@ const on = (target, name, handler) => {
   return () => target.removeEventListener(name, handler);
 };
 
+const once = (target, name, handler) => {
+  const oneTime = (...args) => {
+    handler(...args);
+    target.removeEventListener(name, oneTime);
+  };
+
+  target.addEventListener(name, oneTime);
+  return () => target.removeEventListener(name, oneTime);
+};
+
 /* eslint-disable no-param-reassign */
 
 const getMediaElementState = (media, plugins) => {
@@ -115,6 +131,10 @@ const subscribeMediaState = (media, updateState, plugins = []) => {
   const registered = [on(media, 'error', () => syncState({
     playbackState: 'error',
     waiting: false
+  })), on(media, 'waiting', () => syncState({
+    waiting: true
+  })), on(media, 'stalled', () => syncState({
+    waiting: true
   })), on(media, 'loadstart', () => syncState({
     seekEnabled: false,
     duration: 0,
@@ -160,7 +180,8 @@ const load = async (media, {
     const overrides = await ((_plugin$load = plugin.load) === null || _plugin$load === void 0 ? void 0 : _plugin$load.call(plugin, manifestItem, {
       video: media,
       player,
-      adContainer
+      adContainer,
+      source: currentSource
     }));
 
     if (overrides) {
@@ -202,6 +223,7 @@ const seek = (media, {
   player,
   plugins = []
 }, time) => {
+  // TODO skip seeking to too near point, consider SSAI cases
   const seekPlugin = plugins.find(plugin => typeof plugin.handleSeek === 'function');
 
   const seekInternal = seekTime => {
@@ -211,6 +233,12 @@ const seek = (media, {
 
     media.currentTime = seekTime;
     media.dispatchEvent(new Event('seeking'));
+    once(media, 'seeked', () => {
+      // when seeking to the end it may result in a few seconds earlier
+      if (Math.abs(seekTime - media.currentTime) > 0.5) {
+        media.currentTime = seekTime;
+      }
+    });
   };
 
   if (seekPlugin) {

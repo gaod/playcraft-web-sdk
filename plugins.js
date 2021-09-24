@@ -778,7 +778,7 @@ const MediaTailorPlugin = ({
       const mediaTailorOptions = (_manifestItem$ssai = manifestItem.ssai) === null || _manifestItem$ssai === void 0 ? void 0 : _manifestItem$ssai.media_tailor;
 
       if (!mediaTailorOptions) {
-        return manifestItem;
+        return;
       }
 
       mediaTailorOptions.adParams = options.adParams;
@@ -942,4 +942,48 @@ const ImaDaiPlugin = () => {
   };
 };
 
-export { ImaDaiPlugin, MediaTailorPlugin };
+const wallTimeSeconds = () => Date.now() / 1000;
+
+const StallReloadPlugin = ({
+  stallThresholdSeconds = 10
+} = {}) => {
+  const state = {
+    lastVideoTime: 0,
+    lastTimer: 0,
+    lastUpdateSeconds: wallTimeSeconds()
+  };
+
+  const load = (_, {
+    player,
+    video,
+    source
+  }) => {
+    clearInterval(state.lastTimer);
+
+    const checkStall = async () => {
+      if (video.paused || video.playbackRate === 0 || state.lastVideoTime !== video.currentTime || !(video.currentTime > 0)) {
+        state.lastUpdateSeconds = wallTimeSeconds();
+        state.lastVideoTime = video.currentTime;
+        return;
+      }
+
+      if (wallTimeSeconds() - state.lastUpdateSeconds > stallThresholdSeconds) {
+        console.warn('Stall detected, reload to resume');
+        await player.load(source);
+        player.play();
+      }
+    };
+
+    state.lastVideoTime = video.currentTime;
+    state.lastTimer = setInterval(checkStall, stallThresholdSeconds / 8 * 1000);
+    video.addEventListener('play', () => {
+      state.lastUpdateSeconds = wallTimeSeconds();
+    });
+  };
+
+  return {
+    load
+  };
+};
+
+export { ImaDaiPlugin, MediaTailorPlugin, StallReloadPlugin };
