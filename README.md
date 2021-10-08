@@ -2,11 +2,13 @@
 
 Enjoy our latest update where we have fixed some bugs and improved our framework to provide you more stable playbacking experience.
 
-Playcraft provides core player and premium player.
+Playcraft provides core player, video player and Premium+ player.
 
 Core player has basic functionalities, and enables maximum customizations.
 
-Premium player wraps the logic of requesting video and verifying authorization, it also provides a control panel with basic control of playback, such like play, pause, seek ...etc.
+Video player is composed of core player and basic UI such as seekbar, play/pause button and loading icon.
+
+Premium+ player wraps the logic of requesting video and verifying authorization, it also provides a control panel with basic control of playback, such like play, pause, seek ...etc.
 
 Playcraft also provides Google Cast Sender integration and mini controller UI.
 
@@ -117,6 +119,19 @@ Style of top level element of this component.
 
 An object contains URLs to the MPEG-DASH manifest and HLS playlist for the video to play.
 
+The player also support playback with video element built-in support, specify `source.native` to use it.
+
+```js
+{
+  native: 'some url',
+  dash: 'this will be ignored'
+}
+```
+
+Props for other players (like Bitmovin) will be ignored if `source.native` is specified.
+
+Currently changing base player is not implemented, please re-mount player component when changing from native to DASH / HLS.
+
 **`autoplay`**
 
 Start playback when player component is mounted.
@@ -163,7 +178,7 @@ Additional props will be passed to video element.
 
 Import with: `import {Player} from 'playcraft'`.
 
-All-in-one player React component with features pre-integrated, feature rich and fast to integrate with enterprise or product projects.
+Premium+ player is all-in-one React component with features pre-integrated, feature rich and fast to integrate with enterprise or product projects.
 
 Props of `<VideoPlayer>` can also be used.
 
@@ -324,13 +339,17 @@ Default is `false`.
 **`drm`**
 
 Strategy function to generate DRM configuration.  
-Currently, we provide two helper functions: `getUpfrontDrmConfig` and `getEnterpriseDrmConfig`.  
-The main difference between the two is authorization mechanism.  
-`getEnterpriseDrmConfig` strategy places token to X-Custom-Data header in DRM flow.  
-`getUpfrontDrmConfig` strategy sets token to authorization header instead of X-Custom-Data.  
+Currently, we provide two helper functions: `getBVKDrmConfig` and `getEnterpriseDrmConfig`.  
+The main difference between the two is authorization mechanism.
+
+`getEnterpriseDrmConfig` strategy places token to X-Custom-Data header in DRM flow.
+
+`getBVKDrmConfig` strategy sets token to authorization header instead of X-Custom-Data.  
+This function is for BlendVision Kaleido. 
+
 The appropriate strategy is based on your DRM service.  
 
-Default is `getUpfrontDrmConfig`.
+Default is `getBVKDrmConfig`.
 
 #### Props for player events
 
@@ -463,6 +482,8 @@ Example:
 ```
 
 **`onBack`**
+
+Handler for the back button, if not specified, back button will be hidden.
 
 ### Plugins
 

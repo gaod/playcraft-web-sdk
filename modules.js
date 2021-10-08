@@ -95,7 +95,7 @@ const mapLogEvents = ({
 
   const registered = [on(session, 'error', error => {
     emitter.emit('playbackError', {
-      module_error_code: error.code,
+      module_error_code: error.code || error.data.code,
       ...commonPropties()
     });
   }), once(session, 'playerStarted', () => {

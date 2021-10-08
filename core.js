@@ -1,22 +1,38 @@
 import UAParser from 'ua-parser-js';
 
+/* eslint-disable no-param-reassign */
+const loadNative = ({
+  videoElement
+}) => ({
+  load: ({
+    native: url
+  }) => {
+    videoElement.src = url;
+    videoElement.style.height = '100%';
+    videoElement.style.width = '100%';
+  },
+  play: () => videoElement.play(),
+  pause: () => videoElement.pause(),
+  seek: time => {
+    videoElement.currentTime = time;
+  },
+  getVideoElement: () => videoElement,
+  getVideoQuality: () => ({}),
+  destroy: () => {}
+});
+
 /* eslint-disable no-plusplus */
 new UAParser();
-let nativeHls = null;
 function needNativeHls() {
-  if (nativeHls == null) {
-    // Don't let Android phones play HLS, even if some of them report supported
-    // This covers Samsung & OPPO special cases
-    const isAndroid = /android/i.test(navigator.userAgent); // canPlayType isn't reliable across all iOS verion / device combinations, so also check user agent
+  // Don't let Android phones play HLS, even if some of them report supported
+  // This covers Samsung & OPPO special cases
+  const isAndroid = /android/i.test(navigator.userAgent); // canPlayType isn't reliable across all iOS verion / device combinations, so also check user agent
 
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent); // ref: https://stackoverflow.com/a/12905122/4578017
-    // none of our supported browsers other than Safari response to this
+  const isSafari = /^((?!chrome|android).)*(safari|iPad|iPhone)/i.test(navigator.userAgent); // ref: https://stackoverflow.com/a/12905122/4578017
+  // none of our supported browsers other than Safari response to this
 
-    const canPlayHls = document.createElement('video').canPlayType('application/vnd.apple.mpegURL');
-    nativeHls = isAndroid || /firefox/i.test(navigator.userAgent) ? '' : isSafari ? 'maybe' : canPlayHls;
-  }
-
-  return nativeHls;
+  const canPlayHls = document.createElement('video').canPlayType('application/vnd.apple.mpegURL');
+  return isAndroid || /firefox/i.test(navigator.userAgent) ? '' : isSafari ? 'maybe' : canPlayHls;
 }
 
 const loadBitmovin = async ({
@@ -39,8 +55,7 @@ const loadBitmovin = async ({
     },
     ui: false,
     ...config,
-    playback: { // TODO resume volume from localStorage
-      ...config.playback,
+    playback: { ...config.playback,
       autoplay
     }
   };
@@ -54,14 +69,33 @@ const loadBitmovin = async ({
       videoElement.dispatchEvent(new Event('canplay'));
     }
   });
+  player.on(PlayerEvent.Error, data => {
+    var _window$Sentry;
+
+    const error = new Error(`Player: ${data.code}/${data.name}`);
+    console.error(error);
+    (_window$Sentry = window.Sentry) === null || _window$Sentry === void 0 ? void 0 : _window$Sentry.captureException(error);
+    videoElement.dispatchEvent(new ErrorEvent('PlayerError', {
+      error,
+      message: `Player Error: ${data.code}/${data.name}`
+    }));
+  });
   return player;
 };
 
 const loadPlayer = async (videoElement, {
   container,
   autoplay,
+  source,
   bitmovin
 }) => {
+  if (source !== null && source !== void 0 && source.native) {
+    const player = await loadNative({
+      videoElement
+    });
+    return player;
+  }
+
   if (bitmovin) {
     const player = await loadBitmovin({
       container,
@@ -133,9 +167,17 @@ const subscribeMediaState = (media, updateState, plugins = []) => {
     waiting: false
   })), on(media, 'waiting', () => syncState({
     waiting: true
-  })), on(media, 'stalled', () => syncState({
-    waiting: true
-  })), on(media, 'loadstart', () => syncState({
+  })), on(media, 'stalled', () => {
+    // Safari fires stalled events randomly.
+    // Maybe we could ignore this event in paused state.
+    if (media.paused) {
+      return;
+    }
+
+    syncState({
+      waiting: true
+    });
+  }), on(media, 'loadstart', () => syncState({
     seekEnabled: false,
     duration: 0,
     playbackState: 'loading',
@@ -146,7 +188,8 @@ const subscribeMediaState = (media, updateState, plugins = []) => {
   })), on(media, 'play', syncState, syncState({
     paused: false
   })), on(media, 'paused', () => syncState({
-    playbackState: 'paused'
+    playbackState: 'paused',
+    waiting: false
   })), on(media, 'seeking', () => syncState({
     waiting: true
   })), on(media, 'seeked', () => syncState({
@@ -171,7 +214,9 @@ const load = async (media, {
   plugins = [],
   adContainer
 }, source) => {
-  const streamFormat = player.getSupportedTech()[0].streaming;
+  var _player$getSupportedT;
+
+  const streamFormat = (_player$getSupportedT = player.getSupportedTech) === null || _player$getSupportedT === void 0 ? void 0 : _player$getSupportedT.call(player)[0].streaming;
   const merged = await plugins.reduce(async (loadChain, plugin) => {
     var _plugin$load;
 
@@ -212,8 +257,9 @@ const playOrPause = (media, {
   }
 
   if (media.paused) {
-    media.play();
-    return player.play();
+    // can't handle this at all, and safe to ignore
+    media.play().catch(error => console.warn(error));
+    return player.play().catch(error => console.warn(error));
   }
 
   return media.pause();
@@ -222,13 +268,13 @@ const playOrPause = (media, {
 const seek = (media, {
   player,
   plugins = []
-}, time) => {
+}, time, issuer) => {
   // TODO skip seeking to too near point, consider SSAI cases
   const seekPlugin = plugins.find(plugin => typeof plugin.handleSeek === 'function');
 
   const seekInternal = seekTime => {
     // when playing DASH, must call player.seek to make it work
-    player.seek(seekTime); // player.seek sets time after adding segments,
+    player.seek(seekTime, issuer); // player.seek sets time after adding segments,
     // set again to reflect instantly
 
     media.currentTime = seekTime;
