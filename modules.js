@@ -120,8 +120,21 @@ const mapLogEvents = ({
       video_startup_time: (Date.now() - state.moduleStartTime) / 1000,
       ...commonPropties()
     });
-  }), on(video, 'playing', dispatchStart), on(video, 'timeupdate', () => {
+  }), on(video, 'playing', dispatchStart), on(video, 'waiting', () => {
+    if (!state.bufferingStartTime) {
+      emitter.emit('bufferingStarted', commonPropties());
+      state.bufferingStartTime = Date.now();
+    }
+  }), on(video, 'timeupdate', () => {
     state.currentTime = getPlaybackStatus().currentTime;
+
+    if (state.bufferingStartTime) {
+      emitter.emit('bufferingEnded', {
+        buffering_second: (Date.now() - state.bufferingStartTime) / 1000,
+        ...commonPropties()
+      });
+      state.bufferingStartTime = undefined;
+    }
   }), on(video, 'pause', dispatchStop), on(video, 'seeking', () => {
     state.seekingFrom = state.currentTime;
   }), on(session, 'userSeeking', () => {

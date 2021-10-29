@@ -158,6 +158,14 @@ Components to be rendered when seekbar is hovered.
 
 Bitmovin player will be loaded if this prop is specified.
 
+**`shaka`**
+
+⚠️ Warning: this prop is experimental.
+
+[Shaka player config](https://shaka-player-demo.appspot.com/docs/api/tutorial-config.html)
+
+Choose Shaka player instead of Bitmovin and give shaka config.
+
 **`videoRef`**
 
 Ref to html video element, use this for custom integrations.

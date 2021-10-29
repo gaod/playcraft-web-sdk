@@ -80,18 +80,64 @@ const loadBitmovin = async ({
       message: `Player Error: ${data.code}/${data.name}`
     }));
   });
+  player.on(PlayerEvent.StallStarted, () => videoElement.dispatchEvent(new Event('waiting')));
   return player;
+};
+
+/* eslint-disable no-param-reassign */
+const loadShaka = async ({
+  videoElement,
+  config = {},
+  extraConfig
+}) => {
+  let player;
+  return {
+    load: async ({
+      dash,
+      hls
+    }) => {
+      const shaka = await import('shaka-player');
+      player = new shaka.Player(videoElement);
+      player.configure(config);
+      videoElement.autoplay = extraConfig.autoplay;
+
+      if (!videoElement.autoplay) {
+        videoElement.muted = false;
+      }
+
+      const assetUri = dash || hls;
+      player.load(assetUri);
+    },
+    play: () => videoElement.play(),
+    seek: time => {
+      videoElement.currentTime = time;
+    },
+    isLive: () => player.isLive(),
+    destroy: () => player.destroy()
+  };
 };
 
 const loadPlayer = async (videoElement, {
   container,
   autoplay,
   source,
-  bitmovin
+  bitmovin,
+  shaka
 }) => {
   if (source !== null && source !== void 0 && source.native) {
     const player = await loadNative({
       videoElement
+    });
+    return player;
+  }
+
+  if (shaka) {
+    const player = await loadShaka({
+      videoElement,
+      config: shaka,
+      extraConfig: {
+        autoplay
+      }
     });
     return player;
   }
@@ -104,7 +150,7 @@ const loadPlayer = async (videoElement, {
       config: bitmovin
     });
     return player;
-  } // TODO load other players: shaka, dash.js, hls.js
+  } // TODO load other players: dash.js, hls.js
 
 };
 
