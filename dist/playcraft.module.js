@@ -1108,7 +1108,7 @@ function isInScope(min, value, max) {
 function getVersion() {
   try {
     // eslint-disable-next-line no-undef
-    return "1.6.0";
+    return "1.7.0";
   } catch (e) {
     return undefined;
   }
@@ -2038,19 +2038,26 @@ const useCache = newState => {
   });
   return shallow(state, newState) ? state : newState;
 };
+/*
+  Rules:
+    1  Set `true` immediately in first time (For loadstart event)
+    2. Set `true` to waiting lazily but update waiting to `false` immediately
+*/
 
 const useLazyWaiting = waiting => {
+  const [first, setFirst] = useState(true);
   const [state, dispatch] = useState(waiting);
   const timer = useRef();
   useEffect(() => {
     clearTimeout(timer.current);
 
-    if (waiting) {
+    if (waiting && !first) {
       timer.current = setTimeout(() => {
         dispatch(waiting);
       }, 1000);
     } else {
       dispatch(waiting);
+      setFirst(false);
     }
 
     return () => clearTimeout(timer.current);
@@ -2404,7 +2411,7 @@ const PlayerProvider = ({
     const logTarget = mapLogEvents({
       session: instance.current.session,
       playerName: 'bitmovin',
-      version: "1.6.0",
+      version: "1.7.0",
       video: videoRef.current,
       getPlaybackStatus: () => getPlaybackStatus$1(videoRef.current, options.plugins)
     });
@@ -2505,9 +2512,8 @@ const StoreProvider = ({
     };
 
     return linkPluginEvents(options.plugins, {
-      cuepointsChanged: (event, plugin) => store.dispatch(UiAction.streamEventsChanged(event.getStreamData().cuepoints, plugin.getPlaybackStatus())),
+      cuepointsChanged: (event, plugin) => store.dispatch(UiAction.streamEventsChanged(event.cuepoints, plugin.getPlaybackStatus())),
       adBreakStarted: handleStart,
-      adProgress: handleStart,
       adBreakEnded: () => {
         dispatchSessionEvent('adBreakEnded');
         store.dispatch(UiAction.adBreakEnded());
@@ -4644,7 +4650,7 @@ const subscribeMediaState = (media, updateState, plugins = []) => {
     waiting: false
   })), on$1(media, 'play', syncState, syncState({
     paused: false
-  })), on$1(media, 'paused', () => syncState({
+  })), on$1(media, 'pause', () => syncState({
     playbackState: 'paused',
     waiting: false
   })), on$1(media, 'seeking', () => syncState({
@@ -4683,7 +4689,8 @@ const load = async (media, {
       video: media,
       player,
       adContainer,
-      source: currentSource
+      source: currentSource,
+      streamFormat
     }));
 
     if (overrides) {
@@ -4727,7 +4734,7 @@ const seek = (media, {
   plugins = []
 }, time, issuer) => {
   // TODO skip seeking to too near point, consider SSAI cases
-  const seekPlugin = plugins.find(plugin => typeof plugin.handleSeek === 'function');
+  const seekPlugin = plugins.find(plugin => typeof plugin.handleSeek === 'function' && plugin.isActive());
 
   const seekInternal = seekTime => {
     // when playing DASH, must call player.seek to make it work
@@ -6410,7 +6417,7 @@ const VideoPlayer = ({
     backItems: isWaiting ? /*#__PURE__*/jsx(LoadingSpinner, {}) : layoutProps.backItems,
     onClick: onClick,
     onMouseMove: onMouseMove,
-    children: [children, /*#__PURE__*/jsx(Backdrop, {
+    children: [children, uiType === 'mobile' && /*#__PURE__*/jsx(Backdrop, {
       open: !player || playbackState === 'loading',
       children: /*#__PURE__*/jsx(LoadingSpinner, {})
     })]
@@ -10103,7 +10110,7 @@ const Player = /*#__PURE__*/forwardRef(({
   autoplay = autoPlay,
   autoplayNext = autoPlayNext,
   startTime,
-  quality,
+  quality = {},
   mediaSource,
   thumbnailSeeking,
   supportEnvironmentList,
@@ -10762,6 +10769,25 @@ const seekingHandler = handleSeeking => {
   };
 };
 
+const snapback = ({
+  streamManager,
+  originTime,
+  seekTime,
+  seek
+}) => {
+  const cuePoint = streamManager === null || streamManager === void 0 ? void 0 : streamManager.previousCuePointForStreamTime(seekTime);
+
+  if ((cuePoint === null || cuePoint === void 0 ? void 0 : cuePoint.start) > originTime) {
+    once$1(streamManager, 'adBreakEnded', async () => {
+      // wait for ad playing flag to clear before resuming, TODO seek earlier
+      await new Promise(resolve => setTimeout(resolve, 20));
+      seek(seekTime);
+    });
+  }
+
+  seek((cuePoint === null || cuePoint === void 0 ? void 0 : cuePoint.start) > originTime ? cuePoint.start : seekTime);
+};
+
 const addFetchPolyfill = () => {
   window.fetch = async (url, {
     method
@@ -10827,25 +10853,6 @@ const getMpdStartTime = manifest => {
   const mpdDocument = new DOMParser().parseFromString(manifest, 'text/xml');
   const availabilityStartTime = mpdDocument.firstChild.getAttribute('availabilityStartTime');
   return new Date(availabilityStartTime).getTime() / 1000;
-};
-
-const snapback = ({
-  streamManager,
-  originTime,
-  seekTime,
-  seek
-}) => {
-  const cuePoint = streamManager === null || streamManager === void 0 ? void 0 : streamManager.previousCuePointForStreamTime(seekTime);
-
-  if ((cuePoint === null || cuePoint === void 0 ? void 0 : cuePoint.start) > originTime) {
-    once(streamManager, 'adBreakEnded', async () => {
-      // wait for ad playing flag to clear before resuming, TODO seek earlier
-      await new Promise(resolve => setTimeout(resolve, 20));
-      seek(seekTime);
-    });
-  }
-
-  seek((cuePoint === null || cuePoint === void 0 ? void 0 : cuePoint.start) > originTime ? cuePoint.start : seekTime);
 }; // Align to Google DAI StreamManager
 
 
@@ -10901,11 +10908,9 @@ const createStreamManager = (videoElement, {
     if (trackingData.avails.length > 0) {
       impression.adBreaks = state.adBreaks;
       emitter.emit('cuepointsChanged', {
-        getStreamData: () => ({
-          cuepoints: state.adBreaks.map(item => ({
-            start: getContentTime(state.adBreaks, item.startTimeInSeconds)
-          }))
-        })
+        cuepoints: state.adBreaks.map(item => ({
+          start: getContentTime(state.adBreaks, item.startTimeInSeconds)
+        }))
       });
     }
   };
@@ -11073,6 +11078,7 @@ const MediaTailorPlugin = ({
     adParams
   };
   return {
+    isActive: () => !!ref.streamManager,
     load: async (manifestItem, {
       player,
       video
@@ -11120,10 +11126,6 @@ const MediaTailorPlugin = ({
       };
     },
     handleSeek: (contentTime, seek) => {
-      if (!ref.streamManager) {
-        return seek(contentTime);
-      }
-
       snapback({
         streamManager: ref.streamManager,
         originTime: ref.video.currentTime,

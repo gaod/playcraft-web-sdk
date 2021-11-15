@@ -233,7 +233,7 @@ const subscribeMediaState = (media, updateState, plugins = []) => {
     waiting: false
   })), on(media, 'play', syncState, syncState({
     paused: false
-  })), on(media, 'paused', () => syncState({
+  })), on(media, 'pause', () => syncState({
     playbackState: 'paused',
     waiting: false
   })), on(media, 'seeking', () => syncState({
@@ -272,7 +272,8 @@ const load = async (media, {
       video: media,
       player,
       adContainer,
-      source: currentSource
+      source: currentSource,
+      streamFormat
     }));
 
     if (overrides) {
@@ -316,7 +317,7 @@ const seek = (media, {
   plugins = []
 }, time, issuer) => {
   // TODO skip seeking to too near point, consider SSAI cases
-  const seekPlugin = plugins.find(plugin => typeof plugin.handleSeek === 'function');
+  const seekPlugin = plugins.find(plugin => typeof plugin.handleSeek === 'function' && plugin.isActive());
 
   const seekInternal = seekTime => {
     // when playing DASH, must call player.seek to make it work
