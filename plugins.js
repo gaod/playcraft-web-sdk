@@ -775,9 +775,10 @@ const MediaTailorPlugin = ({
     isActive: () => !!ref.streamManager,
     load: async (manifestItem, {
       player,
-      video
+      video,
+      source = {}
     } = {}) => {
-      var _ref$streamManager, _manifestItem$ssai;
+      var _ref$streamManager, _manifestItem$ssai, _source$options;
 
       if (typeof fetch !== 'function') {
         addFetchPolyfill();
@@ -816,7 +817,7 @@ const MediaTailorPlugin = ({
         ssaiProvider: 'AWS',
         url,
         vastAvails: streamManager.getVastAvails(),
-        startTime: streamManager.streamTimeForContentTime(manifestItem.startTime)
+        startTime: streamManager.streamTimeForContentTime((_source$options = source.options) === null || _source$options === void 0 ? void 0 : _source$options.startTime)
       };
     },
     handleSeek: (contentTime, seek) => {
@@ -899,9 +900,10 @@ const ImaDaiPlugin = () => {
       player,
       video,
       adContainer,
-      streamFormat
+      streamFormat,
+      source = {}
     }) => {
-      var _manifestItem$ssai;
+      var _manifestItem$ssai, _source$options;
 
       reset();
 
@@ -971,10 +973,11 @@ const ImaDaiPlugin = () => {
       ref.video = video;
       return {
         ssaiProvider: 'DAI',
-        url
+        url,
+        startTime: ref.streamManager.streamTimeForContentTime((_source$options = source.options) === null || _source$options === void 0 ? void 0 : _source$options.startTime)
       };
     },
-    getPlaybackStatus: () => ref.streamManager && {
+    getPlaybackStatus: () => ref.streamManager && ref.video && {
       currentTime: ref.streamManager.contentTimeForStreamTime(ref.video.currentTime),
       duration: ref.streamManager.contentTimeForStreamTime(ref.video.duration),
       ...(ref.progress && {

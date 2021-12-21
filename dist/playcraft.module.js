@@ -1108,7 +1108,7 @@ function isInScope(min, value, max) {
 function getVersion() {
   try {
     // eslint-disable-next-line no-undef
-    return "1.7.0";
+    return "1.8.0";
   } catch (e) {
     return undefined;
   }
@@ -2411,7 +2411,7 @@ const PlayerProvider = ({
     const logTarget = mapLogEvents({
       session: instance.current.session,
       playerName: 'bitmovin',
-      version: "1.7.0",
+      version: "1.8.0",
       video: videoRef.current,
       getPlaybackStatus: () => getPlaybackStatus$1(videoRef.current, options.plugins)
     });
@@ -4040,14 +4040,33 @@ Event$1.defaultProps = {
 const Agent = ({
   command,
   preload = 'auto',
-  playerRef
+  playerRef,
+  videoRef
 }) => {
   const store = useContext(Context.Adapter);
+  const {
+    dispatch
+  } = useContext(Context.Module);
   useImperativeHandle(playerRef, () => ({
     load: () => store.dispatch(operator.loadContent),
     play: () => store.dispatch(PlayerAction.play()),
     pause: () => store.dispatch(PlayerAction.pause()),
-    seek: time => store.dispatch(PlayerAction.seek(time))
+    seek: time => store.dispatch(PlayerAction.seek(time)),
+    forward: seconds => {
+      store.dispatch(PlayerAction.seek(videoRef.current.currentTime + seconds));
+    },
+    rewind: seconds => {
+      store.dispatch(PlayerAction.seek(videoRef.current.currentTime - seconds));
+    },
+    setVolume: volume => {
+      if (videoRef.current.muted && volume > 0) {
+        videoRef.current.muted = false;
+      }
+
+      videoRef.current.volume = volume;
+    },
+    setPlaybackRate: rate => videoRef.current.playbackRate = rate,
+    setQuality: quality => dispatch(operator.changeQuality(quality))
   }));
   useEffect(() => {
     if (command === AgentCommand$1.AUTO) return store.addDispatchedListener((store, action) => {
@@ -4701,7 +4720,7 @@ const load = async (media, {
       return { ...currentSource,
         [streamFormat]: url,
         ...(startTime && {
-          options: { ...currentSource,
+          options: { ...currentSource.options,
             startTime
           }
         })
@@ -10012,6 +10031,7 @@ const PlaybackHooks = ({
   recommendation,
   playerRef,
   containerRef,
+  videoRef,
   onError,
   onMediaSourceChanged,
   onViewModeChange,
@@ -10070,7 +10090,8 @@ const PlaybackHooks = ({
       onSectionChange: onSectionChange
     }), castState !== CastState.CONNECTED && jsx$1(Agent, {
       preload: preload,
-      playerRef: playerRef
+      playerRef: playerRef,
+      videoRef: videoRef
     }), jsx$1(EnvironmentValidator, {
       supportEnvironmentList: supportEnvironmentList
     }), jsx$1(CastAdapter, {
@@ -10244,6 +10265,7 @@ const Player = /*#__PURE__*/forwardRef(({
           })
         }), jsx$1(PlaybackHooks, { ...options,
           playerRef: ref,
+          videoRef,
           containerRef,
           onError,
           onMediaSourceChanged,
@@ -11081,9 +11103,10 @@ const MediaTailorPlugin = ({
     isActive: () => !!ref.streamManager,
     load: async (manifestItem, {
       player,
-      video
+      video,
+      source = {}
     } = {}) => {
-      var _ref$streamManager, _manifestItem$ssai;
+      var _ref$streamManager, _manifestItem$ssai, _source$options;
 
       if (typeof fetch !== 'function') {
         addFetchPolyfill();
@@ -11122,7 +11145,7 @@ const MediaTailorPlugin = ({
         ssaiProvider: 'AWS',
         url,
         vastAvails: streamManager.getVastAvails(),
-        startTime: streamManager.streamTimeForContentTime(manifestItem.startTime)
+        startTime: streamManager.streamTimeForContentTime((_source$options = source.options) === null || _source$options === void 0 ? void 0 : _source$options.startTime)
       };
     },
     handleSeek: (contentTime, seek) => {

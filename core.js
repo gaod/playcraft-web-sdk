@@ -284,7 +284,7 @@ const load = async (media, {
       return { ...currentSource,
         [streamFormat]: url,
         ...(startTime && {
-          options: { ...currentSource,
+          options: { ...currentSource.options,
             startTime
           }
         })
