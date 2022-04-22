@@ -73,7 +73,9 @@ By default this loads Shaka player, you can specify `shaka` for Shaka player opt
 ```js
 import {loadPlayer} from 'playcraft/core'
 
-const player = await loadPlayer(document.querySelector('video'), {shaka: shakaOptions})
+const player = await loadPlayer(document.querySelector('video'), {
+  shaka: shakaOptions,
+})
 ```
 
 Base player to load is determined by options, `loadPlayer(videoElement, {bitmovin: bitmovinOptions})` loads Bitmovin as base player.
@@ -81,7 +83,6 @@ Base player to load is determined by options, `loadPlayer(videoElement, {bitmovi
 For Bitmovin, player with necessary modules based on current browser.
 
 Reference of Bitmovin player: https://bitmovin.com/docs/player/api-reference/web/web-sdk-api-reference-v8#/player/web/8/docs/interfaces/core.playerapi.html
-
 
 ### Plain JavaScript interface
 
@@ -500,7 +501,7 @@ Events are subject to change:
 - previousEpisode, nextEpisode
 - openSettings, closeSettings
 
-This prop is mainly for behaviors can only be observed inside premium player, for amplitude and log 
+This prop is mainly for behaviors can only be observed inside premium player, for amplitude and log
 services integration, see `mapLogEvents`.
 
 Playback properties are provided as an object, you can also add custom properties.
@@ -731,7 +732,9 @@ basePlayer content is `shaka`, `bitmovin`.
 Default is:
 
 ```js
-{basePlayer: 'shaka'}
+{
+  basePlayer: 'shaka'
+}
 ```
 
 You could switch to Bitmovin by `config` interface:
@@ -1039,12 +1042,26 @@ const MyPlayerView = () => {
 This plugin can also integrate with Playcraft Cast receiver.
 
 ```js
-import {MediaTailorPlugin} 'playcraft/plugins'
+import {MediaTailorPlugin} from 'playcraft/plugins'
 import {castService} from 'playcraft-google-cast'
 
 castService.start({
-  plugins: [MediaTailorPlugin()]
+  plugins: [MediaTailorPlugin()],
 })
+```
+
+#### `ImaDaiPlugin`
+
+This plugin enable the playcraft integration with [ImaDai SDK for HTML5](https://developers.google.com/interactive-media-ads/docs/sdks/html5/dai).
+You can use it as follow:
+
+```jsx
+import {ImaDaiPlugin} from 'playcraft/plugins'
+
+function ContainerComponent(props) {
+  const plugins = useMemo(() => [ImaDaiPlugin()], [])
+  return <PremiumPlusPlayer plugins={plugins} />
+}
 ```
 
 ### Modules

@@ -519,8 +519,28 @@ const mapLogEvents = ({
   };
 };
 
+const EnvironmentErrorName = {
+  NOT_SUPPORT_DEVICE: 'KKS.ERROR.DEVICE_IS_NOT_SUPPORTED',
+  NOT_SUPPORT_OS: 'KKS.ERROR.OS_IS_NOT_SUPPORTED',
+  NOT_SUPPORT_OS_VERSION: 'KKS.ERROR.PLEASE_UPGRADE_OS',
+  NOT_SUPPORT_BROWSER: 'KKS.ERROR.BROWSER_IS_NOT_SUPPORTED',
+  NOT_SUPPORT_BROWSER_VERSION: 'KKS.ERROR.PLEASE_UPGRADE_BROWSER'
+};
+
 /* eslint-disable no-plusplus */
-new UAParser();
+const parser = new UAParser();
+function getOS() {
+  return parser.getOS();
+}
+function getDevice() {
+  const device = parser.getDevice();
+  const osName = getOS().name;
+  if (device.type === undefined && osName === 'Android') device.type = 'tablet';
+  return device;
+}
+function getBrowser() {
+  return parser.getBrowser();
+}
 function needNativeHls() {
   // Don't let Android phones play HLS, even if some of them report supported
   // This covers Samsung & OPPO special cases
@@ -532,6 +552,101 @@ function needNativeHls() {
   const canPlayHls = document.createElement('video').canPlayType('application/vnd.apple.mpegURL');
   return isAndroid || /firefox/i.test(navigator.userAgent) ? '' : isSafari ? 'maybe' : canPlayHls;
 }
+
+function compareVersion(v1, v2) {
+  if (!/\d+(\.\d+)*/.test(v1)) throw Error(`the version format ${v1} is wrong`);
+  if (!/\d+(\.\d+)*/.test(v2)) throw Error(`the version format ${v2} is wrong`);
+  const v1parts = v1.split('.').map(p => Number(p));
+  const v2parts = v2.split('.').map(p => Number(p));
+
+  for (let i = 0, I = Math.max(v1parts.length, v2parts.length); i < I; i++) {
+    if (v1parts[i] !== v2parts[i]) {
+      return (v1parts[i] || 0) - (v2parts[i] || 0);
+    }
+  }
+
+  return 0;
+}
+
+const validateEnvironment = (supportEnvironmentList = []) => {
+  if (supportEnvironmentList.length === 0) {
+    return;
+  }
+
+  const device = getDevice();
+  const os = getOS();
+  const browser = getBrowser();
+
+  const toUnique = list => Array.from(new Set(list));
+
+  const validators = [{
+    filter: ({
+      device: {
+        name,
+        type
+      }
+    }) => name === '*' || type === 'desktop' && device.type === undefined || type === device.type,
+    errorName: EnvironmentErrorName.NOT_SUPPORT_DEVICE,
+    getErrorProps: list => ({
+      allowDevices: toUnique(list.map(env => env.device.type))
+    })
+  }, {
+    filter: ({
+      os: {
+        name
+      }
+    }) => name === '*' || name === os.name,
+    errorName: EnvironmentErrorName.NOT_SUPPORT_OS,
+    getErrorProps: list => ({
+      allowOSs: toUnique(list.map(env => env.os.name))
+    })
+  }, {
+    filter: ({
+      os: {
+        version
+      }
+    }) => version === '*' || compareVersion(os.version, version) >= 0,
+    errorName: EnvironmentErrorName.NOT_SUPPORT_OS_VERSION,
+    getErrorProps: list => ({
+      minVersion: list[0].os.version
+    })
+  }, {
+    filter: ({
+      browser: {
+        name
+      }
+    }) => name === browser.name,
+    errorName: EnvironmentErrorName.NOT_SUPPORT_BROWSER,
+    getErrorProps: list => ({
+      allowBrowsers: toUnique(list.map(env => env.browser.name))
+    })
+  }, {
+    filter: ({
+      browser: {
+        version
+      }
+    }) => compareVersion(browser.version, version) >= 0,
+    errorName: EnvironmentErrorName.NOT_SUPPORT_BROWSER_VERSION,
+    getErrorProps: list => ({
+      minVersion: list[0].browser.version
+    })
+  }];
+  let scopes = supportEnvironmentList;
+
+  for (let i = 0; i < validators.length; i++) {
+    const validator = validators[i];
+    const newScopes = scopes.filter(validator.filter);
+
+    if (newScopes.length === 0) {
+      return {
+        name: validator.errorName,
+        ...validator.getErrorProps(scopes)
+      };
+    }
+
+    scopes = newScopes;
+  }
+}; // IE doesn't support pointer query, assume it always have pointer
 
 const matchAll = (input, pattern) => {
   const flags = [pattern.global && 'g', pattern.ignoreCase && 'i', pattern.multiline && 'm'].filter(Boolean).join('');
@@ -580,11 +695,14 @@ const selectHlsQualities = async (source, restrictions) => {
   const filtered = filterHlsManifestQualities((await axios.get(source.hls)).data, items => items.filter(item => meetRestriction(item, restrictions)));
 
   if (filtered) {
-    const newManifest = new Blob([rewriteUrls(filtered, source.hls)], {
-      type: 'application/x-mpegURL'
-    });
     return { ...source,
-      hls: URL.createObjectURL(newManifest)
+
+      /*
+        Native Safari couldn't support blob .m3u8. and will throw MediaError: 4
+        We find the hacky method: dataURI.
+        By the way, bitmovin also use this form even user gives the blob URI.
+      */
+      hls: `data:application/x-mpegURL,${encodeURI(rewriteUrls(filtered, source.hls))}`
     };
   }
 
@@ -592,4 +710,86 @@ const selectHlsQualities = async (source, restrictions) => {
 };
  // for unit test
 
-export { createApi, getContentInfo, getStreamInfo, logEventNames, mapLogEvents, selectHlsQualities, startPlaybackSession as startSession };
+/* eslint-disable no-empty */
+const storageKey = 'playcraft-tab-lock';
+const lockRenewTime = 3000;
+
+const ensureTabLock = () => {
+  let saved = {};
+
+  try {
+    saved = JSON.parse(localStorage[storageKey]);
+  } catch (e) {
+    console.log('Can read saved data for tab lock.', e);
+  }
+
+  const {
+    expireTime
+  } = saved;
+
+  if (Date.now() <= expireTime) {
+    return;
+  }
+
+  const id = uuidv4();
+
+  const renewLock = () => {
+    localStorage[storageKey] = JSON.stringify({
+      id,
+      expireTime: Date.now() + lockRenewTime * 3
+    });
+  };
+
+  const renewInterval = setInterval(renewLock, lockRenewTime);
+
+  const releaseLock = () => {
+    clearInterval(renewInterval);
+    window.removeEventListener('beforeunload', releaseLock);
+    window.removeEventListener('unload', releaseLock);
+    localStorage[storageKey] = {
+      expireTime: Date.now() - 1
+    };
+  };
+
+  window.addEventListener('beforeunload', releaseLock);
+  window.addEventListener('unload', releaseLock);
+  return releaseLock;
+};
+
+let lastError = '';
+const defaultOptions = {
+  ignoreErrors: ['AbortError: The play() request was interrupted', 'i.context.logger'],
+  beforeSend: event => {
+    if (lastError.message === event.exception.values[0].value && Date.now() - lastError.date < 10000) {
+      lastError.date = Date.now();
+      return null;
+    }
+
+    lastError = {
+      date: Date.now(),
+      message: event.exception.values[0].value
+    };
+    return event;
+  }
+};
+
+const addSentry = ({
+  key,
+  ...options
+}) => {
+  const script = document.createElement('script');
+  script.crossorigin = 'anonymous';
+  script.src = `https://js.sentry-cdn.com/${key}.min.js`;
+  script.addEventListener('load', () => {
+    window.Sentry.onLoad(() => {
+      window.Sentry.init({ ...defaultOptions,
+        ...options
+      });
+    });
+  }, {
+    once: true
+  });
+  document.body.append(script);
+};
+
+export { addSentry, createApi, ensureTabLock, getContentInfo, getStreamInfo, logEventNames, mapLogEvents, selectHlsQualities, startPlaybackSession as startSession, validateEnvironment };

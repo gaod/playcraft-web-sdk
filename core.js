@@ -145,7 +145,8 @@ const loadShaka = async ({
       }
 
       const assetUri = needNativeHls() ? hls : dash;
-      player.load(assetUri);
+      const mimeType = needNativeHls() ? 'application/x-mpegURL' : null;
+      player.load(assetUri, null, mimeType);
     },
     play: () => videoElement.play(),
     pause: () => videoElement.pause(),
@@ -275,9 +276,6 @@ const loadBitmovin = async ({
   bitmovinModules.forEach(module => Player.addModule(module.default));
   let adaptationHandler;
   const player = new Player(container, {
-    tweaks: {
-      native_hls_parsing: true
-    },
     ui: false,
     ...config,
     playback: { ...config.playback,

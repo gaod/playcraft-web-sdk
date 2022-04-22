@@ -469,17 +469,21 @@ const snapback = ({
   seekTime,
   seek
 }) => {
-  const cuePoint = streamManager === null || streamManager === void 0 ? void 0 : streamManager.previousCuePointForStreamTime(seekTime);
+  const cuePoint = streamManager === null || streamManager === void 0 ? void 0 : streamManager.previousCuePointForStreamTime(seekTime); // Only check the integer part because the decimal part may come from floating precision error.
+  // TODO: Try to extract this with the workaround OTP_2813 in MediaTailor > createStreamManager > handleTimeUpdate
 
-  if ((cuePoint === null || cuePoint === void 0 ? void 0 : cuePoint.start) >= originTime) {
+  if (Math.floor(cuePoint === null || cuePoint === void 0 ? void 0 : cuePoint.start) >= Math.floor(originTime)) {
     once$1(streamManager, 'adBreakEnded', async () => {
       // wait for ad playing flag to clear before resuming, TODO seek earlier
-      await new Promise(resolve => setTimeout(resolve, 20));
+      await new Promise(resolve => {
+        setTimeout(resolve, 20);
+      });
       seek(seekTime);
     });
+    seek(cuePoint.start);
+  } else {
+    seek(seekTime);
   }
-
-  seek((cuePoint === null || cuePoint === void 0 ? void 0 : cuePoint.start) >= originTime ? cuePoint.start : seekTime);
 };
 
 const addFetchPolyfill = () => {
@@ -622,6 +626,7 @@ const createStreamManager = (videoElement, {
 
 
     if (state.isUserSkipAd) {
+      // TODO: Try to migrate this with the workaround in the snapback
       // 0.1 is magic number for float-point
       if (state.skipAdEndTime + 0.1 >= streamTime) {
         return;
@@ -667,7 +672,9 @@ const createStreamManager = (videoElement, {
         handleTimeUpdate(state.adEndTime);
         state.isUserSkipAd = true;
         state.skipAdEndTime = seekTime;
-        player === null || player === void 0 ? void 0 : player.seek(seekTime, 'internal');
+        player === null || player === void 0 ? void 0 : player.seek(seekTime, 'internal'); // TODO: Should provide methods getAd and getStreamData to align with Google Dai
+
+        emitter.emit('skip');
       }
     },
     setMpdStartTime: time => {
@@ -941,7 +948,7 @@ const ImaDaiPlugin = () => {
       }
 
       ref.streamManager = new daiApi.StreamManager(video, ref.adContainer);
-      pipeEvents(ref.streamManager, emitter, ['skippableStateChanged']);
+      pipeEvents(ref.streamManager, emitter, [daiApi.StreamEvent.Type.SKIPPABLE_STATE_CHANGED, daiApi.StreamEvent.Type.SKIPPED]);
       /**
        * To align with the MideaTailor, convert the cuepoint.start from the stream time to content time.
        */

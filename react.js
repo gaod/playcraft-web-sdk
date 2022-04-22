@@ -2206,7 +2206,7 @@ const Error$1 = ({
         id,
         defaultMessage: last
       }, values), '')
-    }), jsx$1(Button, {
+    }), onBack && jsx$1(Button, {
       variant: "outlined",
       onClick: onBack,
       children: jsx$1(FormattedMessage, {
@@ -3574,7 +3574,8 @@ const loadShaka = async ({
       }
 
       const assetUri = needNativeHls() ? hls : dash;
-      player.load(assetUri);
+      const mimeType = needNativeHls() ? 'application/x-mpegURL' : null;
+      player.load(assetUri, null, mimeType);
     },
     play: () => videoElement.play(),
     pause: () => videoElement.pause(),
@@ -3704,9 +3705,6 @@ const loadBitmovin = async ({
   bitmovinModules.forEach(module => Player.addModule(module.default));
   let adaptationHandler;
   const player = new Player(container, {
-    tweaks: {
-      native_hls_parsing: true
-    },
     ui: false,
     ...config,
     playback: { ...config.playback,
@@ -4128,6 +4126,7 @@ const getSettingsData = ({
   }, {});
   values.subtitles = selectedSubtitleName;
   values.audio = getSelectedAudioName(player);
+  values.speed = player === null || player === void 0 ? void 0 : player.getPlaybackSpeed();
   return {
     sections,
     values
@@ -4380,6 +4379,16 @@ const useLinkState = (request, dependencies = []) => {
 
 const flipState = state => state === 'playing' ? 'paused' : 'playing';
 
+const mergeSections = (current, target) => {
+  if (!current && !target) return [];
+  if (!current) return target;
+  if (!target) return current;
+  const map = new Map();
+  current.forEach(e => map.set(e.name, e));
+  target.forEach(e => map.set(e.name, e));
+  return Array.from(map.values());
+};
+
 const PremiumPlayer = ({
   source,
   startTime,
@@ -4403,7 +4412,7 @@ const PremiumPlayer = ({
   marks = [],
   // TODO sectionId
   intl,
-  settingSections,
+  settings: targetSettings,
   plugins = [],
   style,
   children,
@@ -4534,7 +4543,7 @@ const PremiumPlayer = ({
         quality,
         contentType,
         preferred: current.preferred,
-        otherSections: settingSections
+        otherSections: targetSettings === null || targetSettings === void 0 ? void 0 : targetSettings.sections
       })
     }));
   };
@@ -4672,6 +4681,25 @@ const PremiumPlayer = ({
       onChange(appVolume);
     }
   }, [appVolume]);
+  useEffect(() => {
+    if (targetSettings) {
+      setSettings(current => ({ ...current,
+        // Keep the same object reference if there is nothing to change in the revalant properties
+        ...(targetSettings.values && {
+          values: { ...current.values,
+            ...targetSettings.values
+          }
+        }),
+        ...(targetSettings.preferred && {
+          preferred: { ...current.preferred,
+            ...targetSettings.preferred
+          }
+        }),
+        // Don't need to check targetSettings.sections because mergeSections will keep the original reference if there is nothing to update.
+        sections: mergeSections(current.sections, targetSettings.sections)
+      }));
+    }
+  }, [targetSettings]);
   useEffect(() => {
     // The adContainer should be set before `load` because ImaDai.load needs it.
     plugins.forEach(plugin => {
@@ -5568,7 +5596,8 @@ var uiActions = {
 const linkAdState = ({
   contentType,
   dispatch,
-  plugins
+  plugins,
+  onAdSkip
 }) => {
   const handleStart = event => {
     var _event$getAd;
@@ -5583,12 +5612,13 @@ const linkAdState = ({
     adBreakEnded: () => {
       // TODO playlog ad end event
       dispatch(uiActions.adBreakEnded());
-    }
+    },
+    skip: onAdSkip
   });
 };
 
 const useIntervalUpdate = get => {
-  const [value, setValue] = useState(0);
+  const [value, setValue] = useState(get());
   useEffect(() => {
     const intervalId = setInterval(() => setValue(get()), 500);
     return () => clearInterval(intervalId);
@@ -5627,7 +5657,7 @@ const mergeAdUi = (uiElements, {
 
   const getSkipWaitTime = () => skipTimeOffset >= 0 ? getRemainingTime() - (adBreakDuration - skipTimeOffset) : Infinity;
 
-  return {
+  return { ...uiElements,
     title: '',
     channelTitle: '',
     controlButtons: {
@@ -6529,7 +6559,8 @@ const PremiumPlusPlayer = ({
   preload: preload$1 = 'auto',
   preloadList = [],
   currentTime,
-  quality,
+  quality: targetQuality,
+  sourceType,
   host,
   accessToken,
   deviceId,
@@ -6542,16 +6573,19 @@ const PremiumPlusPlayer = ({
   plugins = [],
   coverImageUrl,
   recommendation,
+  // FIXME: Currently we will get `undefined` from the `playerRef` because we use it without `forwardRef`. Check if we need to fix this issue
   playerRef,
   children,
   onError,
   onApiError,
   onPlaybackStateChange,
   onChange,
+  onSourceTypeChanged,
   sendLog,
+  playbackState: appPlaybackState,
   ...rest
 }) => {
-  var _contentData$section, _contentData$section2, _uiState$streamEvents;
+  var _contentData$section, _contentData$section2, _lastSession$current3, _uiState$streamEvents;
 
   const videoRef = useRef();
   const lastSession = useRef({});
@@ -6566,6 +6600,7 @@ const PremiumPlusPlayer = ({
     sections: [],
     preferred: {}
   });
+  const [targetPlaybackState, setTargetPlaybackState] = useState(appPlaybackState);
   const [uiState, dispatch] = useReducer(reduceUi, initState$1);
 
   const endSession = ({
@@ -6575,19 +6610,20 @@ const PremiumPlusPlayer = ({
 
     preferAppTime.current = false;
 
+    if ((_lastSession$current = lastSession.current) !== null && _lastSession$current !== void 0 && _lastSession$current.end) {
+      lastSession.current = {
+        request: lastSession.current.end(),
+        ...(preserveSource && {
+          sources: lastSession.current.sources
+        })
+      };
+    } // TODO this also triggers re-render to unload, we may need to explicitly trigger
+
+
     if (!preserveSource) {
       setContentData({
         chapters: []
       });
-      setPlaybackInfo({
-        source: {}
-      });
-    }
-
-    if ((_lastSession$current = lastSession.current) !== null && _lastSession$current !== void 0 && _lastSession$current.end) {
-      lastSession.current = {
-        request: lastSession.current.end()
-      };
     }
   };
 
@@ -6603,7 +6639,7 @@ const PremiumPlusPlayer = ({
 
     logTarget.current = mapLogEvents({
       playerName: ['shaka', 'bitmovin'].find(name => name in rest),
-      version: "1.9.0",
+      version: "1.9.1",
       video: videoRef.current
     });
 
@@ -6653,10 +6689,15 @@ const PremiumPlusPlayer = ({
       onError: onApiError
     }), sessionOptions).then(currentSession => {
       lastSession.current = currentSession;
-      setSettingState(current => ({ ...current,
-        sections: [getSourceTypeSettings(currentSession.sources)]
-      }));
-      setPlaybackInfo({ ...getStreamInfo(currentSession.sources, settingState.preferred.sourceType),
+      const sourceSettings = getSourceTypeSettings(currentSession.sources);
+
+      if (sourceSettings) {
+        setSettingState(current => ({ ...current,
+          sections: [sourceSettings]
+        }));
+      }
+
+      setPlaybackInfo({
         token: currentSession.token,
         drmPortalUrl: currentSession.drmPortalUrl,
         currentTime: preferAppTime.current ? currentTime : getContentInfo(currentSession.content).startTime
@@ -6677,6 +6718,11 @@ const PremiumPlusPlayer = ({
   };
 
   const activeDevice = !/casting|error/.test(playbackState);
+  useEffect(() => {
+    if (appPlaybackState) {
+      setTargetPlaybackState(appPlaybackState);
+    }
+  }, [appPlaybackState]);
   useEffect(() => {
     if (preload$1 === 'auto' && activeDevice && contentType && contentId) {
       load();
@@ -6705,8 +6751,31 @@ const PremiumPlusPlayer = ({
   useEffect(() => linkAdState({
     contentType,
     plugins,
-    dispatch
-  }), []); // TODO: extract ? cast things
+    dispatch,
+    // To align with iOS & Android, play the video after the ad is skipped even if its paused originally.
+    onAdSkip: () => setTargetPlaybackState('playing')
+  }), [contentType]);
+  useEffect(() => {
+    if (sourceType) {
+      setSettingState(current => ({ ...current,
+        values: { ...current.values,
+          'source-type': sourceType
+        },
+        preferred: { ...current.preferred,
+          'source-type': sourceType
+        }
+      }));
+    }
+  }, [sourceType]);
+  const {
+    source,
+    quality,
+    thumbnailsUrl
+  } = useMemo(() => {
+    var _lastSession$current2;
+
+    return getStreamInfo((_lastSession$current2 = lastSession.current) === null || _lastSession$current2 === void 0 ? void 0 : _lastSession$current2.sources, settingState.preferred['source-type']);
+  }, [(_lastSession$current3 = lastSession.current) === null || _lastSession$current3 === void 0 ? void 0 : _lastSession$current3.sources, settingState.preferred['source-type']]); // TODO: extract ? cast things
 
   const {
     appId
@@ -6744,7 +6813,7 @@ const PremiumPlusPlayer = ({
 
   }, [castConnected, contentId, castData]);
   return playbackState === 'casting' ? /*#__PURE__*/jsx(CastOverlay, {}) : /*#__PURE__*/jsxs$1(PremiumPlayer, {
-    source: playbackState !== 'error' && playbackInfo.source,
+    source: playbackState !== 'error' && source,
     currentTime: playbackInfo.currentTime,
     controls: uiState.activePanel === 'autoplay-next' ? 'title-only' : uiState.activePanel === 'recommendation' ? 'no-panel' : controls,
     drm: {
@@ -6754,11 +6823,11 @@ const PremiumPlusPlayer = ({
       })
     },
     title: contentData.title,
-    quality: { ...playbackInfo.quality,
-      ...quality
+    quality: { ...quality,
+      ...targetQuality
     },
-    thumbnailsUrl: thumbnailSeeking && playbackInfo.thumbnailsUrl,
-    settingSections: settingState.sections,
+    thumbnailsUrl: thumbnailSeeking && thumbnailsUrl,
+    settings: settingState,
     plugins: plugins.concat(linearTimeRewrite),
     videoRef: videoRef,
     marks: (_uiState$streamEvents = uiState.streamEvents) === null || _uiState$streamEvents === void 0 ? void 0 : _uiState$streamEvents.map(event => event.start),
@@ -6772,16 +6841,16 @@ const PremiumPlusPlayer = ({
       setPlaybackState(state);
 
       if (state === 'error') {
-        var _lastSession$current$, _lastSession$current2;
+        var _lastSession$current$, _lastSession$current4;
 
-        (_lastSession$current$ = (_lastSession$current2 = lastSession.current).end) === null || _lastSession$current$ === void 0 ? void 0 : _lastSession$current$.call(_lastSession$current2);
+        (_lastSession$current$ = (_lastSession$current4 = lastSession.current).end) === null || _lastSession$current$ === void 0 ? void 0 : _lastSession$current$.call(_lastSession$current4);
         lastSession.current = {};
       }
 
       if (state === 'paused' && playbackState !== 'loading' || event.type === 'seeking') {
-        var _lastSession$current$2, _lastSession$current3;
+        var _lastSession$current$2, _lastSession$current5;
 
-        (_lastSession$current$2 = (_lastSession$current3 = lastSession.current).updateLastPlayed) === null || _lastSession$current$2 === void 0 ? void 0 : _lastSession$current$2.call(_lastSession$current3);
+        (_lastSession$current$2 = (_lastSession$current5 = lastSession.current).updateLastPlayed) === null || _lastSession$current$2 === void 0 ? void 0 : _lastSession$current$2.call(_lastSession$current5);
       }
 
       if (state === 'ended') {
@@ -6795,15 +6864,16 @@ const PremiumPlusPlayer = ({
       value
     }) => {
       if (name === 'source-type') {
-        setPlaybackInfo(getStreamInfo(lastSession.current.sources, value));
         setSettingState(current => ({ ...current,
           preferred: {
-            sourceType: value
+            'source-type': value
           }
         }));
+        onSourceTypeChanged === null || onSourceTypeChanged === void 0 ? void 0 : onSourceTypeChanged(value);
       }
     },
     overrideUi: uiState.ad.total > 0 && (uiElements => mergeAdUi(uiElements, uiState.ad, plugins, videoRef.current)),
+    playbackState: targetPlaybackState,
     ...rest,
     style: recommendation && {
       '--bottom-spacing': '5rem'
@@ -6813,8 +6883,8 @@ const PremiumPlusPlayer = ({
         contentId: contentId,
         data: castData
       })
-    }), autoplayNext && contentData.next && /*#__PURE__*/jsx(AutoplayPrompt, {
-      next: lastSession.current.sources ? contentData.next : {},
+    }), autoplayNext && contentData.next && /playing|ended/.test(playbackState) && /*#__PURE__*/jsx(AutoplayPrompt, {
+      next: contentData.next,
       chapters: contentData.chapters,
       videoRef: videoRef,
       ended: playbackState === 'ended',
@@ -6827,7 +6897,7 @@ const PremiumPlusPlayer = ({
       open: uiState.activePanel === 'recommendation',
       onToggle: () => dispatch(uiActions.toggleRecommendationPanel()),
       children: recommendation.content
-    }), contentData.end && /*#__PURE__*/jsx(LiveEnd, {}), preload$1 === 'none' && coverImageUrl && !playbackInfo.source && /*#__PURE__*/jsx(CoverImage, {
+    }), contentData.end && /*#__PURE__*/jsx(LiveEnd, {}), preload$1 === 'none' && coverImageUrl && !source && /*#__PURE__*/jsx(CoverImage, {
       src: coverImageUrl
     })]
   });
@@ -6838,6 +6908,7 @@ PremiumPlusPlayer.propTypes = {
   preload: PropTypes.string,
   currentTime: PropTypes.number,
   quality: PropTypes.object,
+  sourceType: PropTypes.string,
   host: PropTypes.string,
   accessToken: PropTypes.string,
   deviceId: PropTypes.string,
@@ -6860,7 +6931,9 @@ PremiumPlusPlayer.propTypes = {
   onApiError: PropTypes.func,
   onPlaybackStateChange: PropTypes.func,
   onChange: PropTypes.func,
-  sendLog: PropTypes.func
+  onSourceTypeChanged: PropTypes.func,
+  sendLog: PropTypes.func,
+  playbackState: PropTypes.string
 };
 
 const button = {
