@@ -32,9 +32,7 @@ const MyApp = () => {
   return (
     <MyContainer>
       <Video
-        source={{
-          dash: 'https://dash.akamaized.net/dash264/TestCases/1a/sony/SNE_DASH_SD_CASE1A_REVISED.mpd',
-        }}
+        source="https://dash.akamaized.net/dash264/TestCases/1a/sony/SNE_DASH_SD_CASE1A_REVISED.mpd"
         autoplay
       />
     </MyContainer>
@@ -51,6 +49,28 @@ If your app is required to legacy browsers, make sure `@babel/preset-env` is con
 Currently polyfills may be required for these features :
 
 - [ResizeObserver](https://github.com/juggle/resize-observer)
+
+## Low Latency Live Mode
+
+Low latency live supports Shaka player only, to opt-in low latency mode, ensure base player is Shaka and attach `latencyManager` to the player once loaded:
+
+```js
+import {latencyManager} from 'playcraft/modules'
+
+const MyLowLatencyLivePlayer = () => {
+  const videoRef = useRef()
+
+  return (
+    <PremiumPlayer
+      shaka
+      videoRef={videoRef}
+      onPlayerLoaded={player => {
+        latencyManager(player, videoRef.current).configure({enabled: true})
+      }}
+    />
+  )
+}
+```
 
 ## API Reference
 
@@ -104,9 +124,12 @@ Example:
 
 ```js
 <Video
-  source={{
-    dash: 'https://dash.akamaized.net/dash264/TestCases/1a/sony/SNE_DASH_SD_CASE1A_REVISED.mpd'
-  }}
+  source={[
+    {
+      type: 'dash',
+      src: 'https://dash.akamaized.net/dash264/TestCases/1a/sony/SNE_DASH_SD_CASE1A_REVISED.mpd'
+    }
+  ]}
   autoplay
   shaka
   ref={videoRef}
@@ -123,6 +146,70 @@ Example:
 >
 ```
 
+#### Source
+
+An object or an array of objects containing `{type, src}`, URL to manifests of video and type of manifests.
+
+```js
+;[
+  {
+    type: 'dash',
+    src: 'https://storage.googleapis.com/shaka-demo-assets/bbb-dark-truths/dash.mpd',
+  },
+  {
+    type: 'hls',
+    src: 'https://storage.googleapis.com/shaka-demo-assets/bbb-dark-truths-hls/hls.m3u8',
+  },
+]
+```
+
+In iOS browsers and MacOS Safari, the player chooses first HLS manifest and plays with built-in player provided by Apple.
+
+In other browsers the player looks for first DASH manifest and plays with MediaSource Extensions.
+
+**DRM**
+
+To play content protection endabled videos, you should specify license server URLs and options in `source.rm`:
+
+```js
+;[
+  {
+    type: 'dash',
+    src: 'https://storage.googleapis.com/shaka-demo-assets/bbb-dark-truths/dash.mpd',
+    drm: {
+      widevine: 'https://drm.ex.com/portal',
+      playready: 'https://drm.ex.com/portal',
+    },
+  },
+  {
+    type: 'hls',
+    src: 'https://storage.googleapis.com/shaka-demo-assets/bbb-dark-truths-hls/hls.m3u8',
+    drm: {
+      fairplay: {
+        licenseUri: 'https://drm.ex.com/portal',
+        certificateUri: 'https://drm.ex.com/portal/certificate',
+      },
+    },
+  },
+]
+```
+
+**`source.drm.widevine.level`**
+
+In most situations, there's no need to set this, for best compatibility.
+
+Actual robustness/security level is determined by the browser, it may use L3 even if L1 works well.
+
+> It is recommended that a robustness level be specified. Not specifying the robustness level could result in unexpected behavior, potentially including failure to play.
+
+This message is [safe to ignore](https://bugs.chromium.org/p/chromium/issues/detail?id=720013), in case Chrome complaining in the console.
+
+In case hardware based content protection(L1) is required, please set `HW_SECURE_DECODE`.
+
+If you have a list of devices that doesn't plays well with L1, please set `SW_SECURE_DECODE` to force L3.
+
+For advanced or experimental usage, the possible value is the one of `SW_SECURE_CRYPTO`, `SW_SECURE_DECODE`, `HW_SECURE_CRYPTO`, `HW_SECURE_DECODE`, `HW_SECURE_ALL`, this is Widevine specific and not supported in other key systems.
+
 #### Props for Player Options
 
 Base player to load is determined by prop, available base players are `shaka` and `bitmovin`.
@@ -135,11 +222,7 @@ Example:
 <Video bitmovin={{{key: 'my-license-key'}}} /> // Load Bitmovin with config override
 ```
 
-**`autoplay`**
-
-Start playback when player component is mounted.
-
-Defaults to `false`.
+Currently changing base player is not supported, please un-mount and remount player component.
 
 **`shaka`**
 
@@ -153,6 +236,12 @@ Bitmovin player will be loaded if this prop is specified.
 
 `key` is required if not running in localhost.
 
+**`autoplay`**
+
+Start playback when player component is mounted.
+
+Defaults to `false`.
+
 **`videoRef`**
 
 Ref to html video element, use this for custom integrations.
@@ -164,23 +253,6 @@ Ref to base player instance, use this for custom integrations.
 #### Props for Playback
 
 These props describe target state of playback, detailed design explaination can be found [here](hhttps://netflixtechblog.com/integrating-imperative-apis-into-a-react-application-1257e1b45ac6).
-
-**`source`**
-
-An object contains URLs to the MPEG-DASH manifest and HLS playlist for the video to play.
-
-The player also support playback with video element built-in support, specify `source.native` to use it.
-
-```js
-{
-  native: 'some url',
-  dash: 'this will be ignored'
-}
-```
-
-Props for base player will be ignored if `source.native` is specified.
-
-Currently changing base player is not implemented, please re-mount player component when changing from native to DASH / HLS.
 
 **`playbackState`**
 
@@ -273,9 +345,7 @@ Example:
 
 ```js
 <VideoPlayer
-  source={{
-    dash: 'https://dash.akamaized.net/dash264/TestCases/1a/sony/SNE_DASH_SD_CASE1A_REVISED.mpd',
-  }}
+  source="https://dash.akamaized.net/dash264/TestCases/1a/sony/SNE_DASH_SD_CASE1A_REVISED.mpd"
   autoplay
   shaka
 />
@@ -302,10 +372,16 @@ Import with : `import {PremiumPlayer} from 'playcraft/react'`
 **Example**
 
 ```js
-const [source, setSource] = useState({
-  dash: 'https://storage.googleapis.com/shaka-demo-assets/bbb-dark-truths/dash.mpd',
-  hls: 'https://storage.googleapis.com/shaka-demo-assets/bbb-dark-truths-hls/hls.m3u8',
-}, [])
+const [source, setSource] = useState([
+  {
+    type: 'dash',
+    src: 'https://storage.googleapis.com/shaka-demo-assets/bbb-dark-truths/dash.mpd',
+  },
+  {
+    type: 'hls',
+    src: 'https://storage.googleapis.com/shaka-demo-assets/bbb-dark-truths-hls/hls.m3u8',
+  }
+], [])
 
 <PremiumPlayer
   source={source}
@@ -316,55 +392,45 @@ const [source, setSource] = useState({
 />
 ```
 
+#### Source
+
+`source` prop format is the same as `<Video>`, with some extensions.
+
+**Thumbnails**
+
+```js
+;[
+  {
+    type: 'dash',
+    src: 'https://storage.googleapis.com/shaka-demo-assets/bbb-dark-truths/dash.mpd',
+  },
+  {
+    type: 'thumbnail',
+    src: 'https://ex.com/thumbnails.vtt',
+  },
+]
+```
+
+Specify a source object with url to thumbnails data for thumbnail seeking feature.
+
+**Quality**
+
+The player gets the available qualities/profiles/resolutions/variants from the manifest as default and offer quality settings automatically, list of setting options can be overridden by specifying `source.qualityOptions`:
+
+```js
+{
+  type: 'dash',
+  src: 'https://storage.googleapis.com/shaka-demo-assets/bbb-dark-truths/dash.mpd',
+  qualityOptions: [
+    {label: '1080', value: 1080, options: {maxHeight: 1080}},
+    {label: '720', value: 720, options: {maxHeight: 720}},
+  ],
+},
+```
+
 #### Props
 
 All props of `<Video>` are supported.
-
-**`source`**
-
-Format is `{hls, dash}`, stream manifest URL to play.
-
-**`drm`**
-
-Object form:
-
-```
-{
-  url: ''
-  headers: {}
-  widevine: {
-    level: '',
-  }
-  fairplay: {
-    certificateURL: ''
-  }
-}
-```
-
-The `headers` would insert to all DRM headers: **widevine**, **fairplay** and **playready** excluding **fairplay** certificate request.
-
-`widevine.level` (optional)  
-Defaults is `undefined`.  
-The level value is based on browser's capability.  
-The possible value is the one of `SW_SECURE_CRYPTO`, `SW_SECURE_DECODE`, `HW_SECURE_CRYPTO`, `HW_SECURE_DECODE`, `HW_SECURE_ALL`.
-
-For the best compatibility, you shouldn't set any value to this attribute, such as:
-
-```
-{
-  url: ''
-  headers: {}
-  fairplay: {
-    certificateURL: ''
-  }
-}
-```
-
-In some scenarios, we need to the highest security(L1), you can set `HW_SECURE_DECODE`.  
-However, ensure the device supports it.
-
-`fairplay.certificateURL` (optional)  
-Defaults is `${url}/fairplay_cert`.
 
 **`autoplay`**
 
@@ -373,22 +439,6 @@ Whether the player starts playing after loading a source or not. Unmuted autopla
 Takes no effect when `playbackState` prop is given.
 
 **`quality`**
-
-In addition to ABR constrants, you can also specify available quality setting options with `quality.hls` and `quality.dash`.
-
-```js
-{
-  default: 720,
-  hls: [
-    {label: 'AUTO', value: 'auto'},
-    {label: '720', value: 720, options: {maxHeight: 720}},
-    {label: '480', value: 480, options: {maxHeight: 480}},
-  ],
-  dash: [],
-}
-```
-
-If not specifying any quality, the player will get the available qualities from the manifest as default.
 
 When playing with Safari native HLS support, player can't set ABR constraints and quality selection is disabled.
 
@@ -445,10 +495,6 @@ Custom translations.
 Video title text to be displayed at top.
 
 **`subtitleTrack`**
-
-**`thumbnailsUrl`**
-
-Url to thumbnails data for thumbnail seeking feature, this feature is enabled when a valid url is given.
 
 **`onBack`**
 
@@ -1115,10 +1161,13 @@ A function `handleIOSHeadphonesDisconnection` is provided to workaround this.
 
 ```js
 import React, {useEffect} from 'react'
-import {Player, handleIOSHeadphonesDisconnection} from 'playcraft'
+import {Player} from 'playcraft'
+import {handleIOSHeadphonesDisconnection} from 'playcraft/modules'
 
 const MyVideoComponent = () => {
-  useEffect(handleIOSHeadphonesDisconnection)
+  useEffect(() => {
+    handleIOSHeadphonesDisconnection()
+  }, [])
 
   return <Player />
 }

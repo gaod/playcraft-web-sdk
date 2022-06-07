@@ -1082,17 +1082,75 @@ const StallReloadPlugin = ({
 let shaka;
 let MetaSegmentIndex;
 const shakaLog = {
-  debug: () => {},
+  debug: (...messages) => console.warn(...messages),
   error: (...messages) => console.warn(...messages),
-  info: () => {},
+  info: (...messages) => console.warn(...messages),
   warning: (...messages) => console.warn(...messages),
   alwaysWarn: (...messages) => console.warn(...messages)
 };
 const goog = {
   asserts: {
-    assert: () => {}
+    assert: (result, message) => {
+      result || console.warn(message);
+    }
   }
 };
+
+const hasSameElements = (a, b) => {
+  if (a.length != b.length) {
+    return false;
+  }
+
+  const copy = b.slice();
+
+  for (const item of a) {
+    const idx = copy.findIndex(other => item === other);
+
+    if (idx == -1) {
+      return false;
+    } // Since order doesn't matter, just swap the last element with
+    // this one and then drop the last element.
+
+
+    copy[idx] = copy[copy.length - 1];
+    copy.pop();
+  }
+
+  return copy.length == 0;
+};
+
+const mapHasSameElements = (map1, map2) => {
+  if (!map1 && !map2) {
+    return true;
+  }
+
+  if (map1 && !map2) {
+    return false;
+  }
+
+  if (map2 && !map1) {
+    return false;
+  }
+
+  if (map1.size != map2.size) {
+    return false;
+  }
+
+  for (const [key, val] of map1) {
+    if (!map2.has(key)) {
+      return false;
+    }
+
+    const val2 = map2.get(key);
+
+    if (val2 != val || val2 == undefined) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 const DrmEngine = {
   getCommonDrmInfos: (drms1, drms2) => {
     if (!drms1.length) {
@@ -1843,6 +1901,9 @@ class XmlUtils {
       return null;
     } // According to MDN, parseFromString never returns null.
 
+
+    goog.asserts.assert(xml, 'Parsed XML document cannot be null!'); // Check for empty documents.
+
     const rootElem = xml.documentElement;
 
     if (!rootElem) {
@@ -2124,12 +2185,9 @@ class PeriodCombiner {
 
 
   static filterOutAudioStreamDuplicates_(periods) {
-    const {
-      ArrayUtils
-    } = shaka.util; // Two audio streams are considered to be duplicates of
+    // Two audio streams are considered to be duplicates of
     // one another if their ids are different, but all the other
     // information is the same.
-
     for (const period of periods) {
       const filteredAudios = [];
 
@@ -2137,7 +2195,7 @@ class PeriodCombiner {
         let duplicate = false;
 
         for (const a2 of filteredAudios) {
-          if (a1.id != a2.id && a1.channelsCount == a2.channelsCount && a1.language == a2.language && a1.bandwidth == a2.bandwidth && a1.label == a2.label && a1.codecs == a2.codecs && a1.mimeType == a2.mimeType && ArrayUtils.hasSameElements(a1.roles, a2.roles) && a1.audioSamplingRate == a2.audioSamplingRate && a1.primary == a2.primary) {
+          if (a1.id != a2.id && a1.channelsCount == a2.channelsCount && a1.language == a2.language && a1.bandwidth == a2.bandwidth && a1.label == a2.label && a1.codecs == a2.codecs && a1.mimeType == a2.mimeType && hasSameElements(a1.roles, a2.roles) && a1.audioSamplingRate == a2.audioSamplingRate && a1.primary == a2.primary) {
             duplicate = true;
           }
         }
@@ -2157,12 +2215,9 @@ class PeriodCombiner {
 
 
   static filterOutTextStreamDuplicates_(periods) {
-    const {
-      ArrayUtils
-    } = shaka.util; // Two text streams are considered to be duplicates of
+    // Two text streams are considered to be duplicates of
     // one another if their ids are different, but all the other
     // information is the same.
-
     for (const period of periods) {
       const filteredTexts = [];
 
@@ -2170,7 +2225,7 @@ class PeriodCombiner {
         let duplicate = false;
 
         for (const t2 of filteredTexts) {
-          if (t1.id != t2.id && t1.language == t2.language && t1.label == t2.label && t1.codecs == t2.codecs && t1.mimeType == t2.mimeType && t1.bandwidth == t2.bandwidth && ArrayUtils.hasSameElements(t1.roles, t2.roles)) {
+          if (t1.id != t2.id && t1.language == t2.language && t1.label == t2.label && t1.codecs == t2.codecs && t1.mimeType == t2.mimeType && t1.bandwidth == t2.bandwidth && hasSameElements(t1.roles, t2.roles)) {
             duplicate = true;
           }
         }
@@ -2190,15 +2245,9 @@ class PeriodCombiner {
 
 
   static filterOutVideoStreamDuplicates_(periods) {
-    const {
-      ArrayUtils
-    } = shaka.util;
-    const {
-      MapUtils
-    } = shaka.util; // Two video streams are considered to be duplicates of
+    // Two video streams are considered to be duplicates of
     // one another if their ids are different, but all the other
     // information is the same.
-
     for (const period of periods) {
       const filteredVideos = [];
 
@@ -2206,7 +2255,7 @@ class PeriodCombiner {
         let duplicate = false;
 
         for (const v2 of filteredVideos) {
-          if (v1.id != v2.id && v1.width == v2.width && v1.frameRate == v2.frameRate && v1.codecs == v2.codecs && v1.mimeType == v2.mimeType && v1.label == v2.label && ArrayUtils.hasSameElements(v1.roles, v2.roles) && MapUtils.hasSameElements(v1.closedCaptions, v2.closedCaptions) && v1.bandwidth == v2.bandwidth) {
+          if (v1.id != v2.id && v1.width == v2.width && v1.frameRate == v2.frameRate && v1.codecs == v2.codecs && v1.mimeType == v2.mimeType && v1.label == v2.label && hasSameElements(v1.roles, v2.roles) && mapHasSameElements(v1.closedCaptions, v2.closedCaptions) && v1.bandwidth == v2.bandwidth) {
             duplicate = true;
           }
         }
@@ -2493,6 +2542,7 @@ class PeriodCombiner {
   static async extendOutputSegmentIndex_(outputStream, firstNewPeriodIndex) {
     const operations = [];
     const streams = outputStream.matchedStreams;
+    goog.asserts.assert(streams, 'matched streams should be valid');
 
     for (const stream of streams) {
       operations.push(stream.createSegmentIndex());
@@ -3513,6 +3563,7 @@ class MpdUtils {
       }
 
       let value = valueTable[name];
+      goog.asserts.assert(value !== undefined, 'Unrecognized identifier'); // Note that |value| may be 0 or ''.
 
       if (value == null) {
         shakaLog.warning('URL template does not have an available substitution for ', `identifier "${name}":`, uriTemplate);
@@ -3525,6 +3576,8 @@ class MpdUtils {
       }
 
       if (name == 'Time') {
+        goog.asserts.assert(typeof value === 'number', 'Time value should be a number!');
+        goog.asserts.assert(Math.abs(value - Math.round(value)) < 0.2, 'Calculated $Time$ values must be close to integers');
         value = Math.round(value);
       }
       /** @type {string} */
@@ -3554,6 +3607,7 @@ class MpdUtils {
           break;
 
         default:
+          goog.asserts.assert(false, 'Unhandled format specifier');
           valueString = value.toString();
           break;
       } // Create a padding string.
@@ -3580,6 +3634,8 @@ class MpdUtils {
 
 
   static createTimeline(segmentTimeline, timescale, unscaledPresentationTimeOffset, periodDuration) {
+    goog.asserts.assert(timescale > 0 && timescale < Infinity, 'timescale must be a positive, finite integer');
+    goog.asserts.assert(periodDuration > 0, 'period duration must be a positive integer'); // Alias.
     const timePoints = XmlUtils.findChildren(segmentTimeline, 'S');
     /** @type {!Array.<MpdUtils.TimeRange>} */
 
@@ -4042,10 +4098,14 @@ class SegmentBase {
     if (containerType == 'mp4') {
       references = shaka.media.Mp4SegmentIndexParser.parse(indexData, startByte, uris, initSegmentReference, timestampOffset, appendWindowStart, appendWindowEnd);
     } else {
+      goog.asserts.assert(initData, 'WebM requires init data');
       references = shaka.media.WebmSegmentIndexParser.parse(indexData, initData, uris, initSegmentReference, timestampOffset, appendWindowStart, appendWindowEnd);
     }
 
     presentationTimeline.notifySegments(references); // Since containers are never updated, we don't need to store the
+    // segmentIndex in the map.
+
+    goog.asserts.assert(!segmentIndex, 'Should not call generateSegmentIndex twice');
     segmentIndex = new shaka.media.SegmentIndex(references);
 
     if (fitLast) {
@@ -4177,6 +4237,7 @@ class SegmentBase {
   static generateSegmentIndex_(context, requestInitSegment, initSegmentReference, scaledPresentationTimeOffset) {
     const indexUris = SegmentBase.computeIndexUris_(context);
     const indexRange = SegmentBase.computeIndexRange_(context);
+    goog.asserts.assert(indexRange, 'Index range should not be null!');
     return SegmentBase.generateSegmentIndexFromUris(context, requestInitSegment, initSegmentReference, indexUris, indexRange.start, indexRange.end, scaledPresentationTimeOffset);
   }
   /**
@@ -4370,10 +4431,12 @@ class SegmentTemplate {
       shakaLog.warning('SegmentTemplate containes multiple segment information sources:', 'the SegmentTemplate should only contain an index URL template,', 'a SegmentTimeline or a segment duration.', context.representation);
 
       if (info.indexTemplate) {
+        shakaLog.info('Using the index URL template by default.');
         info.timeline = null;
         info.segmentDuration = null;
       } else {
         goog.asserts.assert(info.timeline, 'There should be a timeline');
+        shakaLog.info('Using the SegmentTimeline by default.');
         info.segmentDuration = null;
       }
     }
@@ -4437,6 +4500,7 @@ class SegmentTemplate {
     const {
       segmentDuration
     } = info;
+    goog.asserts.assert(segmentDuration != null, 'Segment duration must not be null!');
     const {
       startNumber
     } = info;
@@ -4463,6 +4527,9 @@ class SegmentTemplate {
     const computeAvailablePositionRange = () => {
       // In presentation timestamps.
       const availablePresentationTimes = computeAvailablePeriodRange();
+      goog.asserts.assert(availablePresentationTimes.every(Number.isFinite), 'Available presentation times must be finite!');
+      goog.asserts.assert(availablePresentationTimes.every(x => x >= 0), 'Available presentation times must be positive!');
+      goog.asserts.assert(segmentDuration != null, 'Segment duration must not be null!'); // In period-relative timestamps.
 
       const availablePeriodTimes = availablePresentationTimes.map(x => x - periodStart); // These may sometimes be reversed ([1] <= [0]) if the period is
       // completely unavailable.  The logic will still work if this happens,
@@ -4485,6 +4552,9 @@ class SegmentTemplate {
     const references = [];
 
     const createReference = position => {
+      // These inner variables are all scoped to the inner loop, and can be used
+      // safely in the callback below.
+      goog.asserts.assert(segmentDuration != null, 'Segment duration must not be null!'); // Relative to the period start.
 
       const positionWithinPeriod = position - startNumber;
       const segmentPeriodTime = positionWithinPeriod * segmentDuration; // What will appear in the actual segment files.  The media timestamp is
@@ -4503,6 +4573,9 @@ class SegmentTemplate {
       // next period will fit neatly after it.
 
       const segmentEnd = Math.min(trueSegmentEnd, getPeriodEnd()); // This condition will be true unless the segmentStart was >= periodEnd.
+      // If we've done the position calculations correctly, this won't happen.
+
+      goog.asserts.assert(segmentStart < segmentEnd, 'Generated a segment outside of the period!');
       const ref = new shaka.media.SegmentReference(segmentStart, segmentEnd, getUris,
       /* startByte= */
       0,
@@ -4543,6 +4616,7 @@ class SegmentTemplate {
       // in low latency mode, late update will delay new segment and increase
       // latency, so update it more frequetly
 
+      console.info('update segmentIndex every', segmentDuration / 8);
       segmentIndex.updateEvery(segmentDuration / 8, () => {
         // Evict any references outside the window.
         const availabilityStartTime = presentationTimeline.getSegmentAvailabilityStart();
@@ -4616,6 +4690,7 @@ class SegmentTemplate {
       // loop, or else we will end up with a leak.
 
       const createUris = () => {
+        goog.asserts.assert(mediaTemplate, 'There should be a media template with a timeline');
         const mediaUri = MpdUtils.fillUriTemplate(mediaTemplate, repId, segmentReplacement, bandwidth || null, timeReplacement);
         return ManifestParserUtils.resolveUris(baseUris, [mediaUri]).map(g => g.toString());
       };
@@ -4652,6 +4727,7 @@ class SegmentTemplate {
     } = context.representation;
 
     const getUris = () => {
+      goog.asserts.assert(initialization, 'Should have returned earler');
       const filledTemplate = MpdUtils.fillUriTemplate(initialization, repId, null, bandwidth, null);
       const resolvedUris = ManifestParserUtils.resolveUris(baseUris, [filledTemplate]);
       return resolvedUris;
@@ -5420,6 +5496,7 @@ class Ewma {
    *   new estimate.
    */
   constructor(halfLife) {
+    goog.asserts.assert(halfLife > 0, 'expected halfLife to be positive');
     /**
      * Larger values of alpha expire historical data more slowly.
      * @private {number}
@@ -5443,6 +5520,7 @@ class Ewma {
 
 
   updateAlpha(halfLife) {
+    goog.asserts.assert(halfLife > 0, 'expected halfLife to be positive');
     this.alpha_ = Math.exp(Math.log(0.5) / halfLife);
   }
   /**
@@ -5580,7 +5658,7 @@ class DashParser {
     this.lowLatencyMode_ = playerInterface.isLowLatencyMode();
     this.manifestUris_ = [uri];
     this.playerInterface_ = playerInterface;
-    console.log('Shaka Start', uri);
+    console.info('Load with custom DASH parser:', uri);
     const updateDelay = await this.requestManifest_();
 
     if (this.playerInterface_) {
@@ -5789,9 +5867,10 @@ class DashParser {
 
     this.updatePeriod_ =
     /** @type {number} */
-    XmlUtils.parseAttr(mpd, 'minimumUpdatePeriod', XmlUtils.parseDuration, -1);
-    const presentationStartTime = XmlUtils.parseAttr(mpd, 'availabilityStartTime', XmlUtils.parseDate);
-    let segmentAvailabilityDuration = XmlUtils.parseAttr(mpd, 'timeShiftBufferDepth', XmlUtils.parseDuration);
+    Math.max(120, XmlUtils.parseAttr(mpd, 'minimumUpdatePeriod', XmlUtils.parseDuration, -1));
+    const presentationStartTime = XmlUtils.parseAttr(mpd, 'availabilityStartTime', XmlUtils.parseDate) - (window.segmentTimestampOffset || 0); // Shaka may keep buffering inifnitely for lower timeShiftBufferDepth
+
+    let segmentAvailabilityDuration = Math.max(60, XmlUtils.parseAttr(mpd, 'timeShiftBufferDepth', XmlUtils.parseDuration));
     const {
       ignoreSuggestedPresentationDelay
     } = this.config_.dash;
@@ -6037,6 +6116,7 @@ class DashParser {
 
 
       if (this.largestPeriodStartTime_ !== null && periodId !== null && start !== null && start < this.largestPeriodStartTime_ && !this.lastManifestUpdatePeriodIds_.includes(periodId) && i + 1 != periodNodes.length) {
+        shakaLog.debug(`Skipping Period with ID ${periodId} as its start time is smaller` + ' than the largest period start time that has been seen, and ID ' + 'is unseen before');
         continue;
       } // Save maximum period start time if it is the last period
 
@@ -6708,6 +6788,7 @@ class DashParser {
 
   async onUpdate_() {
     goog.asserts.assert(this.updatePeriod_ >= 0, 'There should be an update period');
+    shakaLog.info('Updating manifest...'); // Default the update delay to 0 seconds so that if there is an error we can
     // try again right away.
 
     let updateDelay = 0;
@@ -6769,6 +6850,7 @@ class DashParser {
 
 
   createFrame_(elem, parent, baseUris) {
+    goog.asserts.assert(parent || baseUris, 'Must provide either parent or baseUris');
     parent = parent ||
     /** @type {shaka.dash.DashParser.InheritanceFrame} */
     {
@@ -6997,10 +7079,12 @@ class DashParser {
       shakaLog.warning('Representation contains multiple segment information sources:', 'the Representation should only contain one of SegmentBase,', 'SegmentList, or SegmentTemplate.', frame);
 
       if (frame.segmentBase) {
+        shakaLog.info('Using SegmentBase by default.');
         frame.segmentList = null;
         frame.segmentTemplate = null;
       } else {
         goog.asserts.assert(frame.segmentList, 'There should be a SegmentList');
+        shakaLog.info('Using SegmentList by default.');
         frame.segmentTemplate = null;
       }
     }
@@ -7418,6 +7502,7 @@ DashParser.StreamInfo;
 
 DashParser.register = shakaNamespace => {
   shaka = shakaNamespace;
+  console.log(shakaNamespace);
   MetaSegmentIndex = class extends shaka.media.SegmentIndex {
     /** */
     constructor() {
@@ -7519,6 +7604,8 @@ DashParser.register = shakaNamespace => {
 
 
     offset() {
+      // offset() is only used by HLS, and MetaSegmentIndex is only used for DASH.
+      goog.asserts.assert(false, 'offset() should not be used in MetaSegmentIndex!');
     }
     /**
      * @override
@@ -7527,6 +7614,9 @@ DashParser.register = shakaNamespace => {
 
 
     merge() {
+      // merge() is only used internally by the DASH and HLS parser on
+      // SegmentIndexes, but never on MetaSegmentIndex.
+      goog.asserts.assert(false, 'merge() should not be used in MetaSegmentIndex!');
     }
     /**
      * @override
@@ -7535,6 +7625,9 @@ DashParser.register = shakaNamespace => {
 
 
     evict() {
+      // evict() is only used internally by the DASH and HLS parser on
+      // SegmentIndexes, but never on MetaSegmentIndex.
+      goog.asserts.assert(false, 'evict() should not be used in MetaSegmentIndex!');
     }
     /**
      * @override
@@ -7543,6 +7636,9 @@ DashParser.register = shakaNamespace => {
 
 
     mergeAndEvict() {
+      // mergeAndEvict() is only used internally by the DASH and HLS parser on
+      // SegmentIndexes, but never on MetaSegmentIndex.
+      goog.asserts.assert(false, 'mergeAndEvict() should not be used in MetaSegmentIndex!');
     }
     /**
      * @override
@@ -7551,6 +7647,9 @@ DashParser.register = shakaNamespace => {
 
 
     fit() {
+      // fit() is only used internally by manifest parsers on SegmentIndexes, but
+      // never on MetaSegmentIndex.
+      goog.asserts.assert(false, 'fit() should not be used in MetaSegmentIndex!');
     }
     /**
      * @override
@@ -7559,6 +7658,9 @@ DashParser.register = shakaNamespace => {
 
 
     updateEvery() {
+      // updateEvery() is only used internally by the DASH parser on
+      // SegmentIndexes, but never on MetaSegmentIndex.
+      goog.asserts.assert(false, 'updateEvery() should not be used in MetaSegmentIndex!');
     }
 
   };

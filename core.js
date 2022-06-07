@@ -1,4 +1,5 @@
 import UAParser from 'ua-parser-js';
+import 'core-js/proposals/relative-indexing-method';
 import 'axios';
 
 /* eslint-disable no-param-reassign */
@@ -22,19 +23,21 @@ const loadNative = ({
   destroy: () => {}
 });
 
-/* eslint-disable no-plusplus */
-new UAParser();
-function needNativeHls() {
-  // Don't let Android phones play HLS, even if some of them report supported
-  // This covers Samsung & OPPO special cases
-  const isAndroid = /android/i.test(navigator.userAgent); // canPlayType isn't reliable across all iOS verion / device combinations, so also check user agent
+/*
+  We overwrite standard function for getting mediaSource object
+  because Chrome supports VideoTrack only in experiment mode.
+*/
+const getUrlObject = fn => {
+  const createObjectURL = window.URL.createObjectURL.bind();
 
-  const isSafari = /^((?!chrome|android).)*(safari|iPad|iPhone)/i.test(navigator.userAgent); // ref: https://stackoverflow.com/a/12905122/4578017
-  // none of our supported browsers other than Safari response to this
+  window.URL.createObjectURL = blob => {
+    if (blob.addSourceBuffer) {
+      fn(blob);
+    }
 
-  const canPlayHls = document.createElement('video').canPlayType('application/vnd.apple.mpegURL');
-  return isAndroid || /firefox/i.test(navigator.userAgent) ? '' : isSafari ? 'maybe' : canPlayHls;
-}
+    return createObjectURL(blob);
+  };
+};
 
 /*! @license
  * Shaka Player
@@ -319,7 +322,177 @@ HttpFetchPlugin.register = shakaNamespace => {
   shaka.net.NetworkingEngine.registerScheme('blob', HttpFetchPlugin.parse);
 };
 
-/* eslint-disable indent */
+/* eslint-disable no-param-reassign */
+
+const getQualityItem = track => ({
+  id: track.originalVideoId,
+  bitrate: track.videoBandwidth,
+  width: track.width,
+  height: track.height,
+  codec: track.videoCodec,
+  frameRate: track.frameRate
+});
+
+const loadShaka = async (videoElement, config = {}) => {
+  let player;
+  getUrlObject(mediaSource => {
+    player.mediaSource = mediaSource;
+  });
+  const shaka = await import('shaka-player');
+  window.shaka = shaka;
+  shaka.polyfill.installAll();
+  player = new shaka.Player(videoElement);
+  player.configure(config);
+  const extensionOptions = {
+    licenseRequestHeaders: null
+  };
+
+  const getAvailableVideoQualities = () => player.getVariantTracks().reduce((trackList, currentTrack) => {
+    const keepOrignalTrack = trackList.find(track => track.height === currentTrack.height);
+
+    if (!keepOrignalTrack) {
+      trackList.push(getQualityItem(currentTrack));
+    }
+
+    return trackList;
+  }, []);
+
+  const getVideoQuality = () => {
+    const activeTrack = player.getVariantTracks().find(track => track.active);
+    if (!activeTrack) return {};
+    return getQualityItem(activeTrack);
+  };
+
+  HttpFetchPlugin.register(shaka);
+  player.getNetworkingEngine().registerRequestFilter((type, request) => {
+    if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
+      var _extensionOptions$drm;
+
+      request.headers = { ...request.headers,
+        ...((_extensionOptions$drm = extensionOptions.drm[player.drmInfo().keySystem]) === null || _extensionOptions$drm === void 0 ? void 0 : _extensionOptions$drm.headers)
+      };
+    }
+  });
+  const extensions = {
+    shaka,
+
+    get mediaSource() {
+      return player.mediaSource;
+    },
+
+    configureExtensions: ({
+      drm
+    } = {}) => {
+      extensionOptions.drm = drm;
+    },
+    getPlaybackSpeed: () => videoElement.playbackRate,
+    getVideoElement: () => videoElement,
+    setQuality: restrictions => {
+      if (!restrictions) return; // FIXME: Setting restrictions to {} cannot enable abr.
+
+      player.configure('abr.restrictions', restrictions);
+    },
+    getVideoQuality,
+    getAvailableVideoQualities,
+    getSubtitles: () => player.getTextTracks().map(track => ({
+      label: track.label,
+      value: track.language,
+      enabled: track.active
+    })),
+    setSubtitleTrack: lang => {
+      var _player2, _player3;
+
+      if (lang === 'off') {
+        var _player;
+
+        (_player = player) === null || _player === void 0 ? void 0 : _player.setTextTrackVisibility(false);
+        return;
+      }
+
+      (_player2 = player) === null || _player2 === void 0 ? void 0 : _player2.selectTextLanguage(lang);
+      (_player3 = player) === null || _player3 === void 0 ? void 0 : _player3.setTextTrackVisibility(true);
+    },
+    getAudio: () => {
+      var _player4;
+
+      const active = (_player4 = player) === null || _player4 === void 0 ? void 0 : _player4.getVariantTracks().find(track => track.active);
+      return {
+        lang: active === null || active === void 0 ? void 0 : active.language,
+        label: active === null || active === void 0 ? void 0 : active.label
+      };
+    },
+    getAudioList: () => player.getVariantTracks().map(track => ({
+      lang: track.language,
+      label: track.label
+    })),
+    setAudioTrack: lang => {
+      var _player5;
+
+      if (!lang) return;
+      (_player5 = player) === null || _player5 === void 0 ? void 0 : _player5.selectAudioLanguage(lang);
+    },
+    on: player.addEventListener.bind(player)
+  };
+  Object.assign(player, extensions);
+  return player;
+};
+
+/* eslint-disable no-plusplus */
+new UAParser();
+function needNativeHls() {
+  // Don't let Android phones play HLS, even if some of them report supported
+  // This covers Samsung & OPPO special cases
+  const isAndroid = /android/i.test(navigator.userAgent); // canPlayType isn't reliable across all iOS verion / device combinations, so also check user agent
+
+  const isSafari = /^((?!chrome|android).)*(safari|iPad|iPhone)/i.test(navigator.userAgent); // ref: https://stackoverflow.com/a/12905122/4578017
+  // none of our supported browsers other than Safari response to this
+
+  const canPlayHls = document.createElement('video').canPlayType('application/vnd.apple.mpegURL');
+  return isAndroid || /firefox/i.test(navigator.userAgent) ? '' : isSafari ? 'maybe' : canPlayHls;
+}
+
+/* eslint-disable no-param-reassign */
+const keySystems = {
+  widevine: 'com.widevine.alpha',
+  fairplay: 'com.apple.fps.1_0',
+  playready: 'com.microsoft.playready'
+};
+
+const getDrmOptions$1 = source => {
+  const drm = source.drm && Object.entries(source.drm).reduce((result, [keySystemId, options]) => {
+    const uri = options.licenseUri || options;
+
+    if (uri) {
+      const keySystemName = keySystems[keySystemId] || keySystemId;
+      result.servers[keySystemName] = uri;
+
+      if (options.certificateUri) {
+        result.advanced[keySystemName] = {
+          serverCertificateUri: options.certificateUri
+        };
+      }
+    }
+
+    return result;
+  }, {
+    servers: {},
+    advanced: {}
+  });
+  const extensions = source.drm && Object.entries(source.drm).reduce((result, [keySystemId, options]) => {
+    if (options.headers) {
+      const keySystemName = keySystems[keySystemId] || keySystemId;
+      result[keySystemName] = {
+        headers: options.headers
+      };
+    }
+
+    return result;
+  }, {});
+  return [drm, {
+    drm: extensions
+  }];
+};
+
 const FairplayKeySystem = {
   prepareContentId: contentUri => {
     const uriParts = contentUri.split('://');
@@ -342,174 +515,6 @@ const FairplayKeySystem = {
 };
 
 const defaultCertificateUrl = url => `${url === null || url === void 0 ? void 0 : url.replace(/\/$/, '')}/fairplay_cert`;
-
-/* eslint-disable no-param-reassign */
-
-const convertShakaDrm = ({
-  url
-}) => ({
-  servers: {
-    'com.widevine.alpha': url,
-    'com.microsoft.playready': url,
-    'com.apple.fps.1_0': url
-  },
-  advanced: {
-    'com.apple.fps.1_0': {
-      serverCertificateUri: defaultCertificateUrl(url)
-    }
-  }
-});
-
-const getQualityItem = track => ({
-  id: track.originalVideoId,
-  bitrate: track.videoBandwidth,
-  width: track.width,
-  height: track.height,
-  codec: track.videoCodec,
-  frameRate: track.frameRate
-});
-
-const loadShaka = async ({
-  videoElement,
-  config = {},
-  extraConfig = {}
-}) => {
-  const shaka = await import('shaka-player');
-  shaka.polyfill.installAll();
-  const player = new shaka.Player(videoElement);
-
-  const getAvailableVideoQualities = () => player.getVariantTracks().reduce((trackList, currentTrack) => {
-    const keepOrignalTrack = trackList.find(track => track.height === currentTrack.height);
-
-    if (!keepOrignalTrack) {
-      trackList.push(getQualityItem(currentTrack));
-    }
-
-    return trackList;
-  }, []);
-
-  const getVideoQuality = () => {
-    const activeTrack = player.getVariantTracks().find(track => track.active);
-    if (!activeTrack) return {};
-    return getQualityItem(activeTrack);
-  };
-
-  HttpFetchPlugin.register(shaka);
-  return {
-    shaka,
-    player,
-    load: async ({
-      dash,
-      hls,
-      drm
-    }) => {
-      player.configure({ ...config,
-        drm: convertShakaDrm(drm),
-        streaming: {
-          useNativeHlsOnSafari: true
-        }
-      });
-      player.getNetworkingEngine().registerRequestFilter((type, request) => {
-        if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
-          request.headers = { ...request.headers,
-            ...drm.headers
-          };
-        }
-      });
-      /*
-        In iOS Safari, native `canplay` would not be fired and keep loading forever.
-        We need to fire `canplay` manually by shaka event, loaded.
-      */
-
-      player.addEventListener('loaded', () => {
-        videoElement.dispatchEvent(new Event('canplay'));
-      });
-      videoElement.autoplay = extraConfig.autoplay;
-
-      if (!videoElement.autoplay) {
-        videoElement.muted = false;
-      }
-
-      const [assetUri, mimeType] = hls && (!dash || needNativeHls()) ? [hls, 'application/x-mpegURL'] : [dash];
-      return player.load(assetUri, null, mimeType);
-    },
-    configure: config => player.configure(config),
-    play: () => videoElement.play(),
-    pause: () => videoElement.pause(),
-    seek: time => {
-      videoElement.currentTime = time;
-    },
-    seekRange: () => player.seekRange(),
-    isLive: () => player === null || player === void 0 ? void 0 : player.isLive(),
-    destroy: () => player === null || player === void 0 ? void 0 : player.destroy(),
-    getCurrentTime: () => videoElement.currentTime,
-    getDuration: () => videoElement.duration,
-    getViewMode: () => 'fullscreen',
-    getStreamType: () => 'dash',
-    getVideoBufferLength: () => player.getBufferedInfo().video,
-    getAudioBufferLength: () => player.getBufferedInfo().audio,
-    setVolume: volume => {
-      videoElement.volume = volume / 100;
-    },
-    unmute: () => {
-      videoElement.muted = false;
-    },
-    mute: () => {
-      videoElement.muted = true;
-    },
-    setPlaybackSpeed: rate => {
-      videoElement.playbackRate = rate;
-    },
-    hasEnded: () => videoElement.ended,
-    // TODO
-    getSource: () => null,
-    // TODO: implement this function
-    getSupportedTech: () => [{
-      player: 'html5',
-      streaming: 'dash'
-    }],
-    getPlaybackSpeed: () => videoElement.playbackRate,
-    getVideoElement: () => videoElement,
-    setQuality: restrictions => {
-      if (!restrictions) return; // FIXME: Setting restrictions to {} cannot enable abr.
-
-      player.configure('abr.restrictions', restrictions);
-    },
-    getVideoQuality,
-    getAvailableVideoQualities,
-    getSubtitles: () => player.getTextTracks().map(track => ({
-      label: track.label,
-      value: track.language,
-      enabled: track.active
-    })),
-    setSubtitleTrack: lang => {
-      if (lang === 'off') {
-        player === null || player === void 0 ? void 0 : player.setTextTrackVisibility(false);
-        return;
-      }
-
-      player === null || player === void 0 ? void 0 : player.selectTextLanguage(lang);
-      player === null || player === void 0 ? void 0 : player.setTextTrackVisibility(true);
-    },
-    getAudio: () => {
-      const active = player === null || player === void 0 ? void 0 : player.getVariantTracks().find(track => track.active);
-      return {
-        lang: active === null || active === void 0 ? void 0 : active.language,
-        label: active === null || active === void 0 ? void 0 : active.label
-      };
-    },
-    getAudioList: () => player.getVariantTracks().map(track => ({
-      lang: track.language,
-      label: track.label
-    })),
-    setAudioTrack: lang => {
-      if (!lang) return;
-      player === null || player === void 0 ? void 0 : player.selectAudioLanguage(lang);
-    },
-    unload: () => player.unload(),
-    getPresentationStartTimeAsDate: () => player.getPresentationStartTimeAsDate()
-  };
-};
 
 const getDrmConfig = ({
   url,
@@ -563,6 +568,9 @@ const loadBitmovin = async ({
   const nativeHls = needNativeHls();
   const bitmovinModules = [].concat(await import('bitmovin-player/modules/bitmovinplayer-engine-bitmovin'), nativeHls && (await import('bitmovin-player/modules/bitmovinplayer-engine-native')), await Promise.all([import('bitmovin-player/modules/bitmovinplayer-drm'), import('bitmovin-player/modules/bitmovinplayer-abr'), import('bitmovin-player/modules/bitmovinplayer-subtitles'), import('bitmovin-player/modules/bitmovinplayer-container-mp4')]), nativeHls && (await Promise.all([import('bitmovin-player/modules/bitmovinplayer-hls'), import('bitmovin-player/modules/bitmovinplayer-subtitles-native')])), !nativeHls && (await import('bitmovin-player/modules/bitmovinplayer-subtitles-vtt')), !nativeHls && (await import('bitmovin-player/modules/bitmovinplayer-xml')), !nativeHls && (await Promise.all([import('bitmovin-player/modules/bitmovinplayer-dash'), import('bitmovin-player/modules/bitmovinplayer-mserenderer'), import('bitmovin-player/modules/bitmovinplayer-polyfill')]))).filter(Boolean);
   bitmovinModules.forEach(module => Player.addModule(module.default));
+  const extensionOptions = {
+    drm: {}
+  };
   let adaptationHandler;
   const player = new Player(container, {
     ui: false,
@@ -585,10 +593,46 @@ const loadBitmovin = async ({
     }
   });
 
+  player.configure = ({
+    drm
+  }) => {
+    if (drm) {
+      extensionOptions.drm = drm;
+    }
+  };
+
+  player.configureExtensions = ({
+    drm
+  } = {}) => {
+    if (drm) {
+      extensionOptions.licenseRequestHeaders = Object.values(drm)[0].headers;
+    }
+  };
+
+  const originalLoad = player.load;
+
+  player.load = (src, startTime, type) => originalLoad.call(player, {
+    [type === 'application/x-mpegurl' ? 'hls' : 'dash']: src,
+    drm: getDrmConfig({
+      url: ['com.apple.fps.1_0', 'com.widevine.alpha', 'com.microsoft.playready'].map(keySystemName => {
+        var _extensionOptions$drm;
+
+        return (_extensionOptions$drm = extensionOptions.drm) === null || _extensionOptions$drm === void 0 ? void 0 : _extensionOptions$drm.servers[keySystemName];
+      }).find(Boolean),
+      headers: extensionOptions.licenseRequestHeaders
+    }),
+    ...(startTime && {
+      options: {
+        startTime
+      }
+    })
+  });
+
   player.setAdaptationHandler = handler => {
     adaptationHandler = handler;
   };
 
+  player.seekRange = player.getSeekableRange;
   player.getDrmConfig = getDrmConfig; // Mock Shaka player interface from shaka.js
 
   player.getSubtitles = () => {
@@ -683,13 +727,13 @@ const loadPlayer = async (videoElement, {
 
 
   if (shaka || !bitmovin) {
-    const player = await loadShaka({
-      videoElement,
-      config: shaka,
-      extraConfig: {
-        autoplay
-      }
-    });
+    const player = await loadShaka(videoElement, shaka);
+
+    if (autoplay) {
+      // eslint-disable-next-line no-param-reassign
+      videoElement.autoplay = true;
+    }
+
     videoElement.dispatchEvent(new CustomEvent('playerStarted'));
     return player;
   }
@@ -718,7 +762,124 @@ const once = (target, name, handler) => {
 };
 
 /* eslint-disable no-param-reassign */
+const VideoSourceTypeMap = {
+  'application/dash+xml': {
+    sourceKeyName: 'dash',
+    extension: 'mpd'
+  },
+  'application/x-mpegurl': {
+    sourceKeyName: 'hls',
+    extension: 'm3u8'
+  }
+};
+const mimeTypes = {
+  hls: 'application/x-mpegurl',
+  dash: 'application/dash+xml'
+};
 
+const getExtensionByType = srcType => {
+  var _VideoSourceTypeMap$s;
+
+  return (_VideoSourceTypeMap$s = VideoSourceTypeMap[srcType]) === null || _VideoSourceTypeMap$s === void 0 ? void 0 : _VideoSourceTypeMap$s.extension;
+};
+
+const isStringSourceWithProperExtension = (url, srcType) => {
+  if (typeof url === 'string') {
+    const extension = url.split('.').at(-1); // eslint-disable-next-line eqeqeq
+
+    if (extension == getExtensionByType(srcType)) return true;
+  }
+
+  return false;
+};
+
+const matchType = (source, manifestType) => {
+  var _source$type, _source$type2;
+
+  return ((_source$type = source.type) === null || _source$type === void 0 ? void 0 : _source$type.includes(manifestType)) || ((_source$type2 = source.type) === null || _source$type2 === void 0 ? void 0 : _source$type2.toLowerCase()) === mimeTypes[manifestType] || isStringSourceWithProperExtension(source.src || source, manifestType);
+};
+
+const getDrmOptions = fallbackDrm => {
+  if (!(fallbackDrm !== null && fallbackDrm !== void 0 && fallbackDrm.url)) {
+    return;
+  }
+
+  const drmOptions = {
+    licenseUri: fallbackDrm.url,
+    headers: fallbackDrm.headers
+  };
+  return {
+    widevine: drmOptions,
+    fairplay: { ...drmOptions,
+      certificateUri: `${fallbackDrm.url}/fairplay_cert`
+    },
+    playready: drmOptions
+  };
+};
+/**
+ * @typedef {{src: string, type: string}} SourceObject
+ * @typedef {{hls: string, dash: string}} SourceObjectAlt backward compatiable form
+ *
+ * @param {SourceObject[]|SourceObject|SourceObjectAlt|string} sourceOptions
+ * @param {{preferManifestType?: ('dash'|'hls')}} options
+ * @return {{src: string, type: string, drm: Object}}
+ */
+
+
+const getSource = (sourceOptions, {
+  preferManifestType,
+  fallbackDrm
+} = {}) => {
+  if (sourceOptions.dash || sourceOptions.hls) {
+    const {
+      dash,
+      hls
+    } = sourceOptions;
+    return getSource([hls && {
+      src: hls,
+      type: mimeTypes.hls
+    }, dash && {
+      src: dash,
+      type: mimeTypes.dash
+    }].filter(Boolean), {
+      preferManifestType,
+      fallbackDrm
+    });
+  }
+
+  if (!Array.isArray(sourceOptions)) {
+    return getSource([sourceOptions], {
+      preferManifestType,
+      fallbackDrm
+    });
+  }
+
+  if (fallbackDrm) {
+    return getSource(sourceOptions.map(option => ({ ...(option.src ? option : {
+        src: option
+      }),
+      drm: getDrmOptions(fallbackDrm)
+    }), {
+      preferManifestType
+    }));
+  }
+
+  const matched = sourceOptions.find(source => !preferManifestType || matchType(source, preferManifestType));
+  const selected = matched || sourceOptions[0];
+
+  if (!selected) {
+    return;
+  }
+
+  const type = matched && preferManifestType === 'hls' && mimeTypes.hls;
+  return { ...(selected.src ? selected : {
+      src: selected
+    }),
+    type
+  };
+};
+
+/* eslint-disable no-param-reassign */
 
 const SHAKA_LIVE_DURATION = 4294967296;
 
@@ -749,33 +910,36 @@ const getMediaTime = (media, plugins = []) => {
 
 const load = async (media, {
   player,
-  drm,
   startTime,
-  plugins = []
+  plugins = [],
+  drm
 }, source) => {
-  var _player$getSupportedT;
-
-  const streamFormat = (_player$getSupportedT = player.getSupportedTech) === null || _player$getSupportedT === void 0 ? void 0 : _player$getSupportedT.call(player)[0].streaming;
+  const preferred = getSource(source, {
+    preferManifestType: needNativeHls() ? 'hls' : 'dash',
+    fallbackDrm: drm
+  });
   const merged = await plugins.reduce(async (loadChain, plugin) => {
     var _plugin$load;
 
     const currentSource = await loadChain;
-    const manifestItem = currentSource.info[streamFormat];
-    const overrides = await ((_plugin$load = plugin.load) === null || _plugin$load === void 0 ? void 0 : _plugin$load.call(plugin, manifestItem, {
+    const overrides = await ((_plugin$load = plugin.load) === null || _plugin$load === void 0 ? void 0 : _plugin$load.call(plugin, currentSource, {
       video: media,
       player,
       source: currentSource,
-      streamFormat,
       startTime
     }));
     return overrides ? { ...currentSource,
-      [streamFormat]: overrides.url,
-      ...(typeof overrides.startTime === 'number' && {
+      ...(overrides.url && {
+        src: overrides.url
+      }),
+      ...(overrides.startTime >= 0 && {
         startTime: overrides.startTime
       })
     } : currentSource;
-  }, { ...source,
-    startTime
+  }, { ...preferred,
+    options: {
+      startTime
+    }
   });
   media.addEventListener('durationchange', () => {
     // media duration may change when playing VOD to live or SSAI streams, save it here for convenience
@@ -783,22 +947,19 @@ const load = async (media, {
   }, {
     once: true
   });
-  const {
-    startTime: loadStartTime,
-    ...config
-  } = merged;
-  return player.unload().then(() => {
-    var _player$getDrmConfig;
+  const [drmOptions, extensions] = getDrmOptions$1(preferred);
+  player.configure({
+    drm: drmOptions
+  });
+  player.configureExtensions(extensions); // There's no use case that changing DRM options without changing manifest URL, just skip
 
-    return (// TODO drm is Bitmovin form, but should be agnostic
-      player.load({ ...config,
-        drm: ((_player$getDrmConfig = player.getDrmConfig) === null || _player$getDrmConfig === void 0 ? void 0 : _player$getDrmConfig.call(player, drm)) || drm,
-        options: {
-          startTime: loadStartTime
-        }
-      })
-    );
-  }).catch(error => {
+  if (player.lastSrc === merged.src) {
+    console.info('src is unchanged, skip load', merged.src);
+    return;
+  }
+
+  player.lastSrc = merged.src;
+  return player.unload().then(() => player.load(merged.src, merged.startTime, merged.type)).then(() => media.dispatchEvent(new Event('canplay'))).catch(error => {
     media.dispatchEvent(Object.assign(new CustomEvent('error'), {
       error
     }));
@@ -813,8 +974,10 @@ const seek = (media, {
   const seekPlugin = plugins.find(plugin => typeof plugin.handleSeek === 'function' && plugin.isActive());
 
   const seekInternal = seekTime => {
-    // when playing DASH, must call player.seek to make it work
-    player.seek(seekTime, issuer); // player.seek sets time after adding segments,
+    var _player$seek;
+
+    // when playing in Bitmovin, must call player.seek to sync internal time
+    (_player$seek = player.seek) === null || _player$seek === void 0 ? void 0 : _player$seek.call(player, seekTime, issuer); // player.seek sets time after adding segments,
     // set again to reflect instantly
 
     media.currentTime = seekTime;

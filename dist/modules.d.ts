@@ -18,4 +18,7 @@ declare module 'playcraft/modules' {
     supportEnvironmentList: SupportEnvironmentItem[]
   ) => EnvironmentError;
   export const ensureTabLock: () => void | (() => void);
+  export const handleIOSHeadphonesDisconnection: ({ maxStuckSeconds }?: {
+    maxStuckSeconds?: number | undefined;
+  }) => void;
 }
