@@ -192,6 +192,8 @@ const deepEqual = (current, updated) => JSON.stringify(current) === JSON.stringi
 const HEARTBEAT_INTERVAL_MS = 10000;
 const UPDATE_INTERVAL_MS = 10000;
 
+const isContentExpired = content => typeof (content === null || content === void 0 ? void 0 : content.end_time) === 'number' && content.end_time * 1000 <= Date.now();
+
 const startPlaybackSession = async (playbackApi, options = {}) => {
   var _options$cache, _options$cache$get, _options$cache2, _options$cache2$get;
 
@@ -211,7 +213,7 @@ const startPlaybackSession = async (playbackApi, options = {}) => {
   const state = {};
 
   const updateContent = async contentInCache => {
-    const content = !contentInCache || contentInCache.end_time * 1000 <= Date.now() ? await playbackApi.getContent({
+    const content = !contentInCache || isContentExpired(contentInCache) ? await playbackApi.getContent({
       type,
       id
     }) : contentInCache;

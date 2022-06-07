@@ -388,6 +388,8 @@ In addition to ABR constrants, you can also specify available quality setting op
 }
 ```
 
+If not specifying any quality, the player will get the available qualities from the manifest as default.
+
 When playing with Safari native HLS support, player can't set ABR constraints and quality selection is disabled.
 
 To enable quality selection in Safari, specify `quality.rewriteManifest` to let player apply ABR constriants by manifest rewrite.
