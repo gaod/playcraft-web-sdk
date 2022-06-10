@@ -1,221 +1,232 @@
-'use strict';
+import React, { useState, useRef, useEffect, useContext, cloneElement, createContext, useReducer, useLayoutEffect, forwardRef, useMemo, useImperativeHandle, Fragment as Fragment$2 } from 'react';
+import useDimensions from 'react-cool-dimensions';
+import { ResizeObserver } from '@juggle/resize-observer';
+import UAParser from 'ua-parser-js';
+import require$$0 from 'react-is';
+import { jsx, jsxs as jsxs$1, Fragment as Fragment$1 } from 'react/jsx-runtime';
+import 'core-js/proposals/relative-indexing-method';
+import axios from 'axios';
+import { css, ClassNames, keyframes } from '@emotion/react';
+import { jsx as jsx$1, jsxs, Fragment } from '@emotion/react/jsx-runtime';
+import { createPortal } from 'react-dom';
+import useOnclickOutside from 'react-cool-onclickoutside';
+import mitt from 'mitt';
+import _get from 'dlv';
 
-Object.defineProperty(exports, '__esModule', { value: true });
+const LanguageCode$1 = {
+  EN: 'en',
+  JA: 'ja',
+  ZHTW: 'zh-TW'
+};
+const SeekOrigin = {
+  START: 'START',
+  CURRENT: 'CURRENT'
+};
+const CastState = {
+  NO_DEVICES_AVAILABLE: 'NO_DEVICES_AVAILABLE',
+  CONNECTED: 'CONNECTED',
+  CONNECTING: 'CONNECTING',
+  NOT_CONNECTED: 'NOT_CONNECTED'
+};
+const ItemType$1 = {
+  VIDEOS: 'videos',
+  LIVES: 'lives'
+};
 
-var React = require('react');
-var require$$0 = require('react-is');
-var axios = require('axios');
-var UAParser = require('ua-parser-js');
-require('core-js/proposals/relative-indexing-method');
-var reactDom = require('react-dom');
-var jsxRuntime = require('react/jsx-runtime');
-var jsxRuntime$1 = require('@emotion/react/jsx-runtime');
-var mitt = require('mitt');
-var react = require('@emotion/react');
-var useDimensions = require('react-cool-dimensions');
-var resizeObserver = require('@juggle/resize-observer');
-var useOnclickOutside = require('react-cool-onclickoutside');
-var _get = require('dlv');
+/* eslint-disable no-plusplus */
+const parser = new UAParser();
+function getOS() {
+  return parser.getOS();
+}
+function getDevice() {
+  const device = parser.getDevice();
+  const osName = getOS().name;
+  if (device.type === undefined && osName === 'Android') device.type = 'tablet';
+  return device;
+}
+function needNativeHls() {
+  // Don't let Android phones play HLS, even if some of them report supported
+  // This covers Samsung & OPPO special cases
+  const isAndroid = /android/i.test(navigator.userAgent); // canPlayType isn't reliable across all iOS verion / device combinations, so also check user agent
 
-function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+  const isSafari = /^((?!chrome|android).)*(safari|iPad|iPhone)/i.test(navigator.userAgent); // ref: https://stackoverflow.com/a/12905122/4578017
+  // none of our supported browsers other than Safari response to this
 
-function _interopNamespace(e) {
-  if (e && e.__esModule) return e;
-  var n = Object.create(null);
-  if (e) {
-    Object.keys(e).forEach(function (k) {
-      if (k !== 'default') {
-        var d = Object.getOwnPropertyDescriptor(e, k);
-        Object.defineProperty(n, k, d.get ? d : {
-          enumerable: true,
-          get: function () { return e[k]; }
-        });
+  const canPlayHls = document.createElement('video').canPlayType('application/vnd.apple.mpegURL');
+  return isAndroid || /firefox/i.test(navigator.userAgent) ? '' : isSafari ? 'maybe' : canPlayHls;
+}
+
+const isDesktop = () => !getDevice().type;
+
+const isIOS = () => /iPad|iPhone|iPod/.test(navigator.platform) || navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+
+
+const havePointerQuery = 'not all and (pointer: coarse), screen and (-ms-high-contrast: active), (-ms-high-contrast: none)';
+
+const multiRef = (...refs) => element => {
+  if (element) {
+    refs.forEach(ref => {
+      if (ref && 'current' in ref) {
+        // eslint-disable-next-line no-param-reassign
+        ref.current = element;
+      } else {
+        ref === null || ref === void 0 ? void 0 : ref(element);
       }
     });
   }
-  n["default"] = e;
-  return Object.freeze(n);
-}
-
-var React__default = /*#__PURE__*/_interopDefaultLegacy(React);
-var require$$0__default = /*#__PURE__*/_interopDefaultLegacy(require$$0);
-var axios__default = /*#__PURE__*/_interopDefaultLegacy(axios);
-var UAParser__default = /*#__PURE__*/_interopDefaultLegacy(UAParser);
-var mitt__default = /*#__PURE__*/_interopDefaultLegacy(mitt);
-var useDimensions__default = /*#__PURE__*/_interopDefaultLegacy(useDimensions);
-var useOnclickOutside__default = /*#__PURE__*/_interopDefaultLegacy(useOnclickOutside);
-var _get__default = /*#__PURE__*/_interopDefaultLegacy(_get);
-
-var logs = {
-	bitmovin: false,
-	level: "error"
-};
-var style$a = {
-	width: "100%",
-	height: "100%"
-};
-var ui = false;
-var BitmovinConfig = {
-	logs: logs,
-	style: style$a,
-	ui: ui
 };
 
-var desktop = [
-	{
-		device: {
-			type: "desktop"
-		},
-		os: {
-			name: "*",
-			version: "*"
-		},
-		browser: {
-			name: "Chrome",
-			version: "60"
-		}
-	},
-	{
-		device: {
-			type: "desktop"
-		},
-		os: {
-			name: "*",
-			version: "*"
-		},
-		browser: {
-			name: "Safari",
-			version: "11"
-		}
-	},
-	{
-		device: {
-			type: "desktop"
-		},
-		os: {
-			name: "*",
-			version: "*"
-		},
-		browser: {
-			name: "Firefox",
-			version: "60"
-		}
-	},
-	{
-		device: {
-			type: "desktop"
-		},
-		os: {
-			name: "*",
-			version: "*"
-		},
-		browser: {
-			name: "Edge",
-			version: "15"
-		}
-	},
-	{
-		device: {
-			type: "desktop"
-		},
-		os: {
-			name: "Windows",
-			version: "8.1"
-		},
-		browser: {
-			name: "IE",
-			version: "11"
-		}
-	}
-];
+const on = (target, name, handler) => {
+  target.addEventListener(name, handler);
+  return () => target.removeEventListener(name, handler);
+};
 
-var mobile = [
-	{
-		device: {
-			type: "mobile"
-		},
-		os: {
-			name: "Android",
-			version: "5"
-		},
-		browser: {
-			name: "Chrome",
-			version: "60"
-		}
-	},
-	{
-		device: {
-			type: "mobile"
-		},
-		os: {
-			name: "Android",
-			version: "5"
-		},
-		browser: {
-			name: "Chrome WebView",
-			version: "60"
-		}
-	},
-	{
-		device: {
-			type: "mobile"
-		},
-		os: {
-			name: "iOS",
-			version: "11"
-		},
-		browser: {
-			name: "Mobile Safari",
-			version: "11"
-		}
-	},
-	{
-		device: {
-			type: "tablet"
-		},
-		os: {
-			name: "Android",
-			version: "5"
-		},
-		browser: {
-			name: "Chrome",
-			version: "60"
-		}
-	},
-	{
-		device: {
-			type: "tablet"
-		},
-		os: {
-			name: "Android",
-			version: "5"
-		},
-		browser: {
-			name: "Chrome WebView",
-			version: "60"
-		}
-	},
-	{
-		device: {
-			type: "tablet"
-		},
-		os: {
-			name: "iOS",
-			version: "11"
-		},
-		browser: {
-			name: "Mobile Safari",
-			version: "11"
-		}
-	}
-];
+const once = (target, name, handler) => {
+  const oneTime = (...args) => {
+    handler(...args);
+    target.removeEventListener(name, oneTime);
+  };
 
-var config = {
-  BitmovinConfig,
-  SupportEnvironment: {
-    desktop,
-    mobile
+  target.addEventListener(name, oneTime);
+  return () => target.removeEventListener(name, oneTime);
+};
+
+const waitFor = (check, handler) => {
+  const checkInterval = setInterval(() => {
+    if (check()) {
+      clearInterval(check);
+      handler();
+    }
+  }, 50);
+  return () => clearInterval(checkInterval);
+};
+
+const vendors = {
+  change: ['fullscreenchange', 'webkitfullscreenchange', 'MSFullscreenChange'],
+  element: ['fullscreenElement', 'webkitFullscreenElement', 'msFullscreenElement'],
+  request: ['requestFullscreen', 'webkitRequestFullScreen', 'msRequestFullscreen'],
+  exit: ['exitFullscreen', 'webkitExitFullscreen', 'msExitFullscreen']
+};
+
+const getName = (object, nameList) => nameList.find(name => name in object);
+
+const onViewModeChange = (video, onChange) => {
+  const vendorElementName = getName(document, vendors.element);
+
+  if (vendorElementName) {
+    onChange(document[vendorElementName] ? 'fullscreen' : 'inline');
+    return vendors.change.map(name => on(document, name, () => onChange(document[vendorElementName] ? 'fullscreen' : 'inline')));
   }
+
+  onChange(video.webkitDisplayingFullscreen ? 'fullscreen' : 'inline');
+  const registered = [on(video, 'webkitbeginfullscreen', () => onChange('fullscreen')), on(video, 'webkitendfullscreen', () => onChange('inline'))];
+  return () => {
+    registered.forEach(removeListener => removeListener());
+  };
+};
+
+const toggleFullscreen = container => {
+  const vendorElementName = getName(document, vendors.element);
+
+  if (vendorElementName) {
+    const action = document[vendorElementName] ? 'exit' : 'request';
+    const target = action === 'request' ? container : document;
+    return target[getName(target, vendors[action])]();
+  }
+
+  const target = container.querySelector('video');
+  return target.webkitDisplayingFullscreen ? target.webkitExitFullScreen() : target.webkitEnterFullScreen();
+};
+
+/*
+  Rules:
+    1  Set `true` immediately in first time (For loadstart event)
+    2. Set `true` to waiting lazily but update waiting to `false` immediately
+*/
+
+const useLazyWaiting = waiting => {
+  const [first, setFirst] = useState(true);
+  const [state, dispatch] = useState(waiting);
+  const timer = useRef();
+  useEffect(() => {
+    clearTimeout(timer.current);
+
+    if (waiting && !first) {
+      timer.current = setTimeout(() => {
+        dispatch(waiting);
+      }, 1000);
+    } else {
+      dispatch(waiting);
+      setFirst(false);
+    }
+
+    return () => clearTimeout(timer.current);
+  }, [waiting]);
+  return state;
+};
+
+const useAutoHide = ({
+  hideTimeMs = 3000,
+  pinned,
+  tapToHide,
+  onHide
+} = {}) => {
+  const timer = useRef();
+  const [mode, setMode] = useState('hidden');
+
+  const interact = () => {
+    if (mode !== 'shown') {
+      setMode('shown');
+    }
+
+    clearTimeout(timer.current);
+
+    if (!pinned) {
+      timer.current = setTimeout(() => setMode('hidden'), hideTimeMs);
+    }
+  };
+
+  const hide = () => {
+    clearTimeout(timer.current);
+    setMode('hidden');
+    onHide === null || onHide === void 0 ? void 0 : onHide();
+  };
+
+  useEffect(() => {
+    if (mode === 'shown') {
+      interact();
+    }
+  }, [hideTimeMs]);
+  useEffect(() => {
+    if (pinned) {
+      setMode('shown');
+      clearTimeout(timer.current);
+    } else {
+      interact();
+    }
+  }, [pinned]);
+  useEffect(() => () => {
+    clearTimeout(timer.current);
+  }, []);
+  return {
+    mode,
+    show: interact,
+    hide,
+    onClick: event => {
+      if (mode === 'hidden') {
+        interact();
+      } else if (tapToHide && event.target.tagName !== 'BUTTON') {
+        // hide if tapping on elsewhere
+        hide();
+      }
+    },
+    onMouseMove: () => {
+      // In mobile web, emulated clicks generate extra mouse move events
+      if (!('ontouchstart' in window)) {
+        interact();
+      }
+    }
+  };
 };
 
 var propTypes = {exports: {}};
@@ -428,7 +439,7 @@ var checkPropTypes_1 = checkPropTypes$1;
  * LICENSE file in the root directory of this source tree.
  */
 
-var ReactIs$1 = require$$0__default["default"];
+var ReactIs$1 = require$$0;
 var assign = objectAssign;
 
 var ReactPropTypesSecret$1 = ReactPropTypesSecret_1;
@@ -1080,7 +1091,7 @@ var factoryWithThrowingShims = function() {
  */
 
 if (process.env.NODE_ENV !== 'production') {
-  var ReactIs = require$$0__default["default"];
+  var ReactIs = require$$0;
 
   // By explicitly using `prop-types` you are opting into new development behavior.
   // http://fb.me/prop-types-in-prod
@@ -1093,623 +1104,6 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 var PropTypes = propTypes.exports;
-
-const queryString = object => object && typeof object === 'object' && Object.getOwnPropertyNames(object).map(name => `${name}=${encodeURIComponent(object[name])}`).join('&');
-function convertToSeconds(timeString) {
-  const [hours, minutes, seconds] = timeString.split(':').map(parseFloat);
-  return hours * 3600 + minutes * 60 + seconds;
-}
-function getVersion() {
-  try {
-    // eslint-disable-next-line no-undef
-    return "1.11.0";
-  } catch (e) {
-    return undefined;
-  }
-}
-function getPopoverPosition(rect, target, boundary) {
-  const rectX = rect.x || rect.left;
-  const boundaryX = boundary.x || boundary.left;
-  const maxLeft = boundary.width - rect.width;
-  const targetCenter = (target.left + target.right) / 2 - boundaryX;
-  const center = rectX + rect.width / 2 - boundaryX;
-  const alignLeft = rectX + (targetCenter - center) - boundaryX;
-  return {
-    left: Math.max(0, Math.min(alignLeft, maxLeft)),
-    top: target.top - rect.height
-  };
-} // eslint-disable-next-line consistent-return
-
-const nearest = (items, diff) => {
-  if (!items.length) {
-    return;
-  }
-
-  return items.reduce((a, b) => Math.abs(diff(a)) > Math.abs(diff(b)) ? b : a, items[0]);
-};
-
-const LanguageCode$1 = {
-  EN: 'en',
-  JA: 'ja',
-  ZHTW: 'zh-TW'
-};
-const EnvironmentErrorName = {
-  NOT_SUPPORT_DEVICE: 'KKS.ERROR.DEVICE_IS_NOT_SUPPORTED',
-  NOT_SUPPORT_OS: 'KKS.ERROR.OS_IS_NOT_SUPPORTED',
-  NOT_SUPPORT_OS_VERSION: 'KKS.ERROR.PLEASE_UPGRADE_OS',
-  NOT_SUPPORT_BROWSER: 'KKS.ERROR.BROWSER_IS_NOT_SUPPORTED',
-  NOT_SUPPORT_BROWSER_VERSION: 'KKS.ERROR.PLEASE_UPGRADE_BROWSER'
-};
-const SeekOrigin = {
-  START: 'START',
-  CURRENT: 'CURRENT'
-};
-const CastState = {
-  NO_DEVICES_AVAILABLE: 'NO_DEVICES_AVAILABLE',
-  CONNECTED: 'CONNECTED',
-  CONNECTING: 'CONNECTING',
-  NOT_CONNECTED: 'NOT_CONNECTED'
-};
-const ItemType$1 = {
-  VIDEOS: 'videos',
-  LIVES: 'lives'
-};
-
-/* eslint-disable no-plusplus */
-const parser = new UAParser__default["default"]();
-function getOS() {
-  return parser.getOS();
-}
-function getDevice() {
-  const device = parser.getDevice();
-  const osName = getOS().name;
-  if (device.type === undefined && osName === 'Android') device.type = 'tablet';
-  return device;
-}
-function getBrowser() {
-  return parser.getBrowser();
-}
-function needNativeHls() {
-  // Don't let Android phones play HLS, even if some of them report supported
-  // This covers Samsung & OPPO special cases
-  const isAndroid = /android/i.test(navigator.userAgent); // canPlayType isn't reliable across all iOS verion / device combinations, so also check user agent
-
-  const isSafari = /^((?!chrome|android).)*(safari|iPad|iPhone)/i.test(navigator.userAgent); // ref: https://stackoverflow.com/a/12905122/4578017
-  // none of our supported browsers other than Safari response to this
-
-  const canPlayHls = document.createElement('video').canPlayType('application/vnd.apple.mpegURL');
-  return isAndroid || /firefox/i.test(navigator.userAgent) ? '' : isSafari ? 'maybe' : canPlayHls;
-}
-
-const isDesktop = () => !getDevice().type;
-
-const isIOS = () => /iPad|iPhone|iPod/.test(navigator.platform) || navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
-
-function compareVersion(v1, v2) {
-  if (!/\d+(\.\d+)*/.test(v1)) throw Error(`the version format ${v1} is wrong`);
-  if (!/\d+(\.\d+)*/.test(v2)) throw Error(`the version format ${v2} is wrong`);
-  const v1parts = v1.split('.').map(p => Number(p));
-  const v2parts = v2.split('.').map(p => Number(p));
-
-  for (let i = 0, I = Math.max(v1parts.length, v2parts.length); i < I; i++) {
-    if (v1parts[i] !== v2parts[i]) {
-      return (v1parts[i] || 0) - (v2parts[i] || 0);
-    }
-  }
-
-  return 0;
-}
-
-const validateEnvironment = (supportEnvironmentList = []) => {
-  if (supportEnvironmentList.length === 0) {
-    return;
-  }
-
-  const device = getDevice();
-  const os = getOS();
-  const browser = getBrowser();
-
-  const toUnique = list => Array.from(new Set(list));
-
-  const validators = [{
-    filter: ({
-      device: {
-        name,
-        type
-      }
-    }) => name === '*' || type === 'desktop' && device.type === undefined || type === device.type,
-    errorName: EnvironmentErrorName.NOT_SUPPORT_DEVICE,
-    getErrorProps: list => ({
-      allowDevices: toUnique(list.map(env => env.device.type))
-    })
-  }, {
-    filter: ({
-      os: {
-        name
-      }
-    }) => name === '*' || name === os.name,
-    errorName: EnvironmentErrorName.NOT_SUPPORT_OS,
-    getErrorProps: list => ({
-      allowOSs: toUnique(list.map(env => env.os.name))
-    })
-  }, {
-    filter: ({
-      os: {
-        version
-      }
-    }) => version === '*' || compareVersion(os.version, version) >= 0,
-    errorName: EnvironmentErrorName.NOT_SUPPORT_OS_VERSION,
-    getErrorProps: list => ({
-      minVersion: list[0].os.version
-    })
-  }, {
-    filter: ({
-      browser: {
-        name
-      }
-    }) => name === browser.name,
-    errorName: EnvironmentErrorName.NOT_SUPPORT_BROWSER,
-    getErrorProps: list => ({
-      allowBrowsers: toUnique(list.map(env => env.browser.name))
-    })
-  }, {
-    filter: ({
-      browser: {
-        version
-      }
-    }) => compareVersion(browser.version, version) >= 0,
-    errorName: EnvironmentErrorName.NOT_SUPPORT_BROWSER_VERSION,
-    getErrorProps: list => ({
-      minVersion: list[0].browser.version
-    })
-  }];
-  let scopes = supportEnvironmentList;
-
-  for (let i = 0; i < validators.length; i++) {
-    const validator = validators[i];
-    const newScopes = scopes.filter(validator.filter);
-
-    if (newScopes.length === 0) {
-      return {
-        name: validator.errorName,
-        ...validator.getErrorProps(scopes)
-      };
-    }
-
-    scopes = newScopes;
-  }
-}; // IE doesn't support pointer query, assume it always have pointer
-
-
-const havePointerQuery = 'not all and (pointer: coarse), screen and (-ms-high-contrast: active), (-ms-high-contrast: none)';
-
-/* eslint-disable no-param-reassign */
-const VideoSourceTypeMap = {
-  'application/dash+xml': {
-    sourceKeyName: 'dash',
-    extension: 'mpd'
-  },
-  'application/x-mpegurl': {
-    sourceKeyName: 'hls',
-    extension: 'm3u8'
-  }
-};
-const mimeTypes = {
-  hls: 'application/x-mpegurl',
-  dash: 'application/dash+xml'
-};
-
-const getExtensionByType = srcType => {
-  var _VideoSourceTypeMap$s;
-
-  return (_VideoSourceTypeMap$s = VideoSourceTypeMap[srcType]) === null || _VideoSourceTypeMap$s === void 0 ? void 0 : _VideoSourceTypeMap$s.extension;
-};
-
-const isStringSourceWithProperExtension = (url, srcType) => {
-  if (typeof url === 'string') {
-    const extension = url.split('.').at(-1); // eslint-disable-next-line eqeqeq
-
-    if (extension == getExtensionByType(srcType)) return true;
-  }
-
-  return false;
-};
-
-const matchType = (source, manifestType) => {
-  var _source$type, _source$type2;
-
-  return ((_source$type = source.type) === null || _source$type === void 0 ? void 0 : _source$type.includes(manifestType)) || ((_source$type2 = source.type) === null || _source$type2 === void 0 ? void 0 : _source$type2.toLowerCase()) === mimeTypes[manifestType] || isStringSourceWithProperExtension(source.src || source, manifestType);
-};
-
-const getDrmOptions$1 = fallbackDrm => {
-  if (!(fallbackDrm !== null && fallbackDrm !== void 0 && fallbackDrm.url)) {
-    return;
-  }
-
-  const drmOptions = {
-    licenseUri: fallbackDrm.url,
-    headers: fallbackDrm.headers
-  };
-  return {
-    widevine: drmOptions,
-    fairplay: { ...drmOptions,
-      certificateUri: `${fallbackDrm.url}/fairplay_cert`
-    },
-    playready: drmOptions
-  };
-};
-/**
- * @typedef {{src: string, type: string}} SourceObject
- * @typedef {{hls: string, dash: string}} SourceObjectAlt backward compatiable form
- *
- * @param {SourceObject[]|SourceObject|SourceObjectAlt|string} sourceOptions
- * @param {{preferManifestType?: ('dash'|'hls')}} options
- * @return {{src: string, type: string, drm: Object}}
- */
-
-
-const getSource = (sourceOptions, {
-  preferManifestType,
-  fallbackDrm
-} = {}) => {
-  if (sourceOptions.dash || sourceOptions.hls) {
-    const {
-      dash,
-      hls
-    } = sourceOptions;
-    return getSource([hls && {
-      src: hls,
-      type: mimeTypes.hls
-    }, dash && {
-      src: dash,
-      type: mimeTypes.dash
-    }].filter(Boolean), {
-      preferManifestType,
-      fallbackDrm
-    });
-  }
-
-  if (!Array.isArray(sourceOptions)) {
-    return getSource([sourceOptions], {
-      preferManifestType,
-      fallbackDrm
-    });
-  }
-
-  if (fallbackDrm) {
-    return getSource(sourceOptions.map(option => ({ ...(option.src ? option : {
-        src: option
-      }),
-      drm: getDrmOptions$1(fallbackDrm)
-    }), {
-      preferManifestType
-    }));
-  }
-
-  const matched = sourceOptions.find(source => !preferManifestType || matchType(source, preferManifestType));
-  const selected = matched || sourceOptions[0];
-
-  if (!selected) {
-    return;
-  }
-
-  const type = matched && preferManifestType === 'hls' && mimeTypes.hls;
-  return { ...(selected.src ? selected : {
-      src: selected
-    }),
-    type
-  };
-};
-
-const matchAll = (input, pattern) => {
-  const flags = [pattern.global && 'g', pattern.ignoreCase && 'i', pattern.multiline && 'm'].filter(Boolean).join('');
-  const clone = new RegExp(pattern, flags);
-  return Array.from(function* () {
-    let matched = true;
-
-    while (1) {
-      matched = clone.exec(input);
-
-      if (!matched) {
-        return;
-      }
-
-      yield matched;
-    }
-  }());
-};
-
-const rewriteUrls = (manifest, sourceUrl) => manifest.replace(/((#EXT-X-MEDIA:.*URI=")([^"]*))|((#EXT-X-STREAM-INF.*\n)(.*)(?=\n))/g, (...matches) => [matches[2], matches[5], new URL(matches[3] || matches[6], sourceUrl)].filter(Boolean).join(''));
-
-const filterHlsManifestQualities = (manifest, filter) => {
-  if (!filter) {
-    return;
-  }
-
-  const profiles = matchAll(manifest, /RESOLUTION=(\d+)x(\d+)/g).map(([, width, height]) => ({
-    width: +width,
-    height: +height
-  }));
-  const allowed = filter(profiles) || profiles;
-  const newManifest = manifest.replace(/#EXT-X-STREAM-INF.*RESOLUTION=(\d+)x(\d+).*\n.*\n/g, (item, width, height) => allowed.some(p => p.width === +width && p.height === +height) ? item : '');
-  return newManifest !== manifest && newManifest;
-};
-
-const meetRestriction = (quality, {
-  minHeight,
-  maxHeight
-} = {}) => !(quality.height < minHeight || quality.height > maxHeight);
-
-const selectHlsQualities = async (source, restrictions = {}) => {
-  if (!needNativeHls() || !(restrictions.minHeight || restrictions.maxHeight)) {
-    return source;
-  }
-
-  const selected = getSource(source, {
-    preferManifestType: 'hls'
-  });
-
-  if (!((selected === null || selected === void 0 ? void 0 : selected.type.toLowerCase()) === mimeTypes.hls)) {
-    return source;
-  }
-
-  const filtered = filterHlsManifestQualities((await axios__default["default"].get(selected.src)).data, items => items.filter(item => meetRestriction(item, restrictions)));
-
-  if (filtered) {
-    return { ...selected,
-
-      /*
-        Native Safari couldn't support blob .m3u8. and will throw MediaError: 4
-        We find the hacky method: dataURI.
-        By the way, bitmovin also use this form even user gives the blob URI.
-      */
-      src: `data:application/x-mpegURL,${encodeURI(rewriteUrls(filtered, selected.src))}`
-    };
-  }
-
-  return source;
-};
-
-const selectRestrictedQuality = (availableQualities, {
-  suggested,
-  restrictions
-}) => {
-  if (meetRestriction(suggested, restrictions)) {
-    return suggested.id;
-  }
-
-  const allowed = availableQualities.filter(quality => meetRestriction(quality, restrictions));
-  return (nearest(allowed, item => item.height - suggested.height) || suggested).id;
-};
- // for unit test
-
-let lastError = '';
-const defaultOptions = {
-  ignoreErrors: ['AbortError: The play() request was interrupted', 'i.context.logger'],
-  beforeSend: event => {
-    if (lastError.message === event.exception.values[0].value && Date.now() - lastError.date < 10000) {
-      lastError.date = Date.now();
-      return null;
-    }
-
-    lastError = {
-      date: Date.now(),
-      message: event.exception.values[0].value
-    };
-    return event;
-  }
-};
-
-const addSentry = ({
-  key,
-  ...options
-}) => {
-  const script = document.createElement('script');
-  script.crossorigin = 'anonymous';
-  script.src = `https://js.sentry-cdn.com/${key}.min.js`;
-  script.addEventListener('load', () => {
-    window.Sentry.onLoad(() => {
-      window.Sentry.init({ ...defaultOptions,
-        ...options
-      });
-    });
-  }, {
-    once: true
-  });
-  document.body.append(script);
-};
-
-/* eslint-disable react/prop-types */
-const extensionContext = /*#__PURE__*/React.createContext();
-
-const SlotProvider = ({
-  slotRef,
-  children
-}) => {
-  const [slots, setSlots] = React.useState();
-  React.useEffect(() => {
-    setSlots(slotRef.current);
-  }, []);
-  return /*#__PURE__*/jsxRuntime.jsx(extensionContext.Provider, {
-    value: slots,
-    children: children
-  });
-};
-
-const FunctionBarExtension = ({
-  children
-}) => {
-  const slots = React.useContext(extensionContext);
-  return slots !== null && slots !== void 0 && slots.functionBar ? /*#__PURE__*/reactDom.createPortal(children, slots.functionBar) : '';
-};
-
-/* eslint-disable jsx-a11y/no-static-element-interactions */
-
-/* @jsxImportSource @emotion/react */
-const backdropStyle = {
-  position: 'absolute',
-  zIndex: 1,
-  top: 0,
-  left: 0,
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'center',
-  alignContent: 'center',
-  justifyContent: 'center',
-  height: '100%',
-  width: '100%',
-  backgroundColor: 'rgba(0, 0, 0, 0)',
-  transform: 'translateY(-100%)',
-  transition: 'background-color 0.5s ease, transform 0s 0.5s'
-};
-const backdropOpenStyle = {
-  backgroundColor: 'rgba(0, 0, 0, 0.6)',
-  transform: 'translateY(0)',
-  transition: 'background-color 0.5s ease',
-  '~ .overlay-backdrop': {
-    display: 'none'
-  }
-}; // eslint-disable-next-line react/prop-types
-
-const Backdrop = ({
-  open,
-  children,
-  onClick,
-  ...rest
-}) => jsxRuntime$1.jsx("div", {
-  css: [backdropStyle, open && backdropOpenStyle, process.env.NODE_ENV === "production" ? "" : ";label:Backdrop;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkJhY2tkcm9wLmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQWdDSSIsImZpbGUiOiJCYWNrZHJvcC5qcyIsInNvdXJjZXNDb250ZW50IjpbIi8qIGVzbGludC1kaXNhYmxlIGpzeC1hMTF5L25vLXN0YXRpYy1lbGVtZW50LWludGVyYWN0aW9ucyAqL1xuLyogQGpzeEltcG9ydFNvdXJjZSBAZW1vdGlvbi9yZWFjdCAqL1xuXG5jb25zdCBiYWNrZHJvcFN0eWxlID0ge1xuICBwb3NpdGlvbjogJ2Fic29sdXRlJyxcbiAgekluZGV4OiAxLFxuICB0b3A6IDAsXG4gIGxlZnQ6IDAsXG4gIGRpc3BsYXk6ICdmbGV4JyxcbiAgZmxleFdyYXA6ICd3cmFwJyxcbiAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gIGFsaWduQ29udGVudDogJ2NlbnRlcicsXG4gIGp1c3RpZnlDb250ZW50OiAnY2VudGVyJyxcbiAgaGVpZ2h0OiAnMTAwJScsXG4gIHdpZHRoOiAnMTAwJScsXG4gIGJhY2tncm91bmRDb2xvcjogJ3JnYmEoMCwgMCwgMCwgMCknLFxuICB0cmFuc2Zvcm06ICd0cmFuc2xhdGVZKC0xMDAlKScsXG4gIHRyYW5zaXRpb246ICdiYWNrZ3JvdW5kLWNvbG9yIDAuNXMgZWFzZSwgdHJhbnNmb3JtIDBzIDAuNXMnLFxufVxuXG5jb25zdCBiYWNrZHJvcE9wZW5TdHlsZSA9IHtcbiAgYmFja2dyb3VuZENvbG9yOiAncmdiYSgwLCAwLCAwLCAwLjYpJyxcbiAgdHJhbnNmb3JtOiAndHJhbnNsYXRlWSgwKScsXG4gIHRyYW5zaXRpb246ICdiYWNrZ3JvdW5kLWNvbG9yIDAuNXMgZWFzZScsXG4gICd+IC5vdmVybGF5LWJhY2tkcm9wJzoge1xuICAgIGRpc3BsYXk6ICdub25lJyxcbiAgfSxcbn1cblxuLy8gZXNsaW50LWRpc2FibGUtbmV4dC1saW5lIHJlYWN0L3Byb3AtdHlwZXNcbmNvbnN0IEJhY2tkcm9wID0gKHtvcGVuLCBjaGlsZHJlbiwgb25DbGljaywgLi4ucmVzdH0pID0+IChcbiAgPGRpdlxuICAgIGNzcz17W2JhY2tkcm9wU3R5bGUsIG9wZW4gJiYgYmFja2Ryb3BPcGVuU3R5bGVdfVxuICAgIGNsYXNzTmFtZT1cIm92ZXJsYXktYmFja2Ryb3BcIlxuICAgIG9uQ2xpY2s9e2V2ZW50ID0+IHtcbiAgICAgIGlmIChldmVudC50YXJnZXQgPT09IGV2ZW50LmN1cnJlbnRUYXJnZXQpIHtcbiAgICAgICAgb25DbGljaz8uKClcbiAgICAgIH1cbiAgICB9fVxuICAgIHsuLi5yZXN0fVxuICA+XG4gICAge29wZW4gJiYgY2hpbGRyZW59XG4gIDwvZGl2PlxuKVxuXG5leHBvcnQgZGVmYXVsdCBCYWNrZHJvcFxuIl19 */"],
-  className: "overlay-backdrop",
-  onClick: event => {
-    if (event.target === event.currentTarget) {
-      onClick === null || onClick === void 0 ? void 0 : onClick();
-    }
-  },
-  ...rest,
-  children: open && children
-});
-
-/* @jsxImportSource @emotion/react */
-const panelStyle = {
-  alignSelf: 'center',
-  display: 'flex',
-  flexDirection: 'column',
-  overflow: 'visible',
-  maxWidth: '100%',
-  position: 'absolute',
-  bottom: '0',
-  transition: 'transform 0s 0.5s',
-  transform: 'translateY(100%)',
-  '> *:last-of-type': {
-    flex: '0 auto',
-    transition: 'transform 0.5s ease, opacity 0.5s ease',
-    transform: 'translateY(100%)',
-    opacity: '0'
-  }
-};
-const panelOpenStyle = {
-  transition: 'transform 0s 0s',
-  transform: 'translateY(0)',
-  '> *:last-of-type': {
-    transform: 'translateY(0)',
-    opacity: '1'
-  }
-}; // this is for replacing recommendation panel in future
-
-const panelClosedStyle = height => height && {
-  '> *:last-of-type': {
-    // workaround IE 11 CSS calc() bug
-    transform: `translateY(100%) translateY(-${height})`
-  }
-};
-
-const BottomPanel = ({
-  open,
-  style,
-  backdrop = true,
-  pinned = false,
-  minimizedHeight,
-  button,
-  children,
-  onClose
-}) => {
-  const Wrap = backdrop ? Backdrop : props => props.children;
-  return jsxRuntime$1.jsxs(jsxRuntime$1.Fragment, {
-    children: [jsxRuntime$1.jsx(FunctionBarExtension, {
-      children: button
-    }), jsxRuntime$1.jsx(Wrap, {
-      open: open,
-      onClick: onClose,
-      children: jsxRuntime$1.jsx("div", {
-        css: [panelStyle, open ? panelOpenStyle : panelClosedStyle(minimizedHeight), open && style, process.env.NODE_ENV === "production" ? "" : ";label:BottomPanel;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkJvdHRvbVBhbmVsLmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQTBEVSIsImZpbGUiOiJCb3R0b21QYW5lbC5qcyIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCBQcm9wVHlwZXMgZnJvbSAncHJvcC10eXBlcydcbmltcG9ydCB7RnVuY3Rpb25CYXJFeHRlbnNpb259IGZyb20gJy4vdWlFeHRlbnNpb25zJ1xuaW1wb3J0IEJhY2tkcm9wIGZyb20gJy4vQmFja2Ryb3AnXG5cbmNvbnN0IHBhbmVsU3R5bGUgPSB7XG4gIGFsaWduU2VsZjogJ2NlbnRlcicsXG4gIGRpc3BsYXk6ICdmbGV4JyxcbiAgZmxleERpcmVjdGlvbjogJ2NvbHVtbicsXG4gIG92ZXJmbG93OiAndmlzaWJsZScsXG4gIG1heFdpZHRoOiAnMTAwJScsXG4gIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICBib3R0b206ICcwJyxcbiAgdHJhbnNpdGlvbjogJ3RyYW5zZm9ybSAwcyAwLjVzJyxcbiAgdHJhbnNmb3JtOiAndHJhbnNsYXRlWSgxMDAlKScsXG4gICc+ICo6bGFzdC1vZi10eXBlJzoge1xuICAgIGZsZXg6ICcwIGF1dG8nLFxuICAgIHRyYW5zaXRpb246ICd0cmFuc2Zvcm0gMC41cyBlYXNlLCBvcGFjaXR5IDAuNXMgZWFzZScsXG4gICAgdHJhbnNmb3JtOiAndHJhbnNsYXRlWSgxMDAlKScsXG4gICAgb3BhY2l0eTogJzAnLFxuICB9LFxufVxuXG5jb25zdCBwYW5lbE9wZW5TdHlsZSA9IHtcbiAgdHJhbnNpdGlvbjogJ3RyYW5zZm9ybSAwcyAwcycsXG4gIHRyYW5zZm9ybTogJ3RyYW5zbGF0ZVkoMCknLFxuICAnPiAqOmxhc3Qtb2YtdHlwZSc6IHtcbiAgICB0cmFuc2Zvcm06ICd0cmFuc2xhdGVZKDApJyxcbiAgICBvcGFjaXR5OiAnMScsXG4gIH0sXG59XG5cbi8vIHRoaXMgaXMgZm9yIHJlcGxhY2luZyByZWNvbW1lbmRhdGlvbiBwYW5lbCBpbiBmdXR1cmVcbmNvbnN0IHBhbmVsQ2xvc2VkU3R5bGUgPSBoZWlnaHQgPT5cbiAgaGVpZ2h0ICYmIHtcbiAgICAnPiAqOmxhc3Qtb2YtdHlwZSc6IHtcbiAgICAgIC8vIHdvcmthcm91bmQgSUUgMTEgQ1NTIGNhbGMoKSBidWdcbiAgICAgIHRyYW5zZm9ybTogYHRyYW5zbGF0ZVkoMTAwJSkgdHJhbnNsYXRlWSgtJHtoZWlnaHR9KWAsXG4gICAgfSxcbiAgfVxuXG5jb25zdCBCb3R0b21QYW5lbCA9ICh7XG4gIG9wZW4sXG4gIHN0eWxlLFxuICBiYWNrZHJvcCA9IHRydWUsXG4gIHBpbm5lZCA9IGZhbHNlLFxuICBtaW5pbWl6ZWRIZWlnaHQsXG4gIGJ1dHRvbixcbiAgY2hpbGRyZW4sXG4gIG9uQ2xvc2UsXG59KSA9PiB7XG4gIGNvbnN0IFdyYXAgPSBiYWNrZHJvcCA/IEJhY2tkcm9wIDogcHJvcHMgPT4gcHJvcHMuY2hpbGRyZW5cblxuICByZXR1cm4gKFxuICAgIDw+XG4gICAgICA8RnVuY3Rpb25CYXJFeHRlbnNpb24+e2J1dHRvbn08L0Z1bmN0aW9uQmFyRXh0ZW5zaW9uPlxuICAgICAgPFdyYXAgb3Blbj17b3Blbn0gb25DbGljaz17b25DbG9zZX0+XG4gICAgICAgIDxkaXZcbiAgICAgICAgICBjc3M9e1tcbiAgICAgICAgICAgIHBhbmVsU3R5bGUsXG4gICAgICAgICAgICBvcGVuID8gcGFuZWxPcGVuU3R5bGUgOiBwYW5lbENsb3NlZFN0eWxlKG1pbmltaXplZEhlaWdodCksXG4gICAgICAgICAgICBvcGVuICYmIHN0eWxlLFxuICAgICAgICAgIF19XG4gICAgICAgICAgY2xhc3NOYW1lPXtwaW5uZWQgJiYgJ3Bpbm5lZCd9XG4gICAgICAgID5cbiAgICAgICAgICB7Y2hpbGRyZW59XG4gICAgICAgIDwvZGl2PlxuICAgICAgPC9XcmFwPlxuICAgIDwvPlxuICApXG59XG5cbkJvdHRvbVBhbmVsLnByb3BUeXBlcyA9IHtcbiAgb3BlbjogUHJvcFR5cGVzLmJvb2wsXG4gIHN0eWxlOiBQcm9wVHlwZXMub2JqZWN0LFxuICBiYWNrZHJvcDogUHJvcFR5cGVzLmJvb2wsXG4gIHBpbm5lZDogUHJvcFR5cGVzLmJvb2wsXG4gIG1pbmltaXplZEhlaWdodDogUHJvcFR5cGVzLnN0cmluZyxcbiAgYnV0dG9uOiBQcm9wVHlwZXMubm9kZSxcbiAgY2hpbGRyZW46IFByb3BUeXBlcy5ub2RlLFxuICBvbkNsb3NlOiBQcm9wVHlwZXMuZnVuYyxcbn1cblxuZXhwb3J0IGRlZmF1bHQgQm90dG9tUGFuZWxcbiJdfQ== */"],
-        className: pinned && 'pinned',
-        children: children
-      })
-    })]
-  });
-};
-
-BottomPanel.propTypes = {
-  open: PropTypes.bool,
-  style: PropTypes.object,
-  backdrop: PropTypes.bool,
-  pinned: PropTypes.bool,
-  minimizedHeight: PropTypes.string,
-  button: PropTypes.node,
-  children: PropTypes.node,
-  onClose: PropTypes.func
-};
-
-/* eslint-disable no-bitwise */
-const uuidv4 = () => {
-  const crypto = window.crypto || window.msCrypto;
-  return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
-};
-
-/* eslint-disable no-empty */
-const storageKey = 'playcraft-tab-lock';
-const lockRenewTime = 3000;
-
-const ensureTabLock = () => {
-  let saved = {};
-
-  try {
-    saved = JSON.parse(localStorage[storageKey]);
-  } catch (e) {
-    console.log('Can read saved data for tab lock.', e);
-  }
-
-  const {
-    expireTime
-  } = saved;
-
-  if (Date.now() <= expireTime) {
-    return;
-  }
-
-  const id = uuidv4();
-
-  const renewLock = () => {
-    localStorage[storageKey] = JSON.stringify({
-      id,
-      expireTime: Date.now() + lockRenewTime * 3
-    });
-  };
-
-  const renewInterval = setInterval(renewLock, lockRenewTime);
-
-  const releaseLock = () => {
-    clearInterval(renewInterval);
-    window.removeEventListener('beforeunload', releaseLock);
-    window.removeEventListener('unload', releaseLock);
-    localStorage[storageKey] = {
-      expireTime: Date.now() - 1
-    };
-  };
-
-  window.addEventListener('beforeunload', releaseLock);
-  window.addEventListener('unload', releaseLock);
-  return releaseLock;
-};
 
 var en = {
 	"KKS.YES": "Yes",
@@ -1950,29 +1344,221 @@ var Types = {
   ItemType
 };
 
-const on$1 = (target, name, handler) => {
-  target.addEventListener(name, handler);
-  return () => target.removeEventListener(name, handler);
+const Message = ({
+  code,
+  property,
+  defaultValue,
+  wrap: Wrap = 'span'
+}) => {
+  const {
+    getMessage,
+    translate
+  } = useContext(context);
+  const message = getMessage(code, property) || translate(defaultValue);
+  return Wrap ? /*#__PURE__*/jsx(Wrap, {
+    children: message
+  }) : message;
 };
 
-const once$1 = (target, name, handler) => {
-  const oneTime = (...args) => {
-    handler(...args);
-    target.removeEventListener(name, oneTime);
+Message.propTypes = {
+  code: Types.TextCode,
+  property: PropTypes.object,
+  defaultValue: Types.TextCode,
+  wrap: PropTypes.elementType
+};
+
+const context = /*#__PURE__*/React.createContext();
+
+const IntlProvider = ({
+  locale = LanguageCode$1.EN,
+  messages = {},
+  children
+}) => {
+  const translations = Object.assign({}, LANGS[locale.toLowerCase()], messages);
+
+  const formatMessage = (descriptor = '', values) => (translations[(descriptor === null || descriptor === void 0 ? void 0 : descriptor.id) || descriptor] || '').replace(/{(\S+?)}/gi, (substring, name) => {
+    var _values$name;
+
+    return [].concat((_values$name = values[name]) !== null && _values$name !== void 0 ? _values$name : substring).join(', ');
+  }) || descriptor.defaultMessage || descriptor.id || '';
+
+  const intl = {
+    formatMessage,
+    translate: formatMessage,
+    getMessage: formatMessage
   };
-
-  target.addEventListener(name, oneTime);
-  return () => target.removeEventListener(name, oneTime);
+  return /*#__PURE__*/jsx(context.Provider, {
+    value: intl,
+    children: children
+  });
 };
 
-const waitFor = (check, handler) => {
-  const checkInterval = setInterval(() => {
-    if (check()) {
-      clearInterval(check);
-      handler();
-    }
-  }, 50);
-  return () => clearInterval(checkInterval);
+IntlProvider.propTypes = {
+  locale: Types.LanguageCode,
+  messages: PropTypes.object,
+  children: PropTypes.node
+};
+
+const useIntl = () => useContext(context);
+
+const FormattedMessage = ({
+  id,
+  defaultMessage,
+  values
+}) => {
+  const intl = useIntl();
+  return intl.formatMessage({
+    id,
+    defaultMessage
+  }, values);
+};
+
+var I18n = {
+  Context: context,
+  Message
+};
+
+/* eslint-disable no-param-reassign */
+const VideoSourceTypeMap = {
+  'application/dash+xml': {
+    sourceKeyName: 'dash',
+    extension: 'mpd'
+  },
+  'application/x-mpegurl': {
+    sourceKeyName: 'hls',
+    extension: 'm3u8'
+  }
+};
+const mimeTypes = {
+  hls: 'application/x-mpegurl',
+  dash: 'application/dash+xml'
+};
+
+const getExtensionByType = srcType => {
+  var _VideoSourceTypeMap$s;
+
+  return (_VideoSourceTypeMap$s = VideoSourceTypeMap[srcType]) === null || _VideoSourceTypeMap$s === void 0 ? void 0 : _VideoSourceTypeMap$s.extension;
+};
+
+const isStringSourceWithProperExtension = (url, srcType) => {
+  if (typeof url === 'string') {
+    const extension = url.split('.').at(-1); // eslint-disable-next-line eqeqeq
+
+    if (extension == getExtensionByType(srcType)) return true;
+  }
+
+  return false;
+};
+
+const matchType = (source, manifestType) => {
+  var _source$type, _source$type2;
+
+  return ((_source$type = source.type) === null || _source$type === void 0 ? void 0 : _source$type.includes(manifestType)) || ((_source$type2 = source.type) === null || _source$type2 === void 0 ? void 0 : _source$type2.toLowerCase()) === mimeTypes[manifestType] || isStringSourceWithProperExtension(source.src || source, manifestType);
+};
+
+const getDrmOptions$1 = fallbackDrm => {
+  if (!(fallbackDrm !== null && fallbackDrm !== void 0 && fallbackDrm.url)) {
+    return;
+  }
+
+  const drmOptions = {
+    licenseUri: fallbackDrm.url,
+    headers: fallbackDrm.headers
+  };
+  return {
+    widevine: drmOptions,
+    fairplay: { ...drmOptions,
+      certificateUri: `${fallbackDrm.url}/fairplay_cert`
+    },
+    playready: drmOptions
+  };
+};
+/**
+ * @typedef {{src: string, type: string}} SourceObject
+ * @typedef {{hls: string, dash: string}} SourceObjectAlt backward compatiable form
+ *
+ * @param {SourceObject[]|SourceObject|SourceObjectAlt|string} sourceOptions
+ * @param {{preferManifestType?: ('dash'|'hls')}} options
+ * @return {{src: string, type: string, drm: Object}}
+ */
+
+
+const getSource = (sourceOptions, {
+  preferManifestType,
+  fallbackDrm
+} = {}) => {
+  if (sourceOptions.dash || sourceOptions.hls) {
+    const {
+      dash,
+      hls
+    } = sourceOptions;
+    return getSource([hls && {
+      src: hls,
+      type: mimeTypes.hls
+    }, dash && {
+      src: dash,
+      type: mimeTypes.dash
+    }].filter(Boolean), {
+      preferManifestType,
+      fallbackDrm
+    });
+  }
+
+  if (!Array.isArray(sourceOptions)) {
+    return getSource([sourceOptions], {
+      preferManifestType,
+      fallbackDrm
+    });
+  }
+
+  if (fallbackDrm) {
+    return getSource(sourceOptions.map(option => ({ ...(option.src ? option : {
+        src: option
+      }),
+      drm: getDrmOptions$1(fallbackDrm)
+    }), {
+      preferManifestType
+    }));
+  }
+
+  const matched = sourceOptions.find(source => !preferManifestType || matchType(source, preferManifestType));
+  const selected = matched || sourceOptions[0];
+
+  if (!selected) {
+    return;
+  }
+
+  const type = matched && preferManifestType === 'hls' && mimeTypes.hls;
+  return { ...(selected.src ? selected : {
+      src: selected
+    }),
+    type
+  };
+};
+
+function convertToSeconds(timeString) {
+  const [hours, minutes, seconds] = timeString.split(':').map(parseFloat);
+  return hours * 3600 + minutes * 60 + seconds;
+}
+function getPopoverPosition(rect, target, boundary) {
+  const rectX = rect.x || rect.left;
+  const boundaryX = boundary.x || boundary.left;
+  const maxLeft = boundary.width - rect.width;
+  const targetCenter = (target.left + target.right) / 2 - boundaryX;
+  const center = rectX + rect.width / 2 - boundaryX;
+  const alignLeft = rectX + (targetCenter - center) - boundaryX;
+  return {
+    left: Math.max(0, Math.min(alignLeft, maxLeft)),
+    top: target.top - rect.height
+  };
+} // eslint-disable-next-line consistent-return
+
+const nearest = (items, diff) => {
+  if (!items.length) {
+    return;
+  }
+
+  return items.reduce((a, b) => Math.abs(diff(a)) > Math.abs(diff(b)) ? b : a, items[0]);
 };
 
 /* eslint-disable no-param-reassign */
@@ -2038,100 +1624,96 @@ const FairplayKeySystem = {
   }
 };
 
-const getConfig = (config, {
-  host,
-  widevine = {},
-  fairplay = {}
-}) => {
-  const widevineHeaders = { ...config.headers,
-    ...(widevine === null || widevine === void 0 ? void 0 : widevine.headers)
-  };
-  const fairplayHeaders = { ...config.headers,
-    ...(fairplay === null || fairplay === void 0 ? void 0 : fairplay.headers)
-  };
-  return {
-    widevine: {
-      LA_URL: host.widevine,
-      ...config,
-      headers: widevineHeaders
-    },
-    fairplay: {
-      LA_URL: host.fairplay,
-      ...config,
-      headers: fairplayHeaders,
-      certificateURL: `${host.fairplay.replace(/\/$/, '')}/fairplay_cert`,
-      certificateHeaders: fairplay.certificateHeaders,
-      ...FairplayKeySystem
-    },
-    playready: {
-      LA_URL: host.playready,
-      ...config
-    }
-  };
-};
-/**
- * @param {object}
- * @param {object} .host
- * @param {string} .host.widevine
- * @param {string} .host.fairplay
- * @param {string} .host.playready
- * @param {string} .token
- * @param {object} .headers
- * @param {object} .widevine
- * @param {WidevineLevels} .widevine.level
- * @param {string[]} .widevine.blockedDevices Some devices doesn't play well
- * with hardware based Widevine, so don't enforce it
- */
-
-
-const getEnterpriseDrmConfig = ({
-  host,
-  token,
-  headers = {}
-}) => {
-  const config = {
-    withCredentials: false,
-    headers: {
-      'X-Custom-Data': `token_type=playback&token_value=${token}`,
-      'X-Custom-Header': queryString(headers)
-    }
-  };
-  return getConfig(config, {
-    host
-  });
-};
-
-const getBVKDrmConfig = ({
-  host,
-  token
-}) => {
-  const config = {
-    withCredentials: false,
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  };
-  const fairplay = {
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    certificateHeaders: {
-      Authorization: `Bearer ${token}`
-    }
-  };
-  return getConfig(config, {
-    host,
-    fairplay
-  });
-};
-
 const defaultCertificateUrl = url => `${url === null || url === void 0 ? void 0 : url.replace(/\/$/, '')}/fairplay_cert`;
+
+const meetRestriction = (quality, {
+  minHeight,
+  maxHeight
+} = {}) => !(quality.height < minHeight || quality.height > maxHeight);
+
+const selectRestrictedQuality = (availableQualities, {
+  suggested,
+  restrictions
+}) => {
+  if (meetRestriction(suggested, restrictions)) {
+    return suggested.id;
+  }
+
+  const allowed = availableQualities.filter(quality => meetRestriction(quality, restrictions));
+  return (nearest(allowed, item => item.height - suggested.height) || suggested).id;
+};
+ // for unit test
 
 /* eslint-disable no-param-reassign */
 
 const SHAKA_LIVE_DURATION = 4294967296;
 
 const isFinite = duration => duration < SHAKA_LIVE_DURATION;
+
+const getMediaElementState = (media, plugins = []) => {
+  const overrides = plugins.map(plugin => {
+    var _plugin$getPlaybackSt;
+
+    return (_plugin$getPlaybackSt = plugin.getPlaybackStatus) === null || _plugin$getPlaybackSt === void 0 ? void 0 : _plugin$getPlaybackSt.call(plugin);
+  });
+  return Object.assign({
+    paused: media.paused,
+    ended: media.ended,
+    currentTime: media.currentTime,
+    duration: media.duration
+  }, ...overrides);
+};
+
+const subscribeMediaState = (media, updateState, plugins = []) => {
+  let state = {
+    playbackState: 'init',
+    waiting: false,
+    ...getMediaElementState(media, plugins)
+  };
+
+  const syncState = update => {
+    const videoElementState = getMediaElementState(media, plugins); // when playing SSAI stream,
+    // sometimes duration changes to wrong value when playing an ad
+
+    const overrides = state.duration > 0 ? {
+      duration: state.duration
+    } : {};
+    state = { ...state,
+      ...videoElementState,
+      ...overrides,
+      ...update
+    }; // TODO consider shallow equal?
+
+    updateState(state);
+  };
+
+  const registered = [on(media, 'error', () => syncState({
+    playbackState: 'error'
+  })), on(media, 'waiting', () => syncState({
+    playbackState: 'buffering'
+  })), on(media, 'loadstart', () => syncState({
+    seekEnabled: false,
+    duration: 0,
+    playbackState: 'loading',
+    waiting: true
+  })), on(media, 'play', syncState, syncState({
+    paused: false
+  })), on(media, 'pause', () => syncState({
+    playbackState: 'paused'
+  })), on(media, 'seeking', () => syncState({
+    playbackState: 'buffering'
+  })), on(media, 'timeupdate', () => syncState(!media.paused && {
+    playbackState: 'playing'
+  })), on(media, 'ended', () => syncState({
+    playbackState: 'ended'
+  })), on(media, 'durationchange', () => {
+    syncState({
+      seekEnabled: isFinite(media.duration)
+    });
+  })];
+  syncState();
+  return () => registered.forEach(off => off());
+};
 
 const isEnded = media => isFinite(media.initialDuration) && media.initialDuration - media.currentTime < 1 && media.ended; // When donwload bandwidth is low, Safari may report time update while buffering, ignore it.
 
@@ -2206,11 +1788,11 @@ const subscribePlaybackState = (media, updateState) => {
     }
   };
 
-  const registered = [on$1(media, 'error', event => updateIfChanged(event, 'error')), on$1(media, 'waiting', updateBufferingState), on$1(media, 'loadstart', event => updateIfChanged(event, 'loading')), on$1(media, 'canplay', event => media.paused ? updateIfChanged(event, 'paused') : updatePlaybackTime(event)), on$1(media, 'pause', event => {
+  const registered = [on(media, 'error', event => updateIfChanged(event, 'error')), on(media, 'waiting', updateBufferingState), on(media, 'loadstart', event => updateIfChanged(event, 'loading')), on(media, 'canplay', event => media.paused ? updateIfChanged(event, 'paused') : updatePlaybackTime(event)), on(media, 'pause', event => {
     if (!updateEnd(event)) {
       updateIfChanged(event, 'paused');
     }
-  }), on$1(media, 'seeking', updateBufferingState), on$1(media, 'timeupdate', updatePlaybackTime), on$1(media, 'ended', updateEnd), on$1(media, 'webkitendfullscreen', event => {
+  }), on(media, 'seeking', updateBufferingState), on(media, 'timeupdate', updatePlaybackTime), on(media, 'ended', updateEnd), on(media, 'webkitendfullscreen', event => {
     // webkitDisplayingFullscreen is still true at the moment, can sync bake to target state
     // if paused by native exit fullscreen button, should resume playing
     const resultState = lastUpdate.state === 'paused' && Date.now() - lastUpdate.eventTime < 50 ? 'playing' : lastUpdate.state;
@@ -2298,7 +1880,7 @@ const seek = (media, {
 
     media.currentTime = seekTime;
     media.dispatchEvent(new Event('seeking'));
-    once$1(media, 'seeked', () => {
+    once(media, 'seeked', () => {
       // when seeking to the end it may result in a few seconds earlier
       if (Math.abs(seekTime - media.currentTime) > 0.5) {
         media.currentTime = seekTime;
@@ -2490,706 +2072,24 @@ const getAudioList = (_, {
   return player.getAudioList();
 };
 
-const modes = {
-  videos: 'video',
-  lives: 'live'
-};
-const logEventNames = {
-  playbackBegan: 'video_playback_began',
-  playbackStarted: 'video_playback_started',
-  playbackStopped: 'video_playback_stopped',
-  playbackEnded: 'video_playback_ended',
-  bufferingStarted: 'video_buffering_started',
-  bufferingEnded: 'video_buffering_ended',
-  seeked: 'video_seeking_ended',
-  playbackError: 'video_playback_error_occurred',
-  playing: 'play',
-  paused: 'pause',
-  rewind: 'rewind',
-  forward: 'forward',
-  previousEpisode: 'previous_episode',
-  nextEpisode: 'next_episode',
-  openSettings: 'setting_page_entered',
-  closeSettings: 'setting_page_exited',
-  adPlaybackStarted: 'ad_playback_started',
-  adPlaybackStopped: 'ad_playback_stopped'
-};
-
-const mapLogEvents = ({
-  video,
-  session = video,
-  version,
-  playerName,
-  getPlaybackStatus = () => video
-}) => {
-  var _session$getContent;
-
-  const emitter = mitt__default["default"]();
-  const state = {
-    status: 'init',
-    seeking: false,
-    playerStartTime: Date.now(),
-    moduleStartTime: Date.now(),
-    content: ((_session$getContent = session.getContent) === null || _session$getContent === void 0 ? void 0 : _session$getContent.call(session)) || {}
-  };
-
-  const commonPropties = () => {
-    var _state$content$sectio;
-
-    return {
-      player_name: playerName,
-      playback_module_version: version,
-      playback_mode: modes[state.content.type],
-      playback_session_id: state.sessionId,
-      id: state.content.id,
-      name: state.content.title,
-      ...(state.content.type === 'videos' && {
-        current_position: state.currentTime,
-        video_total_duration: state.duration
-      }),
-      ...(state.content.type === 'lives' && {
-        section_id: (_state$content$sectio = state.content.section) === null || _state$content$sectio === void 0 ? void 0 : _state$content$sectio.id,
-        name_2: state.content.channelName
-      }),
-      SSAI: state.ssaiProvider || 'None'
-    };
-  };
-
-  const dispatchStart = () => {
-    if (state.status === 'started') {
-      return;
-    }
-
-    state.status = 'started';
-    state.lastStartTime = Date.now();
-    const eventName = state.isPlayingAd ? 'adPlaybackStarted' : 'playbackStarted';
-    emitter.emit(eventName, commonPropties());
-  };
-
-  const dispatchStop = () => {
-    if (state.status !== 'started') {
-      return;
-    }
-
-    state.status = 'stopped';
-    const played = (Date.now() - state.lastStartTime) / 1000;
-
-    if (state.isPlayingAd) {
-      state.adPlayedDuration += played;
-    } else {
-      state.playedDuration += played;
-    }
-
-    const eventName = state.isPlayingAd ? 'adPlaybackStopped' : 'playbackStopped';
-    emitter.emit(eventName, { ...commonPropties(),
-      ...(state.isPlayingAd && {
-        ad_played_duration: played
-      })
-    });
-  };
-
-  const registered = [on$1(video, 'error', event => {
-    var _event$error, _event$error2, _event$error2$data;
-
-    emitter.emit('playbackError', {
-      module_error_code: ((_event$error = event.error) === null || _event$error === void 0 ? void 0 : _event$error.code) || ((_event$error2 = event.error) === null || _event$error2 === void 0 ? void 0 : (_event$error2$data = _event$error2.data) === null || _event$error2$data === void 0 ? void 0 : _event$error2$data.code),
-      ...commonPropties()
-    });
-  }), once$1(video, 'playerStarted', () => {
-    state.playerStartTime = Date.now();
-  }), on$1(video, 'durationchange', () => {
-    // duration may change when playing an ad stitched stream, take only initial value
-    if (!state.duration) {
-      state.duration = getPlaybackStatus().duration;
-    }
-  }), once$1(video, 'canplay', () => {
-    state.status = 'began';
-    state.sessionId = uuidv4();
-    state.playedDuration = 0;
-    emitter.emit('playbackBegan', {
-      player_startup_time: (state.playerStartTime - state.moduleStartTime) / 1000,
-      video_startup_time: (Date.now() - state.moduleStartTime) / 1000,
-      ...commonPropties()
-    });
-  }), on$1(video, 'playing', dispatchStart), on$1(video, 'waiting', () => {
-    if (!state.bufferingStartTime) {
-      emitter.emit('bufferingStarted', commonPropties());
-      state.bufferingStartTime = Date.now();
-    }
-  }), on$1(video, 'timeupdate', () => {
-    state.currentTime = getPlaybackStatus().currentTime;
-
-    if (state.bufferingStartTime) {
-      emitter.emit('bufferingEnded', {
-        buffering_second: (Date.now() - state.bufferingStartTime) / 1000,
-        ...commonPropties()
-      });
-      state.bufferingStartTime = undefined;
-    }
-  }), on$1(video, 'pause', dispatchStop), on$1(video, 'seeking', () => {
-    state.seekingFrom = state.currentTime;
-  }), on$1(session, 'userSeeking', () => {
-    state.seeking = true;
-  }), on$1(video, 'seeked', () => {
-    if (state.seeking) {
-      emitter.emit('seeked', {
-        seeking_from: state.seekingFrom,
-        seeking_to: video.currentTime,
-        ...commonPropties()
-      });
-    }
-
-    state.seeking = false;
-  }), on$1(session, 'sectionChange', () => {
-    dispatchStop();
-    state.content = session.getContent();
-    dispatchStart();
-  }), once$1(video, 'emptied', () => {
-    if (state.status === 'started') {
-      dispatchStop();
-    }
-
-    state.status = 'init';
-    emitter.emit('playbackEnded', {
-      video_playback_ended_at_percentage: state.currentTime / state.duration,
-      video_total_played_duration: state.playedDuration,
-      ...(state.ssaiProvider && {
-        ad_total_played_duration: state.adPlayedDuration
-      }),
-      ...commonPropties()
-    });
-  }), once$1(video, 'loadedAdMetadata', event => {
-    state.ssaiProvider = event.data.provider;
-    state.adPlayedDuration = 0;
-  }), on$1(session, 'adBreakStarted', () => {
-    dispatchStop();
-    state.isPlayingAd = true;
-
-    if (!state.seeking) {
-      dispatchStart();
-    }
-  }), on$1(session, 'adBreakEnded', () => {
-    dispatchStop();
-    state.isPlayingAd = false;
-
-    if (!state.seeking) {
-      dispatchStart();
-    }
-  })];
-  return {
-    addEventListener: (name, handler) => emitter.on(name, handler),
-    all: handler => emitter.on('*', handler),
-    emit: (name, {
-      currentTime
-    }) => {
-      emitter.emit(name, {
-        current_position: currentTime,
-        ...commonPropties()
-      });
-    },
-    updateContent: content => {
-      state.content = content;
-    },
-    reset: () => registered.forEach(off => off())
-  };
-};
-
-const deepEqual = (current, updated) => JSON.stringify(current) === JSON.stringify(updated);
-
-const HEARTBEAT_INTERVAL_MS = 10000;
-const UPDATE_INTERVAL_MS = 10000;
-
-const isContentExpired = content => typeof (content === null || content === void 0 ? void 0 : content.end_time) === 'number' && content.end_time * 1000 <= Date.now();
-
-const startPlaybackSession = async (playbackApi, options = {}) => {
-  const emitter = mitt__default["default"]();
-  const {
-    type,
-    id,
-    getCurrentTime,
-    cache
-  } = options;
-  const {
-    onChangeContent,
-    onSourceChange,
-    onInvalidToken,
-    heartbeatTime = HEARTBEAT_INTERVAL_MS,
-    updateTime = UPDATE_INTERVAL_MS
-  } = options;
-  const state = {}; // get last playback time to start playback fast
-  // getContent is not critical, so don't block playback if it hangs or fails(ignored in API logic)
-
-  const loadContent = () => {
-    var _options$cache, _options$cache$get;
-
-    return Promise.race([// eslint-disable-next-line no-use-before-define
-    updateContent((_options$cache = options.cache) === null || _options$cache === void 0 ? void 0 : (_options$cache$get = _options$cache.get(`${type}/${id}`)) === null || _options$cache$get === void 0 ? void 0 : _options$cache$get.content), new Promise(resolve => {
-      setTimeout(resolve, UPDATE_INTERVAL_MS);
-    })]);
-  };
-
-  const getPlaybackInfo = async () => {
-    var _cache$get;
-
-    state.sources = ((cache === null || cache === void 0 ? void 0 : (_cache$get = cache.get(`${type}/${id}`)) === null || _cache$get === void 0 ? void 0 : _cache$get.playbackInfo) || (await playbackApi.getPlaybackInfo({
-      type,
-      id,
-      token: state.token
-    }))).sources;
-    onSourceChange === null || onSourceChange === void 0 ? void 0 : onSourceChange(state.sources);
-  };
-
-  async function updateContent(contentInCache) {
-    var _state$content;
-
-    const content = !contentInCache || isContentExpired(contentInCache) ? await playbackApi.getContent({
-      type,
-      id
-    }) : contentInCache;
-
-    if (!deepEqual(content, state.content)) {
-      state.content = content;
-      onChangeContent === null || onChangeContent === void 0 ? void 0 : onChangeContent({
-        type,
-        ...content,
-        sources: state.sources
-      });
-    }
-
-    if (content.end_time && content.end_time === ((_state$content = state.content) === null || _state$content === void 0 ? void 0 : _state$content.end_time)) {
-      clearTimeout(state.endTimeoutId);
-      state.endTimeoutId = setTimeout(() => {
-        loadContent();
-        getPlaybackInfo();
-      }, content.end_time * 1000 - Date.now());
-    }
-  }
-
-  const waitForContent = loadContent();
-  const sessionInfo = await playbackApi.startPlayback({
-    type,
-    id
-  });
-  const requestParams = {
-    type,
-    id,
-    token: sessionInfo.token
-  };
-  state.token = sessionInfo.token;
-  await getPlaybackInfo();
-  let updateIntervalId;
-
-  if (type === 'lives') {
-    updateIntervalId = setInterval(updateContent, updateTime);
-  }
-
-  let lastPlayedTime;
-
-  const updateLastPlayed = () => {
-    const currentTime = getCurrentTime === null || getCurrentTime === void 0 ? void 0 : getCurrentTime();
-
-    if (currentTime >= 0 && lastPlayedTime !== currentTime) {
-      lastPlayedTime = currentTime;
-      playbackApi.updateLastPlayed({ ...requestParams,
-        time: currentTime
-      });
-    }
-  };
-
-  if (type === 'videos') {
-    updateIntervalId = setInterval(updateLastPlayed, updateTime);
-  }
-
-  const heartbeatIntervalId = setInterval(() => playbackApi.heartbeat(requestParams).catch(error => {
-    var _error$response;
-
-    if (/4\d\d/.test((_error$response = error.response) === null || _error$response === void 0 ? void 0 : _error$response.status)) {
-      clearInterval(heartbeatIntervalId);
-      onInvalidToken === null || onInvalidToken === void 0 ? void 0 : onInvalidToken(error);
-    }
-  }), heartbeatTime);
-
-  const end = () => {
-    updateLastPlayed();
-    clearInterval(updateIntervalId);
-    clearInterval(heartbeatIntervalId);
-    clearTimeout(state.endTimeoutId);
-    emitter.emit('playbackEnded');
-    return playbackApi.endPlayback(requestParams);
-  };
-
-  await waitForContent;
-  return { ...state,
-    token: sessionInfo.token,
-    drmPortalUrl: sessionInfo.drm_portal_url,
-    updateLastPlayed,
-    end
-  };
-};
-
-const preload = (playbackApi, preloadList, currentContent, cache, options = {}) => {
-  const {
-    updateTime = 10000
-  } = options;
-
-  const fetchData = () => {
-    preloadList.forEach(async ({
-      contentType: type,
-      contentId: id
-    }) => {
-      var _cache$get, _cache$get$content;
-
-      if (id === currentContent.id && type === currentContent.type) return;
-      const endTime = (_cache$get = cache.get(`${type}/${id}`)) === null || _cache$get === void 0 ? void 0 : (_cache$get$content = _cache$get.content) === null || _cache$get$content === void 0 ? void 0 : _cache$get$content.end_time;
-      if (typeof endTime === 'number' && endTime * 1000 >= Date.now()) return;
-
-      try {
-        const {
-          token
-        } = await playbackApi.startPlayback({
-          type,
-          id
-        });
-        const waitForContent = playbackApi.getContent({
-          type,
-          id
-        });
-        const waitForPlaybackInfo = playbackApi.getPlaybackInfo({
-          type,
-          id,
-          token
-        });
-        const [content, playbackInfo] = await Promise.all([waitForContent, waitForPlaybackInfo]);
-        cache.set(`${type}/${id}`, {
-          content,
-          playbackInfo
-        });
-        playbackApi.endPlayback({
-          type,
-          id,
-          token
-        });
-      } catch (e) {
-        console.error(e);
+const blurPause = (media, pause) => {
+  const handleVisibilitychange = async () => {
+    let shouldPause = true;
+    pause();
+    setTimeout(() => {
+      shouldPause = false;
+    }, 50);
+    media.addEventListener('play', () => {
+      if (shouldPause) {
+        pause();
       }
+    }, {
+      once: true
     });
   };
 
-  fetchData();
-  const fetchDataIntervalID = setInterval(fetchData, updateTime);
-  return () => clearInterval(fetchDataIntervalID);
-};
-
-const getSourceTypeSettings = sources => {
-  if (!((sources === null || sources === void 0 ? void 0 : sources.length) > 1)) {
-    return;
-  }
-
-  const items = sources.map(source => {
-    var _source$subdub, _source$type;
-
-    return {
-      value: source.subdub || source.type,
-      label: ((_source$subdub = source.subdub) === null || _source$subdub === void 0 ? void 0 : _source$subdub.toUpperCase()) || ((_source$type = source.type) === null || _source$type === void 0 ? void 0 : _source$type.toUpperCase())
-    };
-  });
-
-  const getDefault = preferred => (items.find(item => item.value === preferred) || items[0] || {}).value;
-
-  return {
-    name: 'source-type',
-    title: 'KKS.SETTING.VERSION',
-    items,
-    getDefault
-  };
-};
-
-/* eslint-disable no-param-reassign */
-
-const waitMs = time => new Promise(resolve => {
-  setTimeout(resolve, time);
-});
-
-const handleRequestError = (result, {
-  onError,
-  retryTimes = 0
-}) => result.catch(error => onError(error, {
-  retry: () => handleRequestError(axios__default["default"](error.config), {
-    onError,
-    retryTimes: retryTimes + 1
-  }),
-  retryTimes
-}));
-
-const ignoreMinorError = async (event, {
-  retry,
-  retryTimes
-} = {}) => {
-  var _event$response, _event$response2, _event$config;
-
-  console.warn(event);
-
-  if ((((_event$response = event.response) === null || _event$response === void 0 ? void 0 : _event$response.message) === 'Network Error' || /502|503/.test((_event$response2 = event.response) === null || _event$response2 === void 0 ? void 0 : _event$response2.status)) && retryTimes < 3) {
-    await waitMs(3000);
-    return retry();
-  }
-
-  if (/start$|info$|heartbeat$/.test((_event$config = event.config) === null || _event$config === void 0 ? void 0 : _event$config.url)) {
-    return Promise.reject(event);
-  }
-
-  console.log('Ignore non-critical playback API fail', event);
-  return new Promise(() => {});
-};
-
-const createApi = ({
-  host,
-  accessToken,
-  deviceId,
-  headers,
-  params
-}, {
-  onError = ignoreMinorError
-} = {}) => {
-  const getHeaders = () => ({ ...(accessToken && {
-      Authorization: accessToken
-    }),
-    ...(deviceId && {
-      'X-Device-ID': deviceId
-    }),
-    'Content-type': 'application/json',
-    ...headers
-  });
-
-  const request = (url, {
-    method
-  } = {}) => handleRequestError(axios__default["default"](url, {
-    method,
-    headers: getHeaders(),
-    params
-  }), {
-    onError
-  }).then(response => response.data);
-
-  const sessionRequest = (path, {
-    method = 'POST',
-    type,
-    id,
-    token
-  }) => handleRequestError(axios__default["default"](`${host}/sessions/${type}/${id}/playback/${deviceId}/${path}`, {
-    method,
-    headers: getHeaders(),
-    params: { ...params,
-      playback_token: token
-    }
-  }), {
-    onError
-  }).then(response => response.data);
-
-  return {
-    getContent: ({
-      type,
-      id
-    }) => request(`${host}/${type}/${id}`, {}),
-    startPlayback: ({
-      type,
-      id
-    }) => request(`${host}/sessions/${type}/${id}/playback/${deviceId}/start`, {
-      method: 'POST'
-    }),
-    getPlaybackInfo: ({
-      type,
-      id,
-      token
-    }) => sessionRequest('info', {
-      method: 'GET',
-      type,
-      id,
-      token
-    }),
-    heartbeat: ({
-      type,
-      id,
-      token
-    }) => sessionRequest('heartbeat', {
-      type,
-      id,
-      token
-    }),
-    updateLastPlayed: ({
-      type,
-      id,
-      token,
-      time
-    }) => sessionRequest(`position/${Math.floor(time)}`, {
-      type,
-      id,
-      token
-    }),
-    endPlayback: ({
-      type,
-      id,
-      token
-    }) => sessionRequest('end', {
-      type,
-      id,
-      token
-    })
-  };
-};
-
-const getStreamInfo = (sources = [], {
-  type = '',
-  licenseUri,
-  certificateUri,
-  licenseHeaders: headers,
-  thumbnailEnabled
-} = {}) => {
-  const activeSource = sources.find(source => (source.subdub || source.type) === type) || sources[0];
-  return ((activeSource === null || activeSource === void 0 ? void 0 : activeSource.manifests) || []).map(manifest => ({ ...manifest,
-    type: manifest.protocol,
-    src: manifest.url,
-    drm: {
-      fairplay: {
-        licenseUri,
-        certificateUri,
-        headers
-      },
-      widevine: {
-        licenseUri,
-        headers
-      },
-      playready: {
-        licenseUri,
-        headers
-      }
-    },
-    qualityOptions: manifest.resolutions.map(({
-      height
-    }) => ({
-      label: height,
-      value: height,
-      options: {
-        maxHeight: height
-      }
-    }))
-  })).concat(thumbnailEnabled && activeSource !== null && activeSource !== void 0 && activeSource.thumbnail_seeking_url ? {
-    type: 'thumbnail',
-    src: activeSource.thumbnail_seeking_url
-  } : []);
-};
-
-const getContentInfo = data => {
-  var _data$time, _data$time2;
-
-  return {
-    title: data.title,
-    channelTitle: data.subtitle,
-    end: data.end,
-    section: {
-      id: data.section_id,
-      start: data.start_time,
-      end: data.end_time
-    },
-    previous: data.prev_video,
-    next: data.next_video,
-    startTime: (_data$time = data.time) === null || _data$time === void 0 ? void 0 : _data$time.last_position,
-    chapters: [((_data$time2 = data.time) === null || _data$time2 === void 0 ? void 0 : _data$time2.end_start_position) && {
-      type: 'ending',
-      start: data.time.end_start_position
-    }].filter(Boolean)
-  };
-};
-
-const formattedTime = sourceTime => {
-  const time = sourceTime >= 0 ? sourceTime : 0;
-  const seconds = Math.floor(time % 60).toString().padStart(2, '0');
-  const minutes = Math.floor(time / 60 % 60).toString().padStart(2, '0');
-  const hours = time >= 3600 && Math.floor(time / 60 / 60 % 60).toString();
-  return [hours, minutes, seconds].filter(Boolean).join(':');
-};
-
-const linkPluginEvents = (plugins, handlers) => {
-  const registered = plugins.map(plugin => Object.entries(handlers).map(([eventName, handler]) => {
-    var _plugin$on;
-
-    return (_plugin$on = plugin.on) === null || _plugin$on === void 0 ? void 0 : _plugin$on.call(plugin, eventName, event => handler(event, plugin));
-  }));
-  return () => [].concat(...registered).forEach(removeListener => removeListener === null || removeListener === void 0 ? void 0 : removeListener());
-};
-
-const Message = ({
-  code,
-  property,
-  defaultValue,
-  wrap: Wrap = 'span'
-}) => {
-  const {
-    getMessage,
-    translate
-  } = React.useContext(context);
-  const message = getMessage(code, property) || translate(defaultValue);
-  return Wrap ? /*#__PURE__*/jsxRuntime.jsx(Wrap, {
-    children: message
-  }) : message;
-};
-
-Message.propTypes = {
-  code: Types.TextCode,
-  property: PropTypes.object,
-  defaultValue: Types.TextCode,
-  wrap: PropTypes.elementType
-};
-
-const context = /*#__PURE__*/React__default["default"].createContext();
-
-const IntlProvider = ({
-  locale = LanguageCode$1.EN,
-  messages = {},
-  children
-}) => {
-  const translations = Object.assign({}, LANGS[locale.toLowerCase()], messages);
-
-  const formatMessage = (descriptor = '', values) => (translations[(descriptor === null || descriptor === void 0 ? void 0 : descriptor.id) || descriptor] || '').replace(/{(\S+?)}/gi, (substring, name) => {
-    var _values$name;
-
-    return [].concat((_values$name = values[name]) !== null && _values$name !== void 0 ? _values$name : substring).join(', ');
-  }) || descriptor.defaultMessage || descriptor.id || '';
-
-  const intl = {
-    formatMessage,
-    translate: formatMessage,
-    getMessage: formatMessage
-  };
-  return /*#__PURE__*/jsxRuntime.jsx(context.Provider, {
-    value: intl,
-    children: children
-  });
-};
-
-IntlProvider.propTypes = {
-  locale: Types.LanguageCode,
-  messages: PropTypes.object,
-  children: PropTypes.node
-};
-
-const useIntl = () => React.useContext(context);
-
-const FormattedMessage = ({
-  id,
-  defaultMessage,
-  values
-}) => {
-  const intl = useIntl();
-  return intl.formatMessage({
-    id,
-    defaultMessage
-  }, values);
-};
-
-var I18n = {
-  Context: context,
-  Message
+  document.addEventListener('visibilitychange', handleVisibilitychange);
+  return () => document.removeEventListener('visibilitychange', handleVisibilitychange);
 };
 
 var icon = {
@@ -3226,8 +2126,8 @@ const Icon = function ({
   type,
   ...others
 }) {
-  return jsxRuntime$1.jsx("div", {
-    css: /*#__PURE__*/react.css({
+  return jsx$1("div", {
+    css: /*#__PURE__*/css({
       width: 'inherit',
       height: 'inherit',
       backgroundPosition: 'center',
@@ -3291,11 +2191,11 @@ const Tooltip$1 = ({
   children,
   container
 }) => {
-  const tooltipRef = React.useRef();
-  const boxes = React.useRef();
-  const defaultContainer = React.useRef();
-  const [open, setOpen] = React.useState(false);
-  const [position, setPosition] = React.useState(() => ({
+  const tooltipRef = useRef();
+  const boxes = useRef();
+  const defaultContainer = useRef();
+  const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState(() => ({
     left: '100%'
   }));
   const childProps = {
@@ -3313,25 +2213,25 @@ const Tooltip$1 = ({
       setOpen(false);
     }
   };
-  React.useEffect(() => {
+  useEffect(() => {
     if (disabled) {
       setOpen(false);
     }
   }, [disabled]);
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       const targetPosition = getPopoverPosition(tooltipRef.current.getBoundingClientRect(), ...boxes.current);
       targetPosition.left !== position.left && setPosition(targetPosition);
     }
   }, [open, position.left]);
-  return !title || !isDesktop() && !window.matchMedia(havePointerQuery).matches ? children : jsxRuntime$1.jsxs(jsxRuntime$1.Fragment, {
-    children: [/*#__PURE__*/React.cloneElement(children, childProps), open && /*#__PURE__*/reactDom.createPortal(jsxRuntime$1.jsx("div", {
+  return !title || !isDesktop() && !window.matchMedia(havePointerQuery).matches ? children : jsxs(Fragment, {
+    children: [/*#__PURE__*/cloneElement(children, childProps), open && /*#__PURE__*/createPortal(jsx$1("div", {
       style: { ...tooltipStyle,
         ...position,
         top: `calc(${position.top}px - ${bottom})`
       },
       ref: tooltipRef,
-      children: jsxRuntime$1.jsx(FormattedMessage, {
+      children: jsx$1(FormattedMessage, {
         id: title
       })
     }), container || defaultContainer.current)]
@@ -3345,15 +2245,15 @@ const Button = ({
   title,
   children,
   ...rest
-}) => jsxRuntime$1.jsx(Tooltip$1, {
+}) => jsx$1(Tooltip$1, {
   title: title,
   bottom: "3em",
   disabled: rest.disabled,
-  children: jsxRuntime$1.jsxs("button", {
+  children: jsxs("button", {
     type: "button",
     css: [styles$1, variants[variant], style, process.env.NODE_ENV === "production" ? "" : ";label:Button;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbImJ1dHRvbnMuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBNkgwQiIsImZpbGUiOiJidXR0b25zLmpzIiwic291cmNlc0NvbnRlbnQiOlsiLyogZXNsaW50LWRpc2FibGUgcmVhY3QvcHJvcC10eXBlcyAqL1xuLyogQGpzeEltcG9ydFNvdXJjZSBAZW1vdGlvbi9yZWFjdCAqL1xuaW1wb3J0IHt1c2VTdGF0ZSwgdXNlRWZmZWN0LCB1c2VSZWYsIGNsb25lRWxlbWVudH0gZnJvbSAncmVhY3QnXG5pbXBvcnQge2NyZWF0ZVBvcnRhbH0gZnJvbSAncmVhY3QtZG9tJ1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJ1xuXG5pbXBvcnQge2dldFBvcG92ZXJQb3NpdGlvbn0gZnJvbSAndXRpbC9pbmRleCdcbmltcG9ydCB7aGF2ZVBvaW50ZXJRdWVyeSwgaXNEZXNrdG9wfSBmcm9tICd1dGlsL2Vudmlyb25tZW50J1xuaW1wb3J0IHtGb3JtYXR0ZWRNZXNzYWdlLCB1c2VJbnRsfSBmcm9tICdjb250ZXh0L0kxOG4nXG5pbXBvcnQgSWNvbiBmcm9tICcuL0ljb24nXG5cbmNvbnN0IHN0eWxlcyA9IHtcbiAgLy8gVE9ETyBrZWVwIG9ubHkgbmVjZXNzYXJ5XG4gIGJvcmRlcjogJ25vbmUnLFxuICBvdXRsaW5lOiAnbm9uZScsXG4gIGN1cnNvcjogJ3BvaW50ZXInLFxuICBwYWRkaW5nOiAwLFxuICBmbGV4U2hyaW5rOiAwLFxuICBiYWNrZ3JvdW5kQ29sb3I6ICd0cmFuc3BhcmVudCcsXG4gIHVzZXJTZWxlY3Q6ICdub25lJyxcbiAgJz4gc3Bhbic6IHtcbiAgICB3aWR0aDogJzEwMCUnLFxuICAgIGhlaWdodDogJzEwMCUnLFxuICB9LFxufVxuXG5jb25zdCB2YXJpYW50cyA9IHtcbiAgb3V0bGluZWQ6IHtcbiAgICB3aWR0aDogJzhlbScsXG4gICAgaGVpZ2h0OiAnMmVtJyxcbiAgICBib3JkZXI6ICcxcHggc29saWQgI2ZmZicsXG4gICAgYm9yZGVyUmFkaXVzOiAnNHB4JyxcbiAgICBiYWNrZ3JvdW5kOiAnbm9uZScsXG4gICAgY29sb3I6ICdpbmhlcml0JyxcbiAgICBvcGFjaXR5OiAwLjgsXG4gIH0sXG59XG5cbmNvbnN0IHRvb2x0aXBTdHlsZSA9IHtcbiAgekluZGV4OiA3LFxuICBwb3NpdGlvbjogJ2ZpeGVkJyxcbiAgcGFkZGluZzogJzhweCAxMnB4JyxcbiAgYm9yZGVyUmFkaXVzOiA0LFxuICB0ZXh0QWxpZ246ICdjZW50ZXInLFxuICBjb2xvcjogJ3doaXRlJyxcbiAgYmFja2dyb3VuZENvbG9yOiAncmdiYSg1MSwgNTEsIDUxLCAwLjYyNSknLFxufVxuXG5jb25zdCBpc092ZXJmbG93aW5nID0gZWxlbWVudCA9PiBlbGVtZW50LnNjcm9sbFdpZHRoID4gZWxlbWVudC5jbGllbnRXaWR0aFxuXG5jb25zdCBUb29sdGlwID0gKHtcbiAgdGl0bGUsXG4gIGJvdHRvbSA9ICcwcHgnLFxuICBvdmVyZmxvd09ubHksXG4gIGRpc2FibGVkLFxuICBjaGlsZHJlbixcbiAgY29udGFpbmVyLFxufSkgPT4ge1xuICBjb25zdCB0b29sdGlwUmVmID0gdXNlUmVmKClcbiAgY29uc3QgYm94ZXMgPSB1c2VSZWYoKVxuICBjb25zdCBkZWZhdWx0Q29udGFpbmVyID0gdXNlUmVmKClcbiAgY29uc3QgW29wZW4sIHNldE9wZW5dID0gdXNlU3RhdGUoZmFsc2UpXG4gIGNvbnN0IFtwb3NpdGlvbiwgc2V0UG9zaXRpb25dID0gdXNlU3RhdGUoKCkgPT4gKHtsZWZ0OiAnMTAwJSd9KSlcblxuICBjb25zdCBjaGlsZFByb3BzID0ge1xuICAgIG9uTW91c2VFbnRlcjogZXZlbnQgPT4ge1xuICAgICAgaWYgKCFvdmVyZmxvd09ubHkgfHwgaXNPdmVyZmxvd2luZyhldmVudC5jdXJyZW50VGFyZ2V0KSkge1xuICAgICAgICBib3hlcy5jdXJyZW50ID0gW1xuICAgICAgICAgIGV2ZW50LmN1cnJlbnRUYXJnZXQuZ2V0Qm91bmRpbmdDbGllbnRSZWN0KCksXG4gICAgICAgICAgZG9jdW1lbnQuYm9keS5nZXRCb3VuZGluZ0NsaWVudFJlY3QoKSxcbiAgICAgICAgXVxuICAgICAgICBkZWZhdWx0Q29udGFpbmVyLmN1cnJlbnQgPVxuICAgICAgICAgIGRvY3VtZW50LmZ1bGxzY3JlZW5FbGVtZW50IHx8XG4gICAgICAgICAgZG9jdW1lbnQud2Via2l0RnVsbHNjcmVlbkVsZW1lbnQgfHxcbiAgICAgICAgICBkb2N1bWVudC5ib2R5XG4gICAgICAgIHNldE9wZW4odHJ1ZSlcbiAgICAgIH1cbiAgICB9LFxuICAgIG9uTW91c2VMZWF2ZTogKCkgPT4ge1xuICAgICAgc2V0UG9zaXRpb24oe2xlZnQ6ICcxMDAlJ30pXG4gICAgICBzZXRPcGVuKGZhbHNlKVxuICAgIH0sXG4gIH1cbiAgdXNlRWZmZWN0KCgpID0+IHtcbiAgICBpZiAoZGlzYWJsZWQpIHtcbiAgICAgIHNldE9wZW4oZmFsc2UpXG4gICAgfVxuICB9LCBbZGlzYWJsZWRdKVxuXG4gIHVzZUVmZmVjdCgoKSA9PiB7XG4gICAgaWYgKG9wZW4pIHtcbiAgICAgIGNvbnN0IHRhcmdldFBvc2l0aW9uID0gZ2V0UG9wb3ZlclBvc2l0aW9uKFxuICAgICAgICB0b29sdGlwUmVmLmN1cnJlbnQuZ2V0Qm91bmRpbmdDbGllbnRSZWN0KCksXG4gICAgICAgIC4uLmJveGVzLmN1cnJlbnRcbiAgICAgIClcbiAgICAgIHRhcmdldFBvc2l0aW9uLmxlZnQgIT09IHBvc2l0aW9uLmxlZnQgJiYgc2V0UG9zaXRpb24odGFyZ2V0UG9zaXRpb24pXG4gICAgfVxuICB9LCBbb3BlbiwgcG9zaXRpb24ubGVmdF0pXG5cbiAgcmV0dXJuICF0aXRsZSB8fFxuICAgICghaXNEZXNrdG9wKCkgJiYgIXdpbmRvdy5tYXRjaE1lZGlhKGhhdmVQb2ludGVyUXVlcnkpLm1hdGNoZXMpID8gKFxuICAgIGNoaWxkcmVuXG4gICkgOiAoXG4gICAgPD5cbiAgICAgIHtjbG9uZUVsZW1lbnQoY2hpbGRyZW4sIGNoaWxkUHJvcHMpfVxuICAgICAge29wZW4gJiZcbiAgICAgICAgY3JlYXRlUG9ydGFsKFxuICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgIHN0eWxlPXt7XG4gICAgICAgICAgICAgIC4uLnRvb2x0aXBTdHlsZSxcbiAgICAgICAgICAgICAgLi4ucG9zaXRpb24sXG4gICAgICAgICAgICAgIHRvcDogYGNhbGMoJHtwb3NpdGlvbi50b3B9cHggLSAke2JvdHRvbX0pYCxcbiAgICAgICAgICAgIH19XG4gICAgICAgICAgICByZWY9e3Rvb2x0aXBSZWZ9XG4gICAgICAgICAgPlxuICAgICAgICAgICAgPEZvcm1hdHRlZE1lc3NhZ2UgaWQ9e3RpdGxlfSAvPlxuICAgICAgICAgIDwvZGl2PixcbiAgICAgICAgICBjb250YWluZXIgfHwgZGVmYXVsdENvbnRhaW5lci5jdXJyZW50XG4gICAgICAgICl9XG4gICAgPC8+XG4gIClcbn1cblxuY29uc3QgQnV0dG9uID0gKHtzdGFydEljb24sIHZhcmlhbnQsIHN0eWxlLCB0aXRsZSwgY2hpbGRyZW4sIC4uLnJlc3R9KSA9PiAoXG4gIDxUb29sdGlwIHRpdGxlPXt0aXRsZX0gYm90dG9tPVwiM2VtXCIgZGlzYWJsZWQ9e3Jlc3QuZGlzYWJsZWR9PlxuICAgIDxidXR0b24gdHlwZT1cImJ1dHRvblwiIGNzcz17W3N0eWxlcywgdmFyaWFudHNbdmFyaWFudF0sIHN0eWxlXX0gey4uLnJlc3R9PlxuICAgICAge3R5cGVvZiBzdGFydEljb24gPT09ICdzdHJpbmcnID8gPEljb24gdHlwZT17c3RhcnRJY29ufSAvPiA6IHN0YXJ0SWNvbn1cbiAgICAgIHtjaGlsZHJlbn1cbiAgICA8L2J1dHRvbj5cbiAgPC9Ub29sdGlwPlxuKVxuXG5CdXR0b24ucHJvcFR5cGVzID0ge1xuICBzdGFydEljb246IFByb3BUeXBlcy5ub2RlLFxuICBjaGlsZHJlbjogUHJvcFR5cGVzLm5vZGUsXG59XG5cbmNvbnN0IFBsYXlCdXR0b24gPSAoe3BsYXliYWNrU3RhdGUsIGVuZGVkLCBoaWRkZW4sIG9uQ2xpY2ssIC4uLnJlc3R9KSA9PiAoXG4gIDxCdXR0b25cbiAgICBzdHlsZT17aGlkZGVuICYmIHtvcGFjaXR5OiAwfX1cbiAgICBzdGFydEljb249e1xuICAgICAgZW5kZWQgPyAncmVwbGF5JyA6IHBsYXliYWNrU3RhdGUgPT09ICdwbGF5aW5nJyA/ICdwYXVzZScgOiAncGxheSdcbiAgICB9XG4gICAgdGl0bGU9e2BLS1MuUExBWUVSLiR7XG4gICAgICBlbmRlZCA/ICdSRVBMQVknIDogcGxheWJhY2tTdGF0ZSA9PT0gJ3BsYXlpbmcnID8gJ1BBVVNFJyA6ICdQTEFZJ1xuICAgIH1gfVxuICAgIG9uQ2xpY2s9e29uQ2xpY2t9XG4gICAgey4uLnJlc3R9XG4gIC8+XG4pXG5cblBsYXlCdXR0b24ucHJvcFR5cGVzID0ge1xuICBlbmRlZDogUHJvcFR5cGVzLmJvb2wsXG4gIG9uQ2xpY2s6IFByb3BUeXBlcy5mdW5jLFxufVxuXG5jb25zdCBGdWxsc2NyZWVuQnV0dG9uID0gKHt2aWV3TW9kZSwgb25DbGlja30pID0+IHtcbiAgY29uc3QgaWNvbiA9IHZpZXdNb2RlID09PSAnZnVsbHNjcmVlbicgPyAnbGVhdmVGdWxsU2NyZWVuJyA6ICdlbnRlckZ1bGxTY3JlZW4nXG4gIGNvbnN0IHRleHQgPSB1c2VJbnRsKCkuZm9ybWF0TWVzc2FnZShcbiAgICB2aWV3TW9kZSA9PT0gJ2Z1bGxzY3JlZW4nXG4gICAgICA/ICdLS1MuUExBWUVSLkZVTExTQ1JFRU4uRVhJVCdcbiAgICAgIDogJ0tLUy5QTEFZRVIuRlVMTFNDUkVFTidcbiAgKVxuXG4gIHJldHVybiA8QnV0dG9uIHN0YXJ0SWNvbj17aWNvbn0gdGl0bGU9e3RleHR9IG9uQ2xpY2s9e29uQ2xpY2t9IC8+XG59XG5cbmNvbnN0IHNraXBTdHlsZXMgPSB7XG4gIGRpc3BsYXk6ICdmbGV4JyxcbiAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gIHBhZGRpbmc6ICcwLjVyZW0nLFxuICBib3JkZXI6ICcxcHggc29saWQgI2ZmZicsXG4gIGNvbG9yOiAnI2ZmZicsXG4gIGJhY2tncm91bmQ6ICdyZ2JhKDAsIDAsIDAsIDAuNCknLFxuICBmb250U2l6ZTogJzI0cHgnLFxuICBvcGFjaXR5OiAwLjgsXG4gICcmOmRpc2FibGVkJzoge1xuICAgIG9wYWNpdHk6IDAuNSxcbiAgfSxcbiAgJz4gZGl2Jzoge1xuICAgIG1hcmdpbkxlZnQ6ICcwLjVyZW0nLFxuICAgIHdpZHRoOiAnMS41cmVtJyxcbiAgICBoZWlnaHQ6ICcxLjVyZW0nLFxuICB9LFxufVxuXG5jb25zdCBTa2lwQnV0dG9uID0gKHt3YWl0VGltZSwgb25DbGlja30pID0+IChcbiAgPGJ1dHRvblxuICAgIHR5cGU9XCJidXR0b25cIlxuICAgIGNzcz17c2tpcFN0eWxlc31cbiAgICBkaXNhYmxlZD17d2FpdFRpbWUgPiAwfVxuICAgIG9uQ2xpY2s9e29uQ2xpY2t9XG4gID5cbiAgICB7d2FpdFRpbWUgPiAwID8gKFxuICAgICAgPD5cbiAgICAgICAge01hdGguY2VpbCh3YWl0VGltZSl9IDxGb3JtYXR0ZWRNZXNzYWdlIGlkPVwiS0tTLlNTQUkuU0VDT05EU1wiIC8+XG4gICAgICA8Lz5cbiAgICApIDogKFxuICAgICAgPEZvcm1hdHRlZE1lc3NhZ2UgaWQ9XCJLS1MuU1NBSS5TS0lQLkFEXCIgLz5cbiAgICApfVxuICAgIDxJY29uIHR5cGU9XCJuZXh0RXBpc29kZVwiIC8+XG4gIDwvYnV0dG9uPlxuKVxuXG5leHBvcnQge0J1dHRvbiwgUGxheUJ1dHRvbiwgRnVsbHNjcmVlbkJ1dHRvbiwgU2tpcEJ1dHRvbn1cbiJdfQ== */"],
     ...rest,
-    children: [typeof startIcon === 'string' ? jsxRuntime$1.jsx(Icon, {
+    children: [typeof startIcon === 'string' ? jsx$1(Icon, {
       type: startIcon
     }) : startIcon, children]
   })
@@ -3370,7 +2270,7 @@ const PlayButton$1 = ({
   hidden,
   onClick,
   ...rest
-}) => jsxRuntime$1.jsx(Button, {
+}) => jsx$1(Button, {
   style: hidden && {
     opacity: 0
   },
@@ -3391,7 +2291,7 @@ const FullscreenButton = ({
 }) => {
   const icon = viewMode === 'fullscreen' ? 'leaveFullScreen' : 'enterFullScreen';
   const text = useIntl().formatMessage(viewMode === 'fullscreen' ? 'KKS.PLAYER.FULLSCREEN.EXIT' : 'KKS.PLAYER.FULLSCREEN');
-  return jsxRuntime$1.jsx(Button, {
+  return jsx$1(Button, {
     startIcon: icon,
     title: text,
     onClick: onClick
@@ -3420,351 +2320,66 @@ const skipStyles = {
 const SkipButton = ({
   waitTime,
   onClick
-}) => jsxRuntime$1.jsxs("button", {
+}) => jsxs("button", {
   type: "button",
   css: skipStyles,
   disabled: waitTime > 0,
   onClick: onClick,
-  children: [waitTime > 0 ? jsxRuntime$1.jsxs(jsxRuntime$1.Fragment, {
-    children: [Math.ceil(waitTime), " ", jsxRuntime$1.jsx(FormattedMessage, {
+  children: [waitTime > 0 ? jsxs(Fragment, {
+    children: [Math.ceil(waitTime), " ", jsx$1(FormattedMessage, {
       id: "KKS.SSAI.SECONDS"
     })]
-  }) : jsxRuntime$1.jsx(FormattedMessage, {
+  }) : jsx$1(FormattedMessage, {
     id: "KKS.SSAI.SKIP.AD"
-  }), jsxRuntime$1.jsx(Icon, {
+  }), jsx$1(Icon, {
     type: "nextEpisode"
   })]
 });
 
-const type = {
-  SELECT_MEDIA_SOURCE: 'UI_SELECT_MEDIA_SOURCE',
-  SET_MEDIA_SOURCES: 'UI_SET_MEDIA_SOURCES',
-  CHANGE_RECOMMENDATION_PANEL: 'CHANGE_RECOMMENDATION_PANEL',
-  TOGGLE_RECOMMENDATION_PANEL: 'TOGGLE_RECOMMENDATION_PANEL',
-  OPEN_PANEL: 'OPEN_PANEL',
-  HIDE_PANEL: 'HIDE_PANEL',
-  OFFER_AUTOPLAY: 'OFFER_AUTOPLAY',
-  DISMISS_AUTOPLAY: 'DISMISS_AUTOPLAY',
-  ERROR: 'UI_ERROR',
-  RESET_END_ROLL: 'RESET_END_ROLL',
-  STREAM_EVENTS_CHANGED: 'STREAM_EVENTS_CHANGED',
-  AD_BREAK_STARTED: 'AD_BREAK_STARTED',
-  AD_BREAK_ENDED: 'AD_BREAK_ENDED',
-  VISIBILITY_CHANGE: 'VISIBILITY_CHANGE',
-  PLAYBACK_END: 'PLAYBACK_END'
+/* eslint-disable jsx-a11y/no-static-element-interactions */
+
+/* @jsxImportSource @emotion/react */
+const backdropStyle = {
+  position: 'absolute',
+  zIndex: 1,
+  top: 0,
+  left: 0,
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  alignContent: 'center',
+  justifyContent: 'center',
+  height: '100%',
+  width: '100%',
+  backgroundColor: 'rgba(0, 0, 0, 0)',
+  transform: 'translateY(-100%)',
+  transition: 'background-color 0.5s ease, transform 0s 0.5s'
 };
-var uiActions = {
-  selectMediaSource: mediaSource => ({
-    type: type.SELECT_MEDIA_SOURCE,
-    mediaSource
-  }),
-  setMediaSources: (items = []) => ({
-    type: type.SET_MEDIA_SOURCES,
-    items
-  }),
-  enableRecommendationPanel: () => ({
-    type: type.CHANGE_RECOMMENDATION_PANEL,
-    enabled: true
-  }),
-  disableRecommendationPanel: () => ({
-    type: type.CHANGE_RECOMMENDATION_PANEL,
-    enabled: false
-  }),
-  toggleRecommendationPanel: () => ({
-    type: type.TOGGLE_RECOMMENDATION_PANEL
-  }),
-  openPanel: panel => ({
-    type: type.OPEN_PANEL,
-    panel
-  }),
-  hidePanel: () => ({
-    type: type.HIDE_PANEL
-  }),
-  offerAutoplay: state => ({
-    type: type.OFFER_AUTOPLAY,
-    endState: state
-  }),
-  dismissAutoplay: () => ({
-    type: type.DISMISS_AUTOPLAY
-  }),
-  streamEventsChanged: (streamEvents, playbackStatus) => ({
-    type: type.STREAM_EVENTS_CHANGED,
-    streamEvents,
-    playbackStatus
-  }),
-  adBreakStarted: (adProgressData, skipTimeOffset) => ({
-    type: type.AD_BREAK_STARTED,
-    adProgressData,
-    skipTimeOffset
-  }),
-  adBreakEnded: () => ({
-    type: type.AD_BREAK_ENDED
-  }),
-  playbackEnd: () => ({
-    type: type.PLAYBACK_END
-  })
-};
-
-/* eslint-disable react/prop-types */
-
-const linkAdState = ({
-  contentType,
-  dispatch,
-  plugins,
-  onAdSkip
-}) => {
-  const handleStart = event => {
-    var _event$getAd;
-
-    // TODO playlog ad start event
-    dispatch(uiActions.adBreakStarted(event.getStreamData().adProgressData, contentType !== 'lives' && ((_event$getAd = event.getAd()) === null || _event$getAd === void 0 ? void 0 : _event$getAd.getSkipTimeOffset())));
-  };
-
-  return linkPluginEvents(plugins, {
-    cuepointsChanged: (event, plugin) => dispatch(uiActions.streamEventsChanged(event.cuepoints, plugin.getPlaybackStatus())),
-    adBreakStarted: handleStart,
-    adBreakEnded: () => {
-      // TODO playlog ad end event
-      dispatch(uiActions.adBreakEnded());
-    },
-    skip: onAdSkip
-  });
-};
-
-const useIntervalUpdate = get => {
-  const [value, setValue] = React.useState(get());
-  React.useEffect(() => {
-    const intervalId = setInterval(() => setValue(get()), 500);
-    return () => clearInterval(intervalId);
-  }, []);
-  return value;
-};
-
-const SkipAdButton = ({
-  skipAd,
-  getWaitTime
-}) => {
-  const waitTime = useIntervalUpdate(getWaitTime);
-  return isFinite(waitTime) && /*#__PURE__*/jsxRuntime.jsx(SkipButton, {
-    waitTime: waitTime,
-    onClick: skipAd
-  });
-};
-
-const Status = ({
-  total,
-  position,
-  getRemainingTime
-}) => {
-  const remainingTime = useIntervalUpdate(getRemainingTime);
-  return total > 0 && `Ad ${position} of ${total}・${formattedTime(remainingTime)}`;
-};
-
-const getAdUi = ({
-  position,
-  total,
-  adBreakDuration,
-  skipTimeOffset,
-  clickThroughUrl
-}, plugins, media) => {
-  const getRemainingTime = () => getMediaTime(media, plugins).adRemainingTime;
-
-  const getSkipWaitTime = () => skipTimeOffset >= 0 ? getRemainingTime() - (adBreakDuration - skipTimeOffset) : Infinity;
-
-  return {
-    title: false,
-    channelTitle: false,
-    controlButtons: {
-      rewindButton: false,
-      forwardButton: false,
-      nextEpisodeButton: false,
-      previousEpisodeButton: false
-    },
-    seekbar: false,
-    adLink: clickThroughUrl && /*#__PURE__*/jsxRuntime.jsx("a", {
-      href: clickThroughUrl,
-      rel: "noreferrer",
-      target: "_blank",
-      children: /*#__PURE__*/jsxRuntime.jsx(FormattedMessage, {
-        id: "KKS.SSAI.LEARN.MORE"
-      })
-    }),
-    adStatus: /*#__PURE__*/jsxRuntime.jsx(Status, {
-      position: position,
-      total: total,
-      getRemainingTime: getRemainingTime
-    }),
-    adSkipButton: /*#__PURE__*/jsxRuntime.jsx(SkipAdButton, {
-      getWaitTime: getSkipWaitTime,
-      skipAd: () => plugins.forEach(plugin => {
-        var _plugin$skipAd;
-
-        return (_plugin$skipAd = plugin.skipAd) === null || _plugin$skipAd === void 0 ? void 0 : _plugin$skipAd.call(plugin);
-      })
-    })
-  };
-};
-
-const multiRef = (...refs) => element => {
-  if (element) {
-    refs.forEach(ref => {
-      if (ref && 'current' in ref) {
-        // eslint-disable-next-line no-param-reassign
-        ref.current = element;
-      } else {
-        ref === null || ref === void 0 ? void 0 : ref(element);
-      }
-    });
+const backdropOpenStyle = {
+  backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  transform: 'translateY(0)',
+  transition: 'background-color 0.5s ease',
+  '~ .overlay-backdrop': {
+    display: 'none'
   }
-};
+}; // eslint-disable-next-line react/prop-types
 
-const vendors = {
-  change: ['fullscreenchange', 'webkitfullscreenchange', 'MSFullscreenChange'],
-  element: ['fullscreenElement', 'webkitFullscreenElement', 'msFullscreenElement'],
-  request: ['requestFullscreen', 'webkitRequestFullScreen', 'msRequestFullscreen'],
-  exit: ['exitFullscreen', 'webkitExitFullscreen', 'msExitFullscreen']
-};
-
-const getName = (object, nameList) => nameList.find(name => name in object);
-
-const onViewModeChange = (video, onChange) => {
-  const vendorElementName = getName(document, vendors.element);
-
-  if (vendorElementName) {
-    onChange(document[vendorElementName] ? 'fullscreen' : 'inline');
-    return vendors.change.map(name => on$1(document, name, () => onChange(document[vendorElementName] ? 'fullscreen' : 'inline')));
-  }
-
-  onChange(video.webkitDisplayingFullscreen ? 'fullscreen' : 'inline');
-  const registered = [on$1(video, 'webkitbeginfullscreen', () => onChange('fullscreen')), on$1(video, 'webkitendfullscreen', () => onChange('inline'))];
-  return () => {
-    registered.forEach(removeListener => removeListener());
-  };
-};
-
-const toggleFullscreen = container => {
-  const vendorElementName = getName(document, vendors.element);
-
-  if (vendorElementName) {
-    const action = document[vendorElementName] ? 'exit' : 'request';
-    const target = action === 'request' ? container : document;
-    return target[getName(target, vendors[action])]();
-  }
-
-  const target = container.querySelector('video');
-  return target.webkitDisplayingFullscreen ? target.webkitExitFullScreen() : target.webkitEnterFullScreen();
-};
-
-/*
-  Rules:
-    1  Set `true` immediately in first time (For loadstart event)
-    2. Set `true` to waiting lazily but update waiting to `false` immediately
-*/
-
-const useLazyWaiting = waiting => {
-  const [first, setFirst] = React.useState(true);
-  const [state, dispatch] = React.useState(waiting);
-  const timer = React.useRef();
-  React.useEffect(() => {
-    clearTimeout(timer.current);
-
-    if (waiting && !first) {
-      timer.current = setTimeout(() => {
-        dispatch(waiting);
-      }, 1000);
-    } else {
-      dispatch(waiting);
-      setFirst(false);
+const Backdrop = ({
+  open,
+  children,
+  onClick,
+  ...rest
+}) => jsx$1("div", {
+  css: [backdropStyle, open && backdropOpenStyle, process.env.NODE_ENV === "production" ? "" : ";label:Backdrop;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkJhY2tkcm9wLmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQWdDSSIsImZpbGUiOiJCYWNrZHJvcC5qcyIsInNvdXJjZXNDb250ZW50IjpbIi8qIGVzbGludC1kaXNhYmxlIGpzeC1hMTF5L25vLXN0YXRpYy1lbGVtZW50LWludGVyYWN0aW9ucyAqL1xuLyogQGpzeEltcG9ydFNvdXJjZSBAZW1vdGlvbi9yZWFjdCAqL1xuXG5jb25zdCBiYWNrZHJvcFN0eWxlID0ge1xuICBwb3NpdGlvbjogJ2Fic29sdXRlJyxcbiAgekluZGV4OiAxLFxuICB0b3A6IDAsXG4gIGxlZnQ6IDAsXG4gIGRpc3BsYXk6ICdmbGV4JyxcbiAgZmxleFdyYXA6ICd3cmFwJyxcbiAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gIGFsaWduQ29udGVudDogJ2NlbnRlcicsXG4gIGp1c3RpZnlDb250ZW50OiAnY2VudGVyJyxcbiAgaGVpZ2h0OiAnMTAwJScsXG4gIHdpZHRoOiAnMTAwJScsXG4gIGJhY2tncm91bmRDb2xvcjogJ3JnYmEoMCwgMCwgMCwgMCknLFxuICB0cmFuc2Zvcm06ICd0cmFuc2xhdGVZKC0xMDAlKScsXG4gIHRyYW5zaXRpb246ICdiYWNrZ3JvdW5kLWNvbG9yIDAuNXMgZWFzZSwgdHJhbnNmb3JtIDBzIDAuNXMnLFxufVxuXG5jb25zdCBiYWNrZHJvcE9wZW5TdHlsZSA9IHtcbiAgYmFja2dyb3VuZENvbG9yOiAncmdiYSgwLCAwLCAwLCAwLjYpJyxcbiAgdHJhbnNmb3JtOiAndHJhbnNsYXRlWSgwKScsXG4gIHRyYW5zaXRpb246ICdiYWNrZ3JvdW5kLWNvbG9yIDAuNXMgZWFzZScsXG4gICd+IC5vdmVybGF5LWJhY2tkcm9wJzoge1xuICAgIGRpc3BsYXk6ICdub25lJyxcbiAgfSxcbn1cblxuLy8gZXNsaW50LWRpc2FibGUtbmV4dC1saW5lIHJlYWN0L3Byb3AtdHlwZXNcbmNvbnN0IEJhY2tkcm9wID0gKHtvcGVuLCBjaGlsZHJlbiwgb25DbGljaywgLi4ucmVzdH0pID0+IChcbiAgPGRpdlxuICAgIGNzcz17W2JhY2tkcm9wU3R5bGUsIG9wZW4gJiYgYmFja2Ryb3BPcGVuU3R5bGVdfVxuICAgIGNsYXNzTmFtZT1cIm92ZXJsYXktYmFja2Ryb3BcIlxuICAgIG9uQ2xpY2s9e2V2ZW50ID0+IHtcbiAgICAgIGlmIChldmVudC50YXJnZXQgPT09IGV2ZW50LmN1cnJlbnRUYXJnZXQpIHtcbiAgICAgICAgb25DbGljaz8uKClcbiAgICAgIH1cbiAgICB9fVxuICAgIHsuLi5yZXN0fVxuICA+XG4gICAge29wZW4gJiYgY2hpbGRyZW59XG4gIDwvZGl2PlxuKVxuXG5leHBvcnQgZGVmYXVsdCBCYWNrZHJvcFxuIl19 */"],
+  className: "overlay-backdrop",
+  onClick: event => {
+    if (event.target === event.currentTarget) {
+      onClick === null || onClick === void 0 ? void 0 : onClick();
     }
-
-    return () => clearTimeout(timer.current);
-  }, [waiting]);
-  return state;
-};
-
-const useAutoHide = ({
-  hideTimeMs = 3000,
-  pinned,
-  tapToHide,
-  onHide
-} = {}) => {
-  const timer = React.useRef();
-  const [mode, setMode] = React.useState('hidden');
-
-  const interact = () => {
-    if (mode !== 'shown') {
-      setMode('shown');
-    }
-
-    clearTimeout(timer.current);
-
-    if (!pinned) {
-      timer.current = setTimeout(() => setMode('hidden'), hideTimeMs);
-    }
-  };
-
-  const hide = () => {
-    clearTimeout(timer.current);
-    setMode('hidden');
-    onHide === null || onHide === void 0 ? void 0 : onHide();
-  };
-
-  React.useEffect(() => {
-    if (mode === 'shown') {
-      interact();
-    }
-  }, [hideTimeMs]);
-  React.useEffect(() => {
-    if (pinned) {
-      setMode('shown');
-      clearTimeout(timer.current);
-    } else {
-      interact();
-    }
-  }, [pinned]);
-  React.useEffect(() => () => {
-    clearTimeout(timer.current);
-  }, []);
-  return {
-    mode,
-    show: interact,
-    hide,
-    onClick: event => {
-      if (mode === 'hidden') {
-        interact();
-      } else if (tapToHide && event.target.tagName !== 'BUTTON') {
-        // hide if tapping on elsewhere
-        hide();
-      }
-    },
-    onMouseMove: () => {
-      // In mobile web, emulated clicks generate extra mouse move events
-      if (!('ontouchstart' in window)) {
-        interact();
-      }
-    }
-  };
-};
-
-const blurPause = (media, pause) => {
-  const handleVisibilitychange = async () => {
-    let shouldPause = true;
-    pause();
-    setTimeout(() => {
-      shouldPause = false;
-    }, 50);
-    media.addEventListener('play', () => {
-      if (shouldPause) {
-        pause();
-      }
-    }, {
-      once: true
-    });
-  };
-
-  document.addEventListener('visibilitychange', handleVisibilitychange);
-  return () => document.removeEventListener('visibilitychange', handleVisibilitychange);
-};
+  },
+  ...rest,
+  children: open && children
+});
 
 /* @jsxImportSource @emotion/react */
 const iconStyle$1 = {
@@ -3790,21 +2405,21 @@ const Error$1 = ({
     code: error.code || 0,
     ...error.data
   };
-  return jsxRuntime$1.jsxs(Backdrop, {
+  return jsxs(Backdrop, {
     open: true,
-    children: [jsxRuntime$1.jsx(Icon, {
+    children: [jsx$1(Icon, {
       type: "warning",
       style: iconStyle$1
-    }), jsxRuntime$1.jsx("div", {
+    }), jsx$1("div", {
       css: style$9,
       children: [error.name === 'PlaycraftApiError' ? `KKS.ERROR.PLAYCRAFT.${error.code}` : `KKS.ERROR.${error.code}`, `KKS.ERROR.${error.name}`, error.message, error.name, `KKS.ERROR`].reduceRight((last, id) => intl.formatMessage({
         id,
         defaultMessage: last
       }, values), '')
-    }), onBack && jsxRuntime$1.jsx(Button, {
+    }), onBack && jsx$1(Button, {
       variant: "outlined",
       onClick: onBack,
-      children: jsxRuntime$1.jsx(FormattedMessage, {
+      children: jsx$1(FormattedMessage, {
         id: "KKS.BACK"
       })
     })]
@@ -3814,6 +2429,30 @@ const Error$1 = ({
 Error$1.propTypes = {
   error: PropTypes.object,
   onBack: PropTypes.func
+};
+
+/* eslint-disable react/prop-types */
+const extensionContext = /*#__PURE__*/createContext();
+
+const SlotProvider = ({
+  slotRef,
+  children
+}) => {
+  const [slots, setSlots] = useState();
+  useEffect(() => {
+    setSlots(slotRef.current);
+  }, []);
+  return /*#__PURE__*/jsx(extensionContext.Provider, {
+    value: slots,
+    children: children
+  });
+};
+
+const FunctionBarExtension = ({
+  children
+}) => {
+  const slots = useContext(extensionContext);
+  return slots !== null && slots !== void 0 && slots.functionBar ? /*#__PURE__*/createPortal(children, slots.functionBar) : '';
 };
 
 function _EMOTION_STRINGIFIED_CSS_ERROR__$4() { return "You have tried to stringify object returned from `css` function. It isn't supposed to be used directly (e.g. as value of the `className` prop), but rather handed to emotion so it can handle it (e.g. as value of `css` prop)."; }
@@ -4031,9 +2670,9 @@ const ControlsBlock = ({
   forwardButton = '',
   previousEpisodeButton = '',
   nextEpisodeButton = ''
-}) => order === 'desktop' ? jsxRuntime$1.jsxs(jsxRuntime$1.Fragment, {
+}) => order === 'desktop' ? jsxs(Fragment, {
   children: [previousEpisodeButton, playButton, nextEpisodeButton, rewindButton, forwardButton]
-}) : jsxRuntime$1.jsxs(jsxRuntime$1.Fragment, {
+}) : jsxs(Fragment, {
   children: [rewindButton, previousEpisodeButton, playButton, nextEpisodeButton, forwardButton]
 });
 
@@ -4082,66 +2721,66 @@ const DefaultLayout = ({
   adContainerRef,
   ...rest
 }) => {
-  const slotRef = React.useRef({});
-  return jsxRuntime$1.jsxs("div", {
+  const slotRef = useRef({});
+  return jsxs("div", {
     css: [containerStyle$1, videoContainerStyle, responsiveStyles[size], type === 'desktop' && dekstopStyle$1, style, process.env.NODE_ENV === "production" ? "" : ";label:DefaultLayout;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkRlZmF1bHRMYXlvdXQuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBeVJNIiwiZmlsZSI6IkRlZmF1bHRMYXlvdXQuanMiLCJzb3VyY2VzQ29udGVudCI6WyIvKiBAanN4SW1wb3J0U291cmNlIEBlbW90aW9uL3JlYWN0ICovXG4vKiBlc2xpbnQtZGlzYWJsZSByZWFjdC9wcm9wLXR5cGVzICovXG5pbXBvcnQge3VzZVJlZn0gZnJvbSAncmVhY3QnXG5pbXBvcnQge1Nsb3RQcm92aWRlcn0gZnJvbSAnLi91aUV4dGVuc2lvbnMnXG5cbmNvbnN0IGV4cGFuZCA9IHtcbiAgbWFyZ2luOiAwLFxuICBmbGV4OiAnMScsXG59XG5cbmNvbnN0IGhpZGRlbiA9IHtkaXNwbGF5OiAnbm9uZSd9XG5cbmNvbnN0IGNvbnRhaW5lclN0eWxlID0ge1xuICB3aWR0aDogJzEwMCUnLFxuICBoZWlnaHQ6ICcxMDAlJyxcbiAgYm94U2l6aW5nOiAnYm9yZGVyLWJveCcsXG4gIGRpc3BsYXk6ICdmbGV4JyxcbiAgZmxleERpcmVjdGlvbjogJ2NvbHVtbicsXG4gIG92ZXJmbG93OiAnaGlkZGVuJyxcbiAgY29sb3I6ICd3aGl0ZScsXG4gIC8vIHByZXZlbnQgYW5pbWF0aW9uIGdsaWNoKGFmdGVyaW1hZ2UpIG9mIGRlc2NlbmRhbnQgZWxlbWVudHNcbiAgdHJhbnNmb3JtOiAndHJhbnNsYXRlWCgwKScsXG4gIHVzZXJTZWxlY3Q6ICdub25lJyxcbiAgaDE6IHtcbiAgICBtYXJnaW46IDAsXG4gICAgZm9udFNpemU6ICcxZW0nLFxuICAgIGxpbmVIZWlnaHQ6ICcxLjVlbScsXG4gIH0sXG4gICdhLCBhOmxpbmssIGE6dmlzaXRlZCc6IHtcbiAgICBjb2xvcjogJyNmZmYnLFxuICAgIG9wYWNpdHk6IDAuOCxcbiAgICB0ZXh0RGVjb3JhdGlvbjogJ25vbmUnLFxuICB9LFxuICBidXR0b246IHtcbiAgICBmb250U2l6ZTogJ2luaGVyaXQnLFxuICAgICc+IConOiB7XG4gICAgICBwb2ludGVyRXZlbnRzOiAnbm9uZScsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3QgdmlkZW9Db250YWluZXJTdHlsZSA9IHtcbiAgJz4gZGl2OmZpcnN0LW9mLXR5cGUnOiB7XG4gICAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gICAgekluZGV4OiAnLTEnLFxuICAgIHdpZHRoOiAnMTAwJScsXG4gICAgaGVpZ2h0OiAnMTAwJScsXG4gIH0sXG59XG5cbmNvbnN0IGRyb3AgPSB7XG4gIGJhY2tncm91bmRJbWFnZTogYGxpbmVhci1ncmFkaWVudChcbiAgICAwZGVnLFxuICAgIHJnYmEoMCwwLDAsMC41KSAwLFxuICAgIHJnYmEoMCwwLDAsMCkgOHJlbSBjYWxjKDEwMCUgLSA4cmVtKSxcbiAgICByZ2JhKDAsMCwwLDAuNSkgMTAwJVxuICApYCxcbn1cblxuY29uc3QgZHJvcFRvcCA9IHtcbiAgYmFja2dyb3VuZEltYWdlOiBgbGluZWFyLWdyYWRpZW50KFxuICAgIDBkZWcsXG4gICAgcmdiYSgwLDAsMCwwKSAwLFxuICAgIHJnYmEoMCwwLDAsMCkgOHJlbSBjYWxjKDEwMCUgLSA4cmVtKSxcbiAgICByZ2JhKDAsMCwwLDAuNSkgMTAwJVxuICApYCxcbn1cblxuY29uc3QgcmVzcG9uc2l2ZVN0eWxlcyA9IHtcbiAgZGVza3RvcDoge1xuICAgIGZvbnRTaXplOiAnMjRweCcsXG4gIH0sIC8vIGFkZCBpZiBuZWNlc3Nhcnk6IGJpZy1kZXNrdG9wXG59XG5cbmNvbnN0IHJvd1N0eWxlID0ge1xuICBib3hTaXppbmc6ICdib3JkZXItYm94JyxcbiAgd2lkdGg6ICcxMDAlJyxcbiAgcGFkZGluZzogJ2NhbGMoMmVtIC0gMTZweCknLFxuICBkaXNwbGF5OiAnZmxleCcsXG4gIGFsaWduSXRlbXM6ICdjZW50ZXInLFxuICBqdXN0aWZ5Q29udGVudDogJ2ZsZXgtZW5kJyxcbiAgYnV0dG9uOiB7XG4gICAgZmxleDogJzAgMCAxLjVlbScsXG4gICAgd2lkdGg6ICcxLjVlbScsXG4gICAgaGVpZ2h0OiAnMS41ZW0nLFxuICB9LFxuICAnPiBidXR0b246bm90KDpkaXNhYmxlZCkgfiBidXR0b246bm90KDpkaXNhYmxlZCksIGRpdiB+IGJ1dHRvbjpsYXN0LW9mLXR5cGUnOlxuICAgIHtcbiAgICAgIG1hcmdpbkxlZnQ6ICcwLjVyZW0nLFxuICAgIH0sXG4gICc+IGJ1dHRvbjpub3QoOmxhc3Qtb2YtdHlwZSknOiB7XG4gICAgbWFyZ2luUmlnaHQ6ICcwLjVyZW0nLFxuICB9LFxufVxuXG5jb25zdCBkaXNwbGF5U3R5bGVzID0ge1xuICBoaWRkZW46IHtcbiAgICAnPiBkaXY6bm90KC5waW5uZWQpLCA+IGJ1dHRvbjpub3QoLnBpbm5lZCksID4gaDE6bm90KC5waW5uZWQpJzoge1xuICAgICAgekluZGV4OiAtMixcbiAgICAgIG9wYWNpdHk6IDAsXG4gICAgICB0cmFuc2l0aW9uOiAnb3BhY2l0eSAwLjhzIGVhc2Utb3V0LCB6LWluZGV4IDBzIDAuOHMnLFxuICAgIH0sXG4gIH0sXG4gIHNob3duOiB7XG4gICAgJz4gZGl2Om5vdCgucGlubmVkKSwgPiBidXR0b246bm90KC5waW5uZWQpLCA+IGgxOm5vdCgucGlubmVkKSc6IHtcbiAgICAgIHRyYW5zaXRpb246ICdvcGFjaXR5IDAuM3MgZWFzZS1vdXQnLFxuICAgIH0sXG4gIH0sXG59XG5cbmNvbnN0IGNvbnRyb2xzRGlzcGxheVN0eWxlcyA9IHtcbiAgaGlkZGVuOiB7XG4gICAgLi4uZGlzcGxheVN0eWxlcy5oaWRkZW4sXG4gICAgJ34gZGl2Om5vdCgucGlubmVkKSc6IGRpc3BsYXlTdHlsZXMuaGlkZGVuLFxuICB9LFxuICBzaG93bjoge1xuICAgIC4uLmRpc3BsYXlTdHlsZXMuc2hvd24sXG4gICAgJ34gZGl2JzogZGlzcGxheVN0eWxlcy5zaG93bixcbiAgfSxcbn1cblxuY29uc3QgY29udHJvbHNTdHlsZSA9IHtcbiAgbWFyZ2luVG9wOiAnYXV0bycsXG4gIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICB6SW5kZXg6ICcyJyxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgJz4gYnV0dG9uJzoge1xuICAgIG1hcmdpbjogJzFlbScsXG4gICAgd2lkdGg6ICcxLjc1ZW0nLFxuICAgIGhlaWdodDogJzEuNzVlbScsXG4gICAgJyY6ZGlzYWJsZWQnOiB7XG4gICAgICBvcGFjaXR5OiAwLjMsXG4gICAgfSxcbiAgICAnJi5wbGF5LWJ1dHRvbic6IHtcbiAgICAgIHdpZHRoOiAnM2VtJyxcbiAgICAgIGhlaWdodDogJzNlbScsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3Qgc2xvdFN0eWxlID0ge1xuICBkaXNwbGF5OiAnZmxleCcsXG4gIG1hcmdpbkxlZnQ6ICcwLjc1ZW0nLFxuICBidXR0b246IHtcbiAgICBkaXNwbGF5OiAnYmxvY2snLFxuICAgIG1hcmdpbkxlZnQ6ICcwLjc1ZW0nLFxuICB9LFxufVxuXG5jb25zdCB0ZXh0RWxsaXBzaXMgPSB7XG4gIG92ZXJmbG93OiAnaGlkZGVuJyxcbiAgd2hpdGVTcGFjZTogJ25vd3JhcCcsXG4gIHRleHRPdmVyZmxvdzogJ2VsbGlwc2lzJyxcbn1cblxuY29uc3QgaW5mb1N0eWxlID0ge1xuICBhbGlnbkl0ZW1zOiAnZmxleC1zdGFydCcsXG4gIG92ZXJmbG93OiAndmlzaWJsZScsXG4gIGgxOiB7XG4gICAgaGVpZ2h0OiAnM2VtJyxcbiAgICBmb250V2VpZ2h0OiAnNTAwJyxcbiAgICAuLi50ZXh0RWxsaXBzaXMsXG4gICAgJz4gZGl2JzogdGV4dEVsbGlwc2lzLFxuICB9LFxuICAnYnV0dG9uICsgaDEnOiB7XG4gICAgbWFyZ2luTGVmdDogJzFlbScsXG4gIH0sXG59XG5cbmNvbnN0IGJhY2tTdHlsZSA9IHtcbiAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gIHpJbmRleDogMCxcbiAgd2lkdGg6ICcxMDAlJyxcbiAgaGVpZ2h0OiAnMTAwJScsXG4gIGRpc3BsYXk6ICdmbGV4JyxcbiAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gIGp1c3RpZnlDb250ZW50OiAnY2VudGVyJyxcbiAgJ34gKic6IHtcbiAgICB6SW5kZXg6IDAsXG4gIH0sXG59XG5cbmNvbnN0IHNraXBTdHlsZSA9IHtcbiAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gIHJpZ2h0OiAwLFxuICBib3R0b206ICc5cmVtJyxcbiAgdGV4dEFsaWduOiAncmlnaHQnLFxuICBidXR0b246IHtcbiAgICB3aWR0aDogJ2F1dG8nLFxuICAgIGhlaWdodDogJ2F1dG8nLFxuICB9LFxufVxuXG5jb25zdCBkZWtzdG9wU3R5bGUgPSB7XG4gICc+IGRpdic6IHtcbiAgICAnPiBidXR0b246bm90KDpkaXNhYmxlZCkgfiBidXR0b246bm90KDpkaXNhYmxlZCksID4gYnV0dG9uOmxhc3Qtb2YtdHlwZSc6IHtcbiAgICAgIG1hcmdpbkxlZnQ6ICcwLjc1ZW0nLFxuICAgIH0sXG4gICAgJz4gYnV0dG9uOmZpcnN0LW9mLXR5cGUnOiB7XG4gICAgICBtYXJnaW5MZWZ0OiAnMCcsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3QgZGVza3RvcENvbnRyb2xzID0ge1xuICBmbGV4V3JhcDogJ3dyYXAnLFxuICAnPiBkaXY6Zmlyc3Qtb2YtdHlwZSc6IHtcbiAgICBmbGV4OiAnMTAwJScsXG4gICAgbWFyZ2luQm90dG9tOiAnMC44OGVtJyxcbiAgfSxcbiAgJ2J1dHRvbltkaXNhYmxlZF0nOiB7XG4gICAgZGlzcGxheTogJ25vbmUnLFxuICB9LFxufVxuXG5jb25zdCBhZENvbnRhaW5lclN0eWxlID0ge1xuICBmbGV4R3JvdzogMSxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAganVzdGlmeUNvbnRlbnQ6ICdjZW50ZXInLFxuICBwb2ludGVyRXZlbnRzOiAnbm9uZScsXG4gICc+IGlmcmFtZSc6IHtwb2ludGVyRXZlbnRzOiAnYXV0byd9LFxuICBidXR0b246IHtwb2ludGVyRXZlbnRzOiAnYXV0byd9LFxufVxuXG5jb25zdCBDb250cm9sc0Jsb2NrID0gKHtcbiAgb3JkZXIgPSAnbW9iaWxlJyxcbiAgcGxheUJ1dHRvbixcbiAgcmV3aW5kQnV0dG9uID0gJycsXG4gIGZvcndhcmRCdXR0b24gPSAnJyxcbiAgcHJldmlvdXNFcGlzb2RlQnV0dG9uID0gJycsXG4gIG5leHRFcGlzb2RlQnV0dG9uID0gJycsXG59KSA9PlxuICBvcmRlciA9PT0gJ2Rlc2t0b3AnID8gKFxuICAgIDw+XG4gICAgICB7cHJldmlvdXNFcGlzb2RlQnV0dG9ufVxuICAgICAge3BsYXlCdXR0b259XG4gICAgICB7bmV4dEVwaXNvZGVCdXR0b259XG4gICAgICB7cmV3aW5kQnV0dG9ufVxuICAgICAge2ZvcndhcmRCdXR0b259XG4gICAgPC8+XG4gICkgOiAoXG4gICAgPD5cbiAgICAgIHtyZXdpbmRCdXR0b259XG4gICAgICB7cHJldmlvdXNFcGlzb2RlQnV0dG9ufVxuICAgICAge3BsYXlCdXR0b259XG4gICAgICB7bmV4dEVwaXNvZGVCdXR0b259XG4gICAgICB7Zm9yd2FyZEJ1dHRvbn1cbiAgICA8Lz5cbiAgKVxuXG5jb25zdCBEZWZhdWx0TGF5b3V0ID0gKHtcbiAgdHlwZSA9ICdtb2JpbGUnLFxuICBzdHlsZSxcbiAgZGlzcGxheSxcbiAgY29udHJvbHNEaXNwbGF5ID0gZGlzcGxheSxcbiAgc2l6ZSxcbiAgdGl0bGUgPSAnJyxcbiAgY2hhbm5lbFRpdGxlID0gJycsXG4gIHZpZGVvLFxuICBoYXZlQm90dG9tSXRlbSxcbiAgc2Vla2JhciA9ICcnLFxuICBjb250cm9sQnV0dG9ucyxcbiAgdm9sdW1lQ29udHJvbCxcbiAgZnVsbHNjcmVlbkJ1dHRvbixcbiAgYmFja0J1dHRvbiA9ICcnLFxuICBhZFN0YXR1cyA9ICcnLFxuICBhZExpbmsgPSAnJyxcbiAgYWRTa2lwQnV0dG9uLFxuICBiYWNrSXRlbXMsXG4gIGNoaWxkcmVuLFxuICBjb250YWluZXJSZWYsXG4gIGJhY2tSZWYsXG4gIGFkQ29udGFpbmVyUmVmLFxuICAuLi5yZXN0XG59KSA9PiB7XG4gIGNvbnN0IHNsb3RSZWYgPSB1c2VSZWYoe30pXG5cbiAgcmV0dXJuIChcbiAgICA8ZGl2XG4gICAgICBjc3M9e1tcbiAgICAgICAgY29udGFpbmVyU3R5bGUsXG4gICAgICAgIHZpZGVvQ29udGFpbmVyU3R5bGUsXG4gICAgICAgIHJlc3BvbnNpdmVTdHlsZXNbc2l6ZV0sXG4gICAgICAgIHR5cGUgPT09ICdkZXNrdG9wJyAmJiBkZWtzdG9wU3R5bGUsXG4gICAgICAgIHN0eWxlLFxuICAgICAgXX1cbiAgICAgIHJlZj17Y29udGFpbmVyUmVmfVxuICAgICAgey4uLnJlc3R9XG4gICAgPlxuICAgICAge3ZpZGVvfVxuICAgICAgPGRpdlxuICAgICAgICByZWY9e2JhY2tSZWZ9XG4gICAgICAgIGNzcz17W1xuICAgICAgICAgIGJhY2tTdHlsZSxcbiAgICAgICAgICBkaXNwbGF5ICE9PSAnaGlkZGVuJyAmJiAoaGF2ZUJvdHRvbUl0ZW0gPyBkcm9wVG9wIDogZHJvcCksXG4gICAgICAgIF19XG4gICAgICA+XG4gICAgICAgIHt0eXBlICE9PSAnbW9iaWxlJyAmJiBiYWNrSXRlbXN9XG4gICAgICAgIHthZFNraXBCdXR0b24gJiYgPGRpdiBjc3M9e3NraXBTdHlsZX0+e2FkU2tpcEJ1dHRvbn08L2Rpdj59XG4gICAgICA8L2Rpdj5cbiAgICAgIDxkaXYgY3NzPXtbcm93U3R5bGUsIGluZm9TdHlsZSwgZGlzcGxheVN0eWxlc1tkaXNwbGF5XV19PlxuICAgICAgICB7YmFja0J1dHRvbn1cbiAgICAgICAgPGgxPlxuICAgICAgICAgIHt0aXRsZX1cbiAgICAgICAgICB7Y2hhbm5lbFRpdGxlICYmIDxkaXYgY3NzPXt7Zm9udFNpemU6ICcxNnB4J319PntjaGFubmVsVGl0bGV9PC9kaXY+fVxuICAgICAgICA8L2gxPlxuICAgICAgICA8ZGl2IGNzcz17ZXhwYW5kfSAvPlxuICAgICAgICB7dHlwZSA9PT0gJ21vYmlsZScgJiYgKFxuICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgIGNzcz17YWRTdGF0dXMgPyBoaWRkZW4gOiBbc2xvdFN0eWxlXX1cbiAgICAgICAgICAgIHJlZj17ZWxlbWVudCA9PiB7XG4gICAgICAgICAgICAgIHNsb3RSZWYuY3VycmVudC5mdW5jdGlvbkJhciA9IGVsZW1lbnRcbiAgICAgICAgICAgIH19XG4gICAgICAgICAgLz5cbiAgICAgICAgKX1cbiAgICAgICAge2FkTGluayAmJiA8ZGl2IGNsYXNzTmFtZT1cInBpbm5lZFwiPnthZExpbmt9PC9kaXY+fVxuICAgICAgPC9kaXY+XG4gICAgICA8ZGl2IHJlZj17YWRDb250YWluZXJSZWZ9IGNzcz17YWRDb250YWluZXJTdHlsZX0+XG4gICAgICAgIHt0eXBlID09PSAnbW9iaWxlJyAmJiAoXG4gICAgICAgICAgPGRpdiBjc3M9e1tjb250cm9sc1N0eWxlLCBkaXNwbGF5U3R5bGVzW2NvbnRyb2xzRGlzcGxheV1dfT5cbiAgICAgICAgICAgIDxDb250cm9sc0Jsb2NrIG9yZGVyPVwibW9iaWxlXCIgey4uLmNvbnRyb2xCdXR0b25zfSAvPlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICApfVxuICAgICAgPC9kaXY+XG4gICAgICA8ZGl2XG4gICAgICAgIGNzcz17W1xuICAgICAgICAgIHJvd1N0eWxlLFxuICAgICAgICAgIHttYXJnaW5Ub3A6ICdhdXRvJ30sXG4gICAgICAgICAgdHlwZSA9PT0gJ2Rlc2t0b3AnICYmIGRlc2t0b3BDb250cm9scyxcbiAgICAgICAgICBjb250cm9sc0Rpc3BsYXlTdHlsZXNbY29udHJvbHNEaXNwbGF5XSxcbiAgICAgICAgXX1cbiAgICAgID5cbiAgICAgICAge3NlZWtiYXIgfHwgPGRpdiAvPn1cbiAgICAgICAge3R5cGUgPT09ICdkZXNrdG9wJyAmJiAoXG4gICAgICAgICAgPENvbnRyb2xzQmxvY2sgb3JkZXI9XCJkZXNrdG9wXCIgey4uLmNvbnRyb2xCdXR0b25zfSAvPlxuICAgICAgICApfVxuICAgICAgICB7YWRTdGF0dXMgJiYgKFxuICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgIGNsYXNzTmFtZT1cInBpbm5lZFwiXG4gICAgICAgICAgICBjc3M9e3tmbGV4OiAxLCB0ZXh0U2hhZG93OiAnMnB4IDJweCAxcHggIzAwMCd9fVxuICAgICAgICAgID5cbiAgICAgICAgICAgIHthZFN0YXR1c31cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgKX1cbiAgICAgICAge3R5cGUgPT09ICdkZXNrdG9wJyAmJiAoXG4gICAgICAgICAgPD5cbiAgICAgICAgICAgIDxkaXYgY3NzPXtleHBhbmR9IC8+XG4gICAgICAgICAgICB7dm9sdW1lQ29udHJvbH1cbiAgICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgICAgY3NzPXthZFN0YXR1cyA/IGhpZGRlbiA6IFtzbG90U3R5bGVdfVxuICAgICAgICAgICAgICByZWY9e2VsZW1lbnQgPT4ge1xuICAgICAgICAgICAgICAgIHNsb3RSZWYuY3VycmVudC5mdW5jdGlvbkJhciA9IGVsZW1lbnRcbiAgICAgICAgICAgICAgfX1cbiAgICAgICAgICAgIC8+XG4gICAgICAgICAgPC8+XG4gICAgICAgICl9XG4gICAgICAgIHtmdWxsc2NyZWVuQnV0dG9ufVxuICAgICAgPC9kaXY+XG4gICAgICA8U2xvdFByb3ZpZGVyIHNsb3RSZWY9e3Nsb3RSZWZ9PntjaGlsZHJlbn08L1Nsb3RQcm92aWRlcj5cbiAgICA8L2Rpdj5cbiAgKVxufVxuXG5leHBvcnQgZGVmYXVsdCBEZWZhdWx0TGF5b3V0XG4iXX0= */"],
     ref: containerRef,
     ...rest,
-    children: [video, jsxRuntime$1.jsxs("div", {
+    children: [video, jsxs("div", {
       ref: backRef,
       css: [backStyle, display !== 'hidden' && (haveBottomItem ? dropTop : drop), process.env.NODE_ENV === "production" ? "" : ";label:DefaultLayout;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkRlZmF1bHRMYXlvdXQuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBc1NRIiwiZmlsZSI6IkRlZmF1bHRMYXlvdXQuanMiLCJzb3VyY2VzQ29udGVudCI6WyIvKiBAanN4SW1wb3J0U291cmNlIEBlbW90aW9uL3JlYWN0ICovXG4vKiBlc2xpbnQtZGlzYWJsZSByZWFjdC9wcm9wLXR5cGVzICovXG5pbXBvcnQge3VzZVJlZn0gZnJvbSAncmVhY3QnXG5pbXBvcnQge1Nsb3RQcm92aWRlcn0gZnJvbSAnLi91aUV4dGVuc2lvbnMnXG5cbmNvbnN0IGV4cGFuZCA9IHtcbiAgbWFyZ2luOiAwLFxuICBmbGV4OiAnMScsXG59XG5cbmNvbnN0IGhpZGRlbiA9IHtkaXNwbGF5OiAnbm9uZSd9XG5cbmNvbnN0IGNvbnRhaW5lclN0eWxlID0ge1xuICB3aWR0aDogJzEwMCUnLFxuICBoZWlnaHQ6ICcxMDAlJyxcbiAgYm94U2l6aW5nOiAnYm9yZGVyLWJveCcsXG4gIGRpc3BsYXk6ICdmbGV4JyxcbiAgZmxleERpcmVjdGlvbjogJ2NvbHVtbicsXG4gIG92ZXJmbG93OiAnaGlkZGVuJyxcbiAgY29sb3I6ICd3aGl0ZScsXG4gIC8vIHByZXZlbnQgYW5pbWF0aW9uIGdsaWNoKGFmdGVyaW1hZ2UpIG9mIGRlc2NlbmRhbnQgZWxlbWVudHNcbiAgdHJhbnNmb3JtOiAndHJhbnNsYXRlWCgwKScsXG4gIHVzZXJTZWxlY3Q6ICdub25lJyxcbiAgaDE6IHtcbiAgICBtYXJnaW46IDAsXG4gICAgZm9udFNpemU6ICcxZW0nLFxuICAgIGxpbmVIZWlnaHQ6ICcxLjVlbScsXG4gIH0sXG4gICdhLCBhOmxpbmssIGE6dmlzaXRlZCc6IHtcbiAgICBjb2xvcjogJyNmZmYnLFxuICAgIG9wYWNpdHk6IDAuOCxcbiAgICB0ZXh0RGVjb3JhdGlvbjogJ25vbmUnLFxuICB9LFxuICBidXR0b246IHtcbiAgICBmb250U2l6ZTogJ2luaGVyaXQnLFxuICAgICc+IConOiB7XG4gICAgICBwb2ludGVyRXZlbnRzOiAnbm9uZScsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3QgdmlkZW9Db250YWluZXJTdHlsZSA9IHtcbiAgJz4gZGl2OmZpcnN0LW9mLXR5cGUnOiB7XG4gICAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gICAgekluZGV4OiAnLTEnLFxuICAgIHdpZHRoOiAnMTAwJScsXG4gICAgaGVpZ2h0OiAnMTAwJScsXG4gIH0sXG59XG5cbmNvbnN0IGRyb3AgPSB7XG4gIGJhY2tncm91bmRJbWFnZTogYGxpbmVhci1ncmFkaWVudChcbiAgICAwZGVnLFxuICAgIHJnYmEoMCwwLDAsMC41KSAwLFxuICAgIHJnYmEoMCwwLDAsMCkgOHJlbSBjYWxjKDEwMCUgLSA4cmVtKSxcbiAgICByZ2JhKDAsMCwwLDAuNSkgMTAwJVxuICApYCxcbn1cblxuY29uc3QgZHJvcFRvcCA9IHtcbiAgYmFja2dyb3VuZEltYWdlOiBgbGluZWFyLWdyYWRpZW50KFxuICAgIDBkZWcsXG4gICAgcmdiYSgwLDAsMCwwKSAwLFxuICAgIHJnYmEoMCwwLDAsMCkgOHJlbSBjYWxjKDEwMCUgLSA4cmVtKSxcbiAgICByZ2JhKDAsMCwwLDAuNSkgMTAwJVxuICApYCxcbn1cblxuY29uc3QgcmVzcG9uc2l2ZVN0eWxlcyA9IHtcbiAgZGVza3RvcDoge1xuICAgIGZvbnRTaXplOiAnMjRweCcsXG4gIH0sIC8vIGFkZCBpZiBuZWNlc3Nhcnk6IGJpZy1kZXNrdG9wXG59XG5cbmNvbnN0IHJvd1N0eWxlID0ge1xuICBib3hTaXppbmc6ICdib3JkZXItYm94JyxcbiAgd2lkdGg6ICcxMDAlJyxcbiAgcGFkZGluZzogJ2NhbGMoMmVtIC0gMTZweCknLFxuICBkaXNwbGF5OiAnZmxleCcsXG4gIGFsaWduSXRlbXM6ICdjZW50ZXInLFxuICBqdXN0aWZ5Q29udGVudDogJ2ZsZXgtZW5kJyxcbiAgYnV0dG9uOiB7XG4gICAgZmxleDogJzAgMCAxLjVlbScsXG4gICAgd2lkdGg6ICcxLjVlbScsXG4gICAgaGVpZ2h0OiAnMS41ZW0nLFxuICB9LFxuICAnPiBidXR0b246bm90KDpkaXNhYmxlZCkgfiBidXR0b246bm90KDpkaXNhYmxlZCksIGRpdiB+IGJ1dHRvbjpsYXN0LW9mLXR5cGUnOlxuICAgIHtcbiAgICAgIG1hcmdpbkxlZnQ6ICcwLjVyZW0nLFxuICAgIH0sXG4gICc+IGJ1dHRvbjpub3QoOmxhc3Qtb2YtdHlwZSknOiB7XG4gICAgbWFyZ2luUmlnaHQ6ICcwLjVyZW0nLFxuICB9LFxufVxuXG5jb25zdCBkaXNwbGF5U3R5bGVzID0ge1xuICBoaWRkZW46IHtcbiAgICAnPiBkaXY6bm90KC5waW5uZWQpLCA+IGJ1dHRvbjpub3QoLnBpbm5lZCksID4gaDE6bm90KC5waW5uZWQpJzoge1xuICAgICAgekluZGV4OiAtMixcbiAgICAgIG9wYWNpdHk6IDAsXG4gICAgICB0cmFuc2l0aW9uOiAnb3BhY2l0eSAwLjhzIGVhc2Utb3V0LCB6LWluZGV4IDBzIDAuOHMnLFxuICAgIH0sXG4gIH0sXG4gIHNob3duOiB7XG4gICAgJz4gZGl2Om5vdCgucGlubmVkKSwgPiBidXR0b246bm90KC5waW5uZWQpLCA+IGgxOm5vdCgucGlubmVkKSc6IHtcbiAgICAgIHRyYW5zaXRpb246ICdvcGFjaXR5IDAuM3MgZWFzZS1vdXQnLFxuICAgIH0sXG4gIH0sXG59XG5cbmNvbnN0IGNvbnRyb2xzRGlzcGxheVN0eWxlcyA9IHtcbiAgaGlkZGVuOiB7XG4gICAgLi4uZGlzcGxheVN0eWxlcy5oaWRkZW4sXG4gICAgJ34gZGl2Om5vdCgucGlubmVkKSc6IGRpc3BsYXlTdHlsZXMuaGlkZGVuLFxuICB9LFxuICBzaG93bjoge1xuICAgIC4uLmRpc3BsYXlTdHlsZXMuc2hvd24sXG4gICAgJ34gZGl2JzogZGlzcGxheVN0eWxlcy5zaG93bixcbiAgfSxcbn1cblxuY29uc3QgY29udHJvbHNTdHlsZSA9IHtcbiAgbWFyZ2luVG9wOiAnYXV0bycsXG4gIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICB6SW5kZXg6ICcyJyxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgJz4gYnV0dG9uJzoge1xuICAgIG1hcmdpbjogJzFlbScsXG4gICAgd2lkdGg6ICcxLjc1ZW0nLFxuICAgIGhlaWdodDogJzEuNzVlbScsXG4gICAgJyY6ZGlzYWJsZWQnOiB7XG4gICAgICBvcGFjaXR5OiAwLjMsXG4gICAgfSxcbiAgICAnJi5wbGF5LWJ1dHRvbic6IHtcbiAgICAgIHdpZHRoOiAnM2VtJyxcbiAgICAgIGhlaWdodDogJzNlbScsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3Qgc2xvdFN0eWxlID0ge1xuICBkaXNwbGF5OiAnZmxleCcsXG4gIG1hcmdpbkxlZnQ6ICcwLjc1ZW0nLFxuICBidXR0b246IHtcbiAgICBkaXNwbGF5OiAnYmxvY2snLFxuICAgIG1hcmdpbkxlZnQ6ICcwLjc1ZW0nLFxuICB9LFxufVxuXG5jb25zdCB0ZXh0RWxsaXBzaXMgPSB7XG4gIG92ZXJmbG93OiAnaGlkZGVuJyxcbiAgd2hpdGVTcGFjZTogJ25vd3JhcCcsXG4gIHRleHRPdmVyZmxvdzogJ2VsbGlwc2lzJyxcbn1cblxuY29uc3QgaW5mb1N0eWxlID0ge1xuICBhbGlnbkl0ZW1zOiAnZmxleC1zdGFydCcsXG4gIG92ZXJmbG93OiAndmlzaWJsZScsXG4gIGgxOiB7XG4gICAgaGVpZ2h0OiAnM2VtJyxcbiAgICBmb250V2VpZ2h0OiAnNTAwJyxcbiAgICAuLi50ZXh0RWxsaXBzaXMsXG4gICAgJz4gZGl2JzogdGV4dEVsbGlwc2lzLFxuICB9LFxuICAnYnV0dG9uICsgaDEnOiB7XG4gICAgbWFyZ2luTGVmdDogJzFlbScsXG4gIH0sXG59XG5cbmNvbnN0IGJhY2tTdHlsZSA9IHtcbiAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gIHpJbmRleDogMCxcbiAgd2lkdGg6ICcxMDAlJyxcbiAgaGVpZ2h0OiAnMTAwJScsXG4gIGRpc3BsYXk6ICdmbGV4JyxcbiAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gIGp1c3RpZnlDb250ZW50OiAnY2VudGVyJyxcbiAgJ34gKic6IHtcbiAgICB6SW5kZXg6IDAsXG4gIH0sXG59XG5cbmNvbnN0IHNraXBTdHlsZSA9IHtcbiAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gIHJpZ2h0OiAwLFxuICBib3R0b206ICc5cmVtJyxcbiAgdGV4dEFsaWduOiAncmlnaHQnLFxuICBidXR0b246IHtcbiAgICB3aWR0aDogJ2F1dG8nLFxuICAgIGhlaWdodDogJ2F1dG8nLFxuICB9LFxufVxuXG5jb25zdCBkZWtzdG9wU3R5bGUgPSB7XG4gICc+IGRpdic6IHtcbiAgICAnPiBidXR0b246bm90KDpkaXNhYmxlZCkgfiBidXR0b246bm90KDpkaXNhYmxlZCksID4gYnV0dG9uOmxhc3Qtb2YtdHlwZSc6IHtcbiAgICAgIG1hcmdpbkxlZnQ6ICcwLjc1ZW0nLFxuICAgIH0sXG4gICAgJz4gYnV0dG9uOmZpcnN0LW9mLXR5cGUnOiB7XG4gICAgICBtYXJnaW5MZWZ0OiAnMCcsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3QgZGVza3RvcENvbnRyb2xzID0ge1xuICBmbGV4V3JhcDogJ3dyYXAnLFxuICAnPiBkaXY6Zmlyc3Qtb2YtdHlwZSc6IHtcbiAgICBmbGV4OiAnMTAwJScsXG4gICAgbWFyZ2luQm90dG9tOiAnMC44OGVtJyxcbiAgfSxcbiAgJ2J1dHRvbltkaXNhYmxlZF0nOiB7XG4gICAgZGlzcGxheTogJ25vbmUnLFxuICB9LFxufVxuXG5jb25zdCBhZENvbnRhaW5lclN0eWxlID0ge1xuICBmbGV4R3JvdzogMSxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAganVzdGlmeUNvbnRlbnQ6ICdjZW50ZXInLFxuICBwb2ludGVyRXZlbnRzOiAnbm9uZScsXG4gICc+IGlmcmFtZSc6IHtwb2ludGVyRXZlbnRzOiAnYXV0byd9LFxuICBidXR0b246IHtwb2ludGVyRXZlbnRzOiAnYXV0byd9LFxufVxuXG5jb25zdCBDb250cm9sc0Jsb2NrID0gKHtcbiAgb3JkZXIgPSAnbW9iaWxlJyxcbiAgcGxheUJ1dHRvbixcbiAgcmV3aW5kQnV0dG9uID0gJycsXG4gIGZvcndhcmRCdXR0b24gPSAnJyxcbiAgcHJldmlvdXNFcGlzb2RlQnV0dG9uID0gJycsXG4gIG5leHRFcGlzb2RlQnV0dG9uID0gJycsXG59KSA9PlxuICBvcmRlciA9PT0gJ2Rlc2t0b3AnID8gKFxuICAgIDw+XG4gICAgICB7cHJldmlvdXNFcGlzb2RlQnV0dG9ufVxuICAgICAge3BsYXlCdXR0b259XG4gICAgICB7bmV4dEVwaXNvZGVCdXR0b259XG4gICAgICB7cmV3aW5kQnV0dG9ufVxuICAgICAge2ZvcndhcmRCdXR0b259XG4gICAgPC8+XG4gICkgOiAoXG4gICAgPD5cbiAgICAgIHtyZXdpbmRCdXR0b259XG4gICAgICB7cHJldmlvdXNFcGlzb2RlQnV0dG9ufVxuICAgICAge3BsYXlCdXR0b259XG4gICAgICB7bmV4dEVwaXNvZGVCdXR0b259XG4gICAgICB7Zm9yd2FyZEJ1dHRvbn1cbiAgICA8Lz5cbiAgKVxuXG5jb25zdCBEZWZhdWx0TGF5b3V0ID0gKHtcbiAgdHlwZSA9ICdtb2JpbGUnLFxuICBzdHlsZSxcbiAgZGlzcGxheSxcbiAgY29udHJvbHNEaXNwbGF5ID0gZGlzcGxheSxcbiAgc2l6ZSxcbiAgdGl0bGUgPSAnJyxcbiAgY2hhbm5lbFRpdGxlID0gJycsXG4gIHZpZGVvLFxuICBoYXZlQm90dG9tSXRlbSxcbiAgc2Vla2JhciA9ICcnLFxuICBjb250cm9sQnV0dG9ucyxcbiAgdm9sdW1lQ29udHJvbCxcbiAgZnVsbHNjcmVlbkJ1dHRvbixcbiAgYmFja0J1dHRvbiA9ICcnLFxuICBhZFN0YXR1cyA9ICcnLFxuICBhZExpbmsgPSAnJyxcbiAgYWRTa2lwQnV0dG9uLFxuICBiYWNrSXRlbXMsXG4gIGNoaWxkcmVuLFxuICBjb250YWluZXJSZWYsXG4gIGJhY2tSZWYsXG4gIGFkQ29udGFpbmVyUmVmLFxuICAuLi5yZXN0XG59KSA9PiB7XG4gIGNvbnN0IHNsb3RSZWYgPSB1c2VSZWYoe30pXG5cbiAgcmV0dXJuIChcbiAgICA8ZGl2XG4gICAgICBjc3M9e1tcbiAgICAgICAgY29udGFpbmVyU3R5bGUsXG4gICAgICAgIHZpZGVvQ29udGFpbmVyU3R5bGUsXG4gICAgICAgIHJlc3BvbnNpdmVTdHlsZXNbc2l6ZV0sXG4gICAgICAgIHR5cGUgPT09ICdkZXNrdG9wJyAmJiBkZWtzdG9wU3R5bGUsXG4gICAgICAgIHN0eWxlLFxuICAgICAgXX1cbiAgICAgIHJlZj17Y29udGFpbmVyUmVmfVxuICAgICAgey4uLnJlc3R9XG4gICAgPlxuICAgICAge3ZpZGVvfVxuICAgICAgPGRpdlxuICAgICAgICByZWY9e2JhY2tSZWZ9XG4gICAgICAgIGNzcz17W1xuICAgICAgICAgIGJhY2tTdHlsZSxcbiAgICAgICAgICBkaXNwbGF5ICE9PSAnaGlkZGVuJyAmJiAoaGF2ZUJvdHRvbUl0ZW0gPyBkcm9wVG9wIDogZHJvcCksXG4gICAgICAgIF19XG4gICAgICA+XG4gICAgICAgIHt0eXBlICE9PSAnbW9iaWxlJyAmJiBiYWNrSXRlbXN9XG4gICAgICAgIHthZFNraXBCdXR0b24gJiYgPGRpdiBjc3M9e3NraXBTdHlsZX0+e2FkU2tpcEJ1dHRvbn08L2Rpdj59XG4gICAgICA8L2Rpdj5cbiAgICAgIDxkaXYgY3NzPXtbcm93U3R5bGUsIGluZm9TdHlsZSwgZGlzcGxheVN0eWxlc1tkaXNwbGF5XV19PlxuICAgICAgICB7YmFja0J1dHRvbn1cbiAgICAgICAgPGgxPlxuICAgICAgICAgIHt0aXRsZX1cbiAgICAgICAgICB7Y2hhbm5lbFRpdGxlICYmIDxkaXYgY3NzPXt7Zm9udFNpemU6ICcxNnB4J319PntjaGFubmVsVGl0bGV9PC9kaXY+fVxuICAgICAgICA8L2gxPlxuICAgICAgICA8ZGl2IGNzcz17ZXhwYW5kfSAvPlxuICAgICAgICB7dHlwZSA9PT0gJ21vYmlsZScgJiYgKFxuICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgIGNzcz17YWRTdGF0dXMgPyBoaWRkZW4gOiBbc2xvdFN0eWxlXX1cbiAgICAgICAgICAgIHJlZj17ZWxlbWVudCA9PiB7XG4gICAgICAgICAgICAgIHNsb3RSZWYuY3VycmVudC5mdW5jdGlvbkJhciA9IGVsZW1lbnRcbiAgICAgICAgICAgIH19XG4gICAgICAgICAgLz5cbiAgICAgICAgKX1cbiAgICAgICAge2FkTGluayAmJiA8ZGl2IGNsYXNzTmFtZT1cInBpbm5lZFwiPnthZExpbmt9PC9kaXY+fVxuICAgICAgPC9kaXY+XG4gICAgICA8ZGl2IHJlZj17YWRDb250YWluZXJSZWZ9IGNzcz17YWRDb250YWluZXJTdHlsZX0+XG4gICAgICAgIHt0eXBlID09PSAnbW9iaWxlJyAmJiAoXG4gICAgICAgICAgPGRpdiBjc3M9e1tjb250cm9sc1N0eWxlLCBkaXNwbGF5U3R5bGVzW2NvbnRyb2xzRGlzcGxheV1dfT5cbiAgICAgICAgICAgIDxDb250cm9sc0Jsb2NrIG9yZGVyPVwibW9iaWxlXCIgey4uLmNvbnRyb2xCdXR0b25zfSAvPlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICApfVxuICAgICAgPC9kaXY+XG4gICAgICA8ZGl2XG4gICAgICAgIGNzcz17W1xuICAgICAgICAgIHJvd1N0eWxlLFxuICAgICAgICAgIHttYXJnaW5Ub3A6ICdhdXRvJ30sXG4gICAgICAgICAgdHlwZSA9PT0gJ2Rlc2t0b3AnICYmIGRlc2t0b3BDb250cm9scyxcbiAgICAgICAgICBjb250cm9sc0Rpc3BsYXlTdHlsZXNbY29udHJvbHNEaXNwbGF5XSxcbiAgICAgICAgXX1cbiAgICAgID5cbiAgICAgICAge3NlZWtiYXIgfHwgPGRpdiAvPn1cbiAgICAgICAge3R5cGUgPT09ICdkZXNrdG9wJyAmJiAoXG4gICAgICAgICAgPENvbnRyb2xzQmxvY2sgb3JkZXI9XCJkZXNrdG9wXCIgey4uLmNvbnRyb2xCdXR0b25zfSAvPlxuICAgICAgICApfVxuICAgICAgICB7YWRTdGF0dXMgJiYgKFxuICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgIGNsYXNzTmFtZT1cInBpbm5lZFwiXG4gICAgICAgICAgICBjc3M9e3tmbGV4OiAxLCB0ZXh0U2hhZG93OiAnMnB4IDJweCAxcHggIzAwMCd9fVxuICAgICAgICAgID5cbiAgICAgICAgICAgIHthZFN0YXR1c31cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgKX1cbiAgICAgICAge3R5cGUgPT09ICdkZXNrdG9wJyAmJiAoXG4gICAgICAgICAgPD5cbiAgICAgICAgICAgIDxkaXYgY3NzPXtleHBhbmR9IC8+XG4gICAgICAgICAgICB7dm9sdW1lQ29udHJvbH1cbiAgICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgICAgY3NzPXthZFN0YXR1cyA/IGhpZGRlbiA6IFtzbG90U3R5bGVdfVxuICAgICAgICAgICAgICByZWY9e2VsZW1lbnQgPT4ge1xuICAgICAgICAgICAgICAgIHNsb3RSZWYuY3VycmVudC5mdW5jdGlvbkJhciA9IGVsZW1lbnRcbiAgICAgICAgICAgICAgfX1cbiAgICAgICAgICAgIC8+XG4gICAgICAgICAgPC8+XG4gICAgICAgICl9XG4gICAgICAgIHtmdWxsc2NyZWVuQnV0dG9ufVxuICAgICAgPC9kaXY+XG4gICAgICA8U2xvdFByb3ZpZGVyIHNsb3RSZWY9e3Nsb3RSZWZ9PntjaGlsZHJlbn08L1Nsb3RQcm92aWRlcj5cbiAgICA8L2Rpdj5cbiAgKVxufVxuXG5leHBvcnQgZGVmYXVsdCBEZWZhdWx0TGF5b3V0XG4iXX0= */"],
-      children: [type !== 'mobile' && backItems, adSkipButton && jsxRuntime$1.jsx("div", {
+      children: [type !== 'mobile' && backItems, adSkipButton && jsx$1("div", {
         css: skipStyle,
         children: adSkipButton
       })]
-    }), jsxRuntime$1.jsxs("div", {
+    }), jsxs("div", {
       css: [rowStyle, infoStyle, displayStyles[display], process.env.NODE_ENV === "production" ? "" : ";label:DefaultLayout;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkRlZmF1bHRMYXlvdXQuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBOFNXIiwiZmlsZSI6IkRlZmF1bHRMYXlvdXQuanMiLCJzb3VyY2VzQ29udGVudCI6WyIvKiBAanN4SW1wb3J0U291cmNlIEBlbW90aW9uL3JlYWN0ICovXG4vKiBlc2xpbnQtZGlzYWJsZSByZWFjdC9wcm9wLXR5cGVzICovXG5pbXBvcnQge3VzZVJlZn0gZnJvbSAncmVhY3QnXG5pbXBvcnQge1Nsb3RQcm92aWRlcn0gZnJvbSAnLi91aUV4dGVuc2lvbnMnXG5cbmNvbnN0IGV4cGFuZCA9IHtcbiAgbWFyZ2luOiAwLFxuICBmbGV4OiAnMScsXG59XG5cbmNvbnN0IGhpZGRlbiA9IHtkaXNwbGF5OiAnbm9uZSd9XG5cbmNvbnN0IGNvbnRhaW5lclN0eWxlID0ge1xuICB3aWR0aDogJzEwMCUnLFxuICBoZWlnaHQ6ICcxMDAlJyxcbiAgYm94U2l6aW5nOiAnYm9yZGVyLWJveCcsXG4gIGRpc3BsYXk6ICdmbGV4JyxcbiAgZmxleERpcmVjdGlvbjogJ2NvbHVtbicsXG4gIG92ZXJmbG93OiAnaGlkZGVuJyxcbiAgY29sb3I6ICd3aGl0ZScsXG4gIC8vIHByZXZlbnQgYW5pbWF0aW9uIGdsaWNoKGFmdGVyaW1hZ2UpIG9mIGRlc2NlbmRhbnQgZWxlbWVudHNcbiAgdHJhbnNmb3JtOiAndHJhbnNsYXRlWCgwKScsXG4gIHVzZXJTZWxlY3Q6ICdub25lJyxcbiAgaDE6IHtcbiAgICBtYXJnaW46IDAsXG4gICAgZm9udFNpemU6ICcxZW0nLFxuICAgIGxpbmVIZWlnaHQ6ICcxLjVlbScsXG4gIH0sXG4gICdhLCBhOmxpbmssIGE6dmlzaXRlZCc6IHtcbiAgICBjb2xvcjogJyNmZmYnLFxuICAgIG9wYWNpdHk6IDAuOCxcbiAgICB0ZXh0RGVjb3JhdGlvbjogJ25vbmUnLFxuICB9LFxuICBidXR0b246IHtcbiAgICBmb250U2l6ZTogJ2luaGVyaXQnLFxuICAgICc+IConOiB7XG4gICAgICBwb2ludGVyRXZlbnRzOiAnbm9uZScsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3QgdmlkZW9Db250YWluZXJTdHlsZSA9IHtcbiAgJz4gZGl2OmZpcnN0LW9mLXR5cGUnOiB7XG4gICAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gICAgekluZGV4OiAnLTEnLFxuICAgIHdpZHRoOiAnMTAwJScsXG4gICAgaGVpZ2h0OiAnMTAwJScsXG4gIH0sXG59XG5cbmNvbnN0IGRyb3AgPSB7XG4gIGJhY2tncm91bmRJbWFnZTogYGxpbmVhci1ncmFkaWVudChcbiAgICAwZGVnLFxuICAgIHJnYmEoMCwwLDAsMC41KSAwLFxuICAgIHJnYmEoMCwwLDAsMCkgOHJlbSBjYWxjKDEwMCUgLSA4cmVtKSxcbiAgICByZ2JhKDAsMCwwLDAuNSkgMTAwJVxuICApYCxcbn1cblxuY29uc3QgZHJvcFRvcCA9IHtcbiAgYmFja2dyb3VuZEltYWdlOiBgbGluZWFyLWdyYWRpZW50KFxuICAgIDBkZWcsXG4gICAgcmdiYSgwLDAsMCwwKSAwLFxuICAgIHJnYmEoMCwwLDAsMCkgOHJlbSBjYWxjKDEwMCUgLSA4cmVtKSxcbiAgICByZ2JhKDAsMCwwLDAuNSkgMTAwJVxuICApYCxcbn1cblxuY29uc3QgcmVzcG9uc2l2ZVN0eWxlcyA9IHtcbiAgZGVza3RvcDoge1xuICAgIGZvbnRTaXplOiAnMjRweCcsXG4gIH0sIC8vIGFkZCBpZiBuZWNlc3Nhcnk6IGJpZy1kZXNrdG9wXG59XG5cbmNvbnN0IHJvd1N0eWxlID0ge1xuICBib3hTaXppbmc6ICdib3JkZXItYm94JyxcbiAgd2lkdGg6ICcxMDAlJyxcbiAgcGFkZGluZzogJ2NhbGMoMmVtIC0gMTZweCknLFxuICBkaXNwbGF5OiAnZmxleCcsXG4gIGFsaWduSXRlbXM6ICdjZW50ZXInLFxuICBqdXN0aWZ5Q29udGVudDogJ2ZsZXgtZW5kJyxcbiAgYnV0dG9uOiB7XG4gICAgZmxleDogJzAgMCAxLjVlbScsXG4gICAgd2lkdGg6ICcxLjVlbScsXG4gICAgaGVpZ2h0OiAnMS41ZW0nLFxuICB9LFxuICAnPiBidXR0b246bm90KDpkaXNhYmxlZCkgfiBidXR0b246bm90KDpkaXNhYmxlZCksIGRpdiB+IGJ1dHRvbjpsYXN0LW9mLXR5cGUnOlxuICAgIHtcbiAgICAgIG1hcmdpbkxlZnQ6ICcwLjVyZW0nLFxuICAgIH0sXG4gICc+IGJ1dHRvbjpub3QoOmxhc3Qtb2YtdHlwZSknOiB7XG4gICAgbWFyZ2luUmlnaHQ6ICcwLjVyZW0nLFxuICB9LFxufVxuXG5jb25zdCBkaXNwbGF5U3R5bGVzID0ge1xuICBoaWRkZW46IHtcbiAgICAnPiBkaXY6bm90KC5waW5uZWQpLCA+IGJ1dHRvbjpub3QoLnBpbm5lZCksID4gaDE6bm90KC5waW5uZWQpJzoge1xuICAgICAgekluZGV4OiAtMixcbiAgICAgIG9wYWNpdHk6IDAsXG4gICAgICB0cmFuc2l0aW9uOiAnb3BhY2l0eSAwLjhzIGVhc2Utb3V0LCB6LWluZGV4IDBzIDAuOHMnLFxuICAgIH0sXG4gIH0sXG4gIHNob3duOiB7XG4gICAgJz4gZGl2Om5vdCgucGlubmVkKSwgPiBidXR0b246bm90KC5waW5uZWQpLCA+IGgxOm5vdCgucGlubmVkKSc6IHtcbiAgICAgIHRyYW5zaXRpb246ICdvcGFjaXR5IDAuM3MgZWFzZS1vdXQnLFxuICAgIH0sXG4gIH0sXG59XG5cbmNvbnN0IGNvbnRyb2xzRGlzcGxheVN0eWxlcyA9IHtcbiAgaGlkZGVuOiB7XG4gICAgLi4uZGlzcGxheVN0eWxlcy5oaWRkZW4sXG4gICAgJ34gZGl2Om5vdCgucGlubmVkKSc6IGRpc3BsYXlTdHlsZXMuaGlkZGVuLFxuICB9LFxuICBzaG93bjoge1xuICAgIC4uLmRpc3BsYXlTdHlsZXMuc2hvd24sXG4gICAgJ34gZGl2JzogZGlzcGxheVN0eWxlcy5zaG93bixcbiAgfSxcbn1cblxuY29uc3QgY29udHJvbHNTdHlsZSA9IHtcbiAgbWFyZ2luVG9wOiAnYXV0bycsXG4gIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICB6SW5kZXg6ICcyJyxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgJz4gYnV0dG9uJzoge1xuICAgIG1hcmdpbjogJzFlbScsXG4gICAgd2lkdGg6ICcxLjc1ZW0nLFxuICAgIGhlaWdodDogJzEuNzVlbScsXG4gICAgJyY6ZGlzYWJsZWQnOiB7XG4gICAgICBvcGFjaXR5OiAwLjMsXG4gICAgfSxcbiAgICAnJi5wbGF5LWJ1dHRvbic6IHtcbiAgICAgIHdpZHRoOiAnM2VtJyxcbiAgICAgIGhlaWdodDogJzNlbScsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3Qgc2xvdFN0eWxlID0ge1xuICBkaXNwbGF5OiAnZmxleCcsXG4gIG1hcmdpbkxlZnQ6ICcwLjc1ZW0nLFxuICBidXR0b246IHtcbiAgICBkaXNwbGF5OiAnYmxvY2snLFxuICAgIG1hcmdpbkxlZnQ6ICcwLjc1ZW0nLFxuICB9LFxufVxuXG5jb25zdCB0ZXh0RWxsaXBzaXMgPSB7XG4gIG92ZXJmbG93OiAnaGlkZGVuJyxcbiAgd2hpdGVTcGFjZTogJ25vd3JhcCcsXG4gIHRleHRPdmVyZmxvdzogJ2VsbGlwc2lzJyxcbn1cblxuY29uc3QgaW5mb1N0eWxlID0ge1xuICBhbGlnbkl0ZW1zOiAnZmxleC1zdGFydCcsXG4gIG92ZXJmbG93OiAndmlzaWJsZScsXG4gIGgxOiB7XG4gICAgaGVpZ2h0OiAnM2VtJyxcbiAgICBmb250V2VpZ2h0OiAnNTAwJyxcbiAgICAuLi50ZXh0RWxsaXBzaXMsXG4gICAgJz4gZGl2JzogdGV4dEVsbGlwc2lzLFxuICB9LFxuICAnYnV0dG9uICsgaDEnOiB7XG4gICAgbWFyZ2luTGVmdDogJzFlbScsXG4gIH0sXG59XG5cbmNvbnN0IGJhY2tTdHlsZSA9IHtcbiAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gIHpJbmRleDogMCxcbiAgd2lkdGg6ICcxMDAlJyxcbiAgaGVpZ2h0OiAnMTAwJScsXG4gIGRpc3BsYXk6ICdmbGV4JyxcbiAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gIGp1c3RpZnlDb250ZW50OiAnY2VudGVyJyxcbiAgJ34gKic6IHtcbiAgICB6SW5kZXg6IDAsXG4gIH0sXG59XG5cbmNvbnN0IHNraXBTdHlsZSA9IHtcbiAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gIHJpZ2h0OiAwLFxuICBib3R0b206ICc5cmVtJyxcbiAgdGV4dEFsaWduOiAncmlnaHQnLFxuICBidXR0b246IHtcbiAgICB3aWR0aDogJ2F1dG8nLFxuICAgIGhlaWdodDogJ2F1dG8nLFxuICB9LFxufVxuXG5jb25zdCBkZWtzdG9wU3R5bGUgPSB7XG4gICc+IGRpdic6IHtcbiAgICAnPiBidXR0b246bm90KDpkaXNhYmxlZCkgfiBidXR0b246bm90KDpkaXNhYmxlZCksID4gYnV0dG9uOmxhc3Qtb2YtdHlwZSc6IHtcbiAgICAgIG1hcmdpbkxlZnQ6ICcwLjc1ZW0nLFxuICAgIH0sXG4gICAgJz4gYnV0dG9uOmZpcnN0LW9mLXR5cGUnOiB7XG4gICAgICBtYXJnaW5MZWZ0OiAnMCcsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3QgZGVza3RvcENvbnRyb2xzID0ge1xuICBmbGV4V3JhcDogJ3dyYXAnLFxuICAnPiBkaXY6Zmlyc3Qtb2YtdHlwZSc6IHtcbiAgICBmbGV4OiAnMTAwJScsXG4gICAgbWFyZ2luQm90dG9tOiAnMC44OGVtJyxcbiAgfSxcbiAgJ2J1dHRvbltkaXNhYmxlZF0nOiB7XG4gICAgZGlzcGxheTogJ25vbmUnLFxuICB9LFxufVxuXG5jb25zdCBhZENvbnRhaW5lclN0eWxlID0ge1xuICBmbGV4R3JvdzogMSxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAganVzdGlmeUNvbnRlbnQ6ICdjZW50ZXInLFxuICBwb2ludGVyRXZlbnRzOiAnbm9uZScsXG4gICc+IGlmcmFtZSc6IHtwb2ludGVyRXZlbnRzOiAnYXV0byd9LFxuICBidXR0b246IHtwb2ludGVyRXZlbnRzOiAnYXV0byd9LFxufVxuXG5jb25zdCBDb250cm9sc0Jsb2NrID0gKHtcbiAgb3JkZXIgPSAnbW9iaWxlJyxcbiAgcGxheUJ1dHRvbixcbiAgcmV3aW5kQnV0dG9uID0gJycsXG4gIGZvcndhcmRCdXR0b24gPSAnJyxcbiAgcHJldmlvdXNFcGlzb2RlQnV0dG9uID0gJycsXG4gIG5leHRFcGlzb2RlQnV0dG9uID0gJycsXG59KSA9PlxuICBvcmRlciA9PT0gJ2Rlc2t0b3AnID8gKFxuICAgIDw+XG4gICAgICB7cHJldmlvdXNFcGlzb2RlQnV0dG9ufVxuICAgICAge3BsYXlCdXR0b259XG4gICAgICB7bmV4dEVwaXNvZGVCdXR0b259XG4gICAgICB7cmV3aW5kQnV0dG9ufVxuICAgICAge2ZvcndhcmRCdXR0b259XG4gICAgPC8+XG4gICkgOiAoXG4gICAgPD5cbiAgICAgIHtyZXdpbmRCdXR0b259XG4gICAgICB7cHJldmlvdXNFcGlzb2RlQnV0dG9ufVxuICAgICAge3BsYXlCdXR0b259XG4gICAgICB7bmV4dEVwaXNvZGVCdXR0b259XG4gICAgICB7Zm9yd2FyZEJ1dHRvbn1cbiAgICA8Lz5cbiAgKVxuXG5jb25zdCBEZWZhdWx0TGF5b3V0ID0gKHtcbiAgdHlwZSA9ICdtb2JpbGUnLFxuICBzdHlsZSxcbiAgZGlzcGxheSxcbiAgY29udHJvbHNEaXNwbGF5ID0gZGlzcGxheSxcbiAgc2l6ZSxcbiAgdGl0bGUgPSAnJyxcbiAgY2hhbm5lbFRpdGxlID0gJycsXG4gIHZpZGVvLFxuICBoYXZlQm90dG9tSXRlbSxcbiAgc2Vla2JhciA9ICcnLFxuICBjb250cm9sQnV0dG9ucyxcbiAgdm9sdW1lQ29udHJvbCxcbiAgZnVsbHNjcmVlbkJ1dHRvbixcbiAgYmFja0J1dHRvbiA9ICcnLFxuICBhZFN0YXR1cyA9ICcnLFxuICBhZExpbmsgPSAnJyxcbiAgYWRTa2lwQnV0dG9uLFxuICBiYWNrSXRlbXMsXG4gIGNoaWxkcmVuLFxuICBjb250YWluZXJSZWYsXG4gIGJhY2tSZWYsXG4gIGFkQ29udGFpbmVyUmVmLFxuICAuLi5yZXN0XG59KSA9PiB7XG4gIGNvbnN0IHNsb3RSZWYgPSB1c2VSZWYoe30pXG5cbiAgcmV0dXJuIChcbiAgICA8ZGl2XG4gICAgICBjc3M9e1tcbiAgICAgICAgY29udGFpbmVyU3R5bGUsXG4gICAgICAgIHZpZGVvQ29udGFpbmVyU3R5bGUsXG4gICAgICAgIHJlc3BvbnNpdmVTdHlsZXNbc2l6ZV0sXG4gICAgICAgIHR5cGUgPT09ICdkZXNrdG9wJyAmJiBkZWtzdG9wU3R5bGUsXG4gICAgICAgIHN0eWxlLFxuICAgICAgXX1cbiAgICAgIHJlZj17Y29udGFpbmVyUmVmfVxuICAgICAgey4uLnJlc3R9XG4gICAgPlxuICAgICAge3ZpZGVvfVxuICAgICAgPGRpdlxuICAgICAgICByZWY9e2JhY2tSZWZ9XG4gICAgICAgIGNzcz17W1xuICAgICAgICAgIGJhY2tTdHlsZSxcbiAgICAgICAgICBkaXNwbGF5ICE9PSAnaGlkZGVuJyAmJiAoaGF2ZUJvdHRvbUl0ZW0gPyBkcm9wVG9wIDogZHJvcCksXG4gICAgICAgIF19XG4gICAgICA+XG4gICAgICAgIHt0eXBlICE9PSAnbW9iaWxlJyAmJiBiYWNrSXRlbXN9XG4gICAgICAgIHthZFNraXBCdXR0b24gJiYgPGRpdiBjc3M9e3NraXBTdHlsZX0+e2FkU2tpcEJ1dHRvbn08L2Rpdj59XG4gICAgICA8L2Rpdj5cbiAgICAgIDxkaXYgY3NzPXtbcm93U3R5bGUsIGluZm9TdHlsZSwgZGlzcGxheVN0eWxlc1tkaXNwbGF5XV19PlxuICAgICAgICB7YmFja0J1dHRvbn1cbiAgICAgICAgPGgxPlxuICAgICAgICAgIHt0aXRsZX1cbiAgICAgICAgICB7Y2hhbm5lbFRpdGxlICYmIDxkaXYgY3NzPXt7Zm9udFNpemU6ICcxNnB4J319PntjaGFubmVsVGl0bGV9PC9kaXY+fVxuICAgICAgICA8L2gxPlxuICAgICAgICA8ZGl2IGNzcz17ZXhwYW5kfSAvPlxuICAgICAgICB7dHlwZSA9PT0gJ21vYmlsZScgJiYgKFxuICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgIGNzcz17YWRTdGF0dXMgPyBoaWRkZW4gOiBbc2xvdFN0eWxlXX1cbiAgICAgICAgICAgIHJlZj17ZWxlbWVudCA9PiB7XG4gICAgICAgICAgICAgIHNsb3RSZWYuY3VycmVudC5mdW5jdGlvbkJhciA9IGVsZW1lbnRcbiAgICAgICAgICAgIH19XG4gICAgICAgICAgLz5cbiAgICAgICAgKX1cbiAgICAgICAge2FkTGluayAmJiA8ZGl2IGNsYXNzTmFtZT1cInBpbm5lZFwiPnthZExpbmt9PC9kaXY+fVxuICAgICAgPC9kaXY+XG4gICAgICA8ZGl2IHJlZj17YWRDb250YWluZXJSZWZ9IGNzcz17YWRDb250YWluZXJTdHlsZX0+XG4gICAgICAgIHt0eXBlID09PSAnbW9iaWxlJyAmJiAoXG4gICAgICAgICAgPGRpdiBjc3M9e1tjb250cm9sc1N0eWxlLCBkaXNwbGF5U3R5bGVzW2NvbnRyb2xzRGlzcGxheV1dfT5cbiAgICAgICAgICAgIDxDb250cm9sc0Jsb2NrIG9yZGVyPVwibW9iaWxlXCIgey4uLmNvbnRyb2xCdXR0b25zfSAvPlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICApfVxuICAgICAgPC9kaXY+XG4gICAgICA8ZGl2XG4gICAgICAgIGNzcz17W1xuICAgICAgICAgIHJvd1N0eWxlLFxuICAgICAgICAgIHttYXJnaW5Ub3A6ICdhdXRvJ30sXG4gICAgICAgICAgdHlwZSA9PT0gJ2Rlc2t0b3AnICYmIGRlc2t0b3BDb250cm9scyxcbiAgICAgICAgICBjb250cm9sc0Rpc3BsYXlTdHlsZXNbY29udHJvbHNEaXNwbGF5XSxcbiAgICAgICAgXX1cbiAgICAgID5cbiAgICAgICAge3NlZWtiYXIgfHwgPGRpdiAvPn1cbiAgICAgICAge3R5cGUgPT09ICdkZXNrdG9wJyAmJiAoXG4gICAgICAgICAgPENvbnRyb2xzQmxvY2sgb3JkZXI9XCJkZXNrdG9wXCIgey4uLmNvbnRyb2xCdXR0b25zfSAvPlxuICAgICAgICApfVxuICAgICAgICB7YWRTdGF0dXMgJiYgKFxuICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgIGNsYXNzTmFtZT1cInBpbm5lZFwiXG4gICAgICAgICAgICBjc3M9e3tmbGV4OiAxLCB0ZXh0U2hhZG93OiAnMnB4IDJweCAxcHggIzAwMCd9fVxuICAgICAgICAgID5cbiAgICAgICAgICAgIHthZFN0YXR1c31cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgKX1cbiAgICAgICAge3R5cGUgPT09ICdkZXNrdG9wJyAmJiAoXG4gICAgICAgICAgPD5cbiAgICAgICAgICAgIDxkaXYgY3NzPXtleHBhbmR9IC8+XG4gICAgICAgICAgICB7dm9sdW1lQ29udHJvbH1cbiAgICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgICAgY3NzPXthZFN0YXR1cyA/IGhpZGRlbiA6IFtzbG90U3R5bGVdfVxuICAgICAgICAgICAgICByZWY9e2VsZW1lbnQgPT4ge1xuICAgICAgICAgICAgICAgIHNsb3RSZWYuY3VycmVudC5mdW5jdGlvbkJhciA9IGVsZW1lbnRcbiAgICAgICAgICAgICAgfX1cbiAgICAgICAgICAgIC8+XG4gICAgICAgICAgPC8+XG4gICAgICAgICl9XG4gICAgICAgIHtmdWxsc2NyZWVuQnV0dG9ufVxuICAgICAgPC9kaXY+XG4gICAgICA8U2xvdFByb3ZpZGVyIHNsb3RSZWY9e3Nsb3RSZWZ9PntjaGlsZHJlbn08L1Nsb3RQcm92aWRlcj5cbiAgICA8L2Rpdj5cbiAgKVxufVxuXG5leHBvcnQgZGVmYXVsdCBEZWZhdWx0TGF5b3V0XG4iXX0= */"],
-      children: [backButton, jsxRuntime$1.jsxs("h1", {
-        children: [title, channelTitle && jsxRuntime$1.jsx("div", {
+      children: [backButton, jsxs("h1", {
+        children: [title, channelTitle && jsx$1("div", {
           css: _ref$4,
           children: channelTitle
         })]
-      }), jsxRuntime$1.jsx("div", {
+      }), jsx$1("div", {
         css: expand
-      }), type === 'mobile' && jsxRuntime$1.jsx("div", {
+      }), type === 'mobile' && jsx$1("div", {
         css: adStatus ? hidden : [slotStyle],
         ref: element => {
           slotRef.current.functionBar = element;
         }
-      }), adLink && jsxRuntime$1.jsx("div", {
+      }), adLink && jsx$1("div", {
         className: "pinned",
         children: adLink
       })]
-    }), jsxRuntime$1.jsx("div", {
+    }), jsx$1("div", {
       ref: adContainerRef,
       css: adContainerStyle,
-      children: type === 'mobile' && jsxRuntime$1.jsx("div", {
+      children: type === 'mobile' && jsx$1("div", {
         css: [controlsStyle, displayStyles[controlsDisplay], process.env.NODE_ENV === "production" ? "" : ";label:DefaultLayout;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkRlZmF1bHRMYXlvdXQuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBaVVlIiwiZmlsZSI6IkRlZmF1bHRMYXlvdXQuanMiLCJzb3VyY2VzQ29udGVudCI6WyIvKiBAanN4SW1wb3J0U291cmNlIEBlbW90aW9uL3JlYWN0ICovXG4vKiBlc2xpbnQtZGlzYWJsZSByZWFjdC9wcm9wLXR5cGVzICovXG5pbXBvcnQge3VzZVJlZn0gZnJvbSAncmVhY3QnXG5pbXBvcnQge1Nsb3RQcm92aWRlcn0gZnJvbSAnLi91aUV4dGVuc2lvbnMnXG5cbmNvbnN0IGV4cGFuZCA9IHtcbiAgbWFyZ2luOiAwLFxuICBmbGV4OiAnMScsXG59XG5cbmNvbnN0IGhpZGRlbiA9IHtkaXNwbGF5OiAnbm9uZSd9XG5cbmNvbnN0IGNvbnRhaW5lclN0eWxlID0ge1xuICB3aWR0aDogJzEwMCUnLFxuICBoZWlnaHQ6ICcxMDAlJyxcbiAgYm94U2l6aW5nOiAnYm9yZGVyLWJveCcsXG4gIGRpc3BsYXk6ICdmbGV4JyxcbiAgZmxleERpcmVjdGlvbjogJ2NvbHVtbicsXG4gIG92ZXJmbG93OiAnaGlkZGVuJyxcbiAgY29sb3I6ICd3aGl0ZScsXG4gIC8vIHByZXZlbnQgYW5pbWF0aW9uIGdsaWNoKGFmdGVyaW1hZ2UpIG9mIGRlc2NlbmRhbnQgZWxlbWVudHNcbiAgdHJhbnNmb3JtOiAndHJhbnNsYXRlWCgwKScsXG4gIHVzZXJTZWxlY3Q6ICdub25lJyxcbiAgaDE6IHtcbiAgICBtYXJnaW46IDAsXG4gICAgZm9udFNpemU6ICcxZW0nLFxuICAgIGxpbmVIZWlnaHQ6ICcxLjVlbScsXG4gIH0sXG4gICdhLCBhOmxpbmssIGE6dmlzaXRlZCc6IHtcbiAgICBjb2xvcjogJyNmZmYnLFxuICAgIG9wYWNpdHk6IDAuOCxcbiAgICB0ZXh0RGVjb3JhdGlvbjogJ25vbmUnLFxuICB9LFxuICBidXR0b246IHtcbiAgICBmb250U2l6ZTogJ2luaGVyaXQnLFxuICAgICc+IConOiB7XG4gICAgICBwb2ludGVyRXZlbnRzOiAnbm9uZScsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3QgdmlkZW9Db250YWluZXJTdHlsZSA9IHtcbiAgJz4gZGl2OmZpcnN0LW9mLXR5cGUnOiB7XG4gICAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gICAgekluZGV4OiAnLTEnLFxuICAgIHdpZHRoOiAnMTAwJScsXG4gICAgaGVpZ2h0OiAnMTAwJScsXG4gIH0sXG59XG5cbmNvbnN0IGRyb3AgPSB7XG4gIGJhY2tncm91bmRJbWFnZTogYGxpbmVhci1ncmFkaWVudChcbiAgICAwZGVnLFxuICAgIHJnYmEoMCwwLDAsMC41KSAwLFxuICAgIHJnYmEoMCwwLDAsMCkgOHJlbSBjYWxjKDEwMCUgLSA4cmVtKSxcbiAgICByZ2JhKDAsMCwwLDAuNSkgMTAwJVxuICApYCxcbn1cblxuY29uc3QgZHJvcFRvcCA9IHtcbiAgYmFja2dyb3VuZEltYWdlOiBgbGluZWFyLWdyYWRpZW50KFxuICAgIDBkZWcsXG4gICAgcmdiYSgwLDAsMCwwKSAwLFxuICAgIHJnYmEoMCwwLDAsMCkgOHJlbSBjYWxjKDEwMCUgLSA4cmVtKSxcbiAgICByZ2JhKDAsMCwwLDAuNSkgMTAwJVxuICApYCxcbn1cblxuY29uc3QgcmVzcG9uc2l2ZVN0eWxlcyA9IHtcbiAgZGVza3RvcDoge1xuICAgIGZvbnRTaXplOiAnMjRweCcsXG4gIH0sIC8vIGFkZCBpZiBuZWNlc3Nhcnk6IGJpZy1kZXNrdG9wXG59XG5cbmNvbnN0IHJvd1N0eWxlID0ge1xuICBib3hTaXppbmc6ICdib3JkZXItYm94JyxcbiAgd2lkdGg6ICcxMDAlJyxcbiAgcGFkZGluZzogJ2NhbGMoMmVtIC0gMTZweCknLFxuICBkaXNwbGF5OiAnZmxleCcsXG4gIGFsaWduSXRlbXM6ICdjZW50ZXInLFxuICBqdXN0aWZ5Q29udGVudDogJ2ZsZXgtZW5kJyxcbiAgYnV0dG9uOiB7XG4gICAgZmxleDogJzAgMCAxLjVlbScsXG4gICAgd2lkdGg6ICcxLjVlbScsXG4gICAgaGVpZ2h0OiAnMS41ZW0nLFxuICB9LFxuICAnPiBidXR0b246bm90KDpkaXNhYmxlZCkgfiBidXR0b246bm90KDpkaXNhYmxlZCksIGRpdiB+IGJ1dHRvbjpsYXN0LW9mLXR5cGUnOlxuICAgIHtcbiAgICAgIG1hcmdpbkxlZnQ6ICcwLjVyZW0nLFxuICAgIH0sXG4gICc+IGJ1dHRvbjpub3QoOmxhc3Qtb2YtdHlwZSknOiB7XG4gICAgbWFyZ2luUmlnaHQ6ICcwLjVyZW0nLFxuICB9LFxufVxuXG5jb25zdCBkaXNwbGF5U3R5bGVzID0ge1xuICBoaWRkZW46IHtcbiAgICAnPiBkaXY6bm90KC5waW5uZWQpLCA+IGJ1dHRvbjpub3QoLnBpbm5lZCksID4gaDE6bm90KC5waW5uZWQpJzoge1xuICAgICAgekluZGV4OiAtMixcbiAgICAgIG9wYWNpdHk6IDAsXG4gICAgICB0cmFuc2l0aW9uOiAnb3BhY2l0eSAwLjhzIGVhc2Utb3V0LCB6LWluZGV4IDBzIDAuOHMnLFxuICAgIH0sXG4gIH0sXG4gIHNob3duOiB7XG4gICAgJz4gZGl2Om5vdCgucGlubmVkKSwgPiBidXR0b246bm90KC5waW5uZWQpLCA+IGgxOm5vdCgucGlubmVkKSc6IHtcbiAgICAgIHRyYW5zaXRpb246ICdvcGFjaXR5IDAuM3MgZWFzZS1vdXQnLFxuICAgIH0sXG4gIH0sXG59XG5cbmNvbnN0IGNvbnRyb2xzRGlzcGxheVN0eWxlcyA9IHtcbiAgaGlkZGVuOiB7XG4gICAgLi4uZGlzcGxheVN0eWxlcy5oaWRkZW4sXG4gICAgJ34gZGl2Om5vdCgucGlubmVkKSc6IGRpc3BsYXlTdHlsZXMuaGlkZGVuLFxuICB9LFxuICBzaG93bjoge1xuICAgIC4uLmRpc3BsYXlTdHlsZXMuc2hvd24sXG4gICAgJ34gZGl2JzogZGlzcGxheVN0eWxlcy5zaG93bixcbiAgfSxcbn1cblxuY29uc3QgY29udHJvbHNTdHlsZSA9IHtcbiAgbWFyZ2luVG9wOiAnYXV0bycsXG4gIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICB6SW5kZXg6ICcyJyxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgJz4gYnV0dG9uJzoge1xuICAgIG1hcmdpbjogJzFlbScsXG4gICAgd2lkdGg6ICcxLjc1ZW0nLFxuICAgIGhlaWdodDogJzEuNzVlbScsXG4gICAgJyY6ZGlzYWJsZWQnOiB7XG4gICAgICBvcGFjaXR5OiAwLjMsXG4gICAgfSxcbiAgICAnJi5wbGF5LWJ1dHRvbic6IHtcbiAgICAgIHdpZHRoOiAnM2VtJyxcbiAgICAgIGhlaWdodDogJzNlbScsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3Qgc2xvdFN0eWxlID0ge1xuICBkaXNwbGF5OiAnZmxleCcsXG4gIG1hcmdpbkxlZnQ6ICcwLjc1ZW0nLFxuICBidXR0b246IHtcbiAgICBkaXNwbGF5OiAnYmxvY2snLFxuICAgIG1hcmdpbkxlZnQ6ICcwLjc1ZW0nLFxuICB9LFxufVxuXG5jb25zdCB0ZXh0RWxsaXBzaXMgPSB7XG4gIG92ZXJmbG93OiAnaGlkZGVuJyxcbiAgd2hpdGVTcGFjZTogJ25vd3JhcCcsXG4gIHRleHRPdmVyZmxvdzogJ2VsbGlwc2lzJyxcbn1cblxuY29uc3QgaW5mb1N0eWxlID0ge1xuICBhbGlnbkl0ZW1zOiAnZmxleC1zdGFydCcsXG4gIG92ZXJmbG93OiAndmlzaWJsZScsXG4gIGgxOiB7XG4gICAgaGVpZ2h0OiAnM2VtJyxcbiAgICBmb250V2VpZ2h0OiAnNTAwJyxcbiAgICAuLi50ZXh0RWxsaXBzaXMsXG4gICAgJz4gZGl2JzogdGV4dEVsbGlwc2lzLFxuICB9LFxuICAnYnV0dG9uICsgaDEnOiB7XG4gICAgbWFyZ2luTGVmdDogJzFlbScsXG4gIH0sXG59XG5cbmNvbnN0IGJhY2tTdHlsZSA9IHtcbiAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gIHpJbmRleDogMCxcbiAgd2lkdGg6ICcxMDAlJyxcbiAgaGVpZ2h0OiAnMTAwJScsXG4gIGRpc3BsYXk6ICdmbGV4JyxcbiAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gIGp1c3RpZnlDb250ZW50OiAnY2VudGVyJyxcbiAgJ34gKic6IHtcbiAgICB6SW5kZXg6IDAsXG4gIH0sXG59XG5cbmNvbnN0IHNraXBTdHlsZSA9IHtcbiAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gIHJpZ2h0OiAwLFxuICBib3R0b206ICc5cmVtJyxcbiAgdGV4dEFsaWduOiAncmlnaHQnLFxuICBidXR0b246IHtcbiAgICB3aWR0aDogJ2F1dG8nLFxuICAgIGhlaWdodDogJ2F1dG8nLFxuICB9LFxufVxuXG5jb25zdCBkZWtzdG9wU3R5bGUgPSB7XG4gICc+IGRpdic6IHtcbiAgICAnPiBidXR0b246bm90KDpkaXNhYmxlZCkgfiBidXR0b246bm90KDpkaXNhYmxlZCksID4gYnV0dG9uOmxhc3Qtb2YtdHlwZSc6IHtcbiAgICAgIG1hcmdpbkxlZnQ6ICcwLjc1ZW0nLFxuICAgIH0sXG4gICAgJz4gYnV0dG9uOmZpcnN0LW9mLXR5cGUnOiB7XG4gICAgICBtYXJnaW5MZWZ0OiAnMCcsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3QgZGVza3RvcENvbnRyb2xzID0ge1xuICBmbGV4V3JhcDogJ3dyYXAnLFxuICAnPiBkaXY6Zmlyc3Qtb2YtdHlwZSc6IHtcbiAgICBmbGV4OiAnMTAwJScsXG4gICAgbWFyZ2luQm90dG9tOiAnMC44OGVtJyxcbiAgfSxcbiAgJ2J1dHRvbltkaXNhYmxlZF0nOiB7XG4gICAgZGlzcGxheTogJ25vbmUnLFxuICB9LFxufVxuXG5jb25zdCBhZENvbnRhaW5lclN0eWxlID0ge1xuICBmbGV4R3JvdzogMSxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAganVzdGlmeUNvbnRlbnQ6ICdjZW50ZXInLFxuICBwb2ludGVyRXZlbnRzOiAnbm9uZScsXG4gICc+IGlmcmFtZSc6IHtwb2ludGVyRXZlbnRzOiAnYXV0byd9LFxuICBidXR0b246IHtwb2ludGVyRXZlbnRzOiAnYXV0byd9LFxufVxuXG5jb25zdCBDb250cm9sc0Jsb2NrID0gKHtcbiAgb3JkZXIgPSAnbW9iaWxlJyxcbiAgcGxheUJ1dHRvbixcbiAgcmV3aW5kQnV0dG9uID0gJycsXG4gIGZvcndhcmRCdXR0b24gPSAnJyxcbiAgcHJldmlvdXNFcGlzb2RlQnV0dG9uID0gJycsXG4gIG5leHRFcGlzb2RlQnV0dG9uID0gJycsXG59KSA9PlxuICBvcmRlciA9PT0gJ2Rlc2t0b3AnID8gKFxuICAgIDw+XG4gICAgICB7cHJldmlvdXNFcGlzb2RlQnV0dG9ufVxuICAgICAge3BsYXlCdXR0b259XG4gICAgICB7bmV4dEVwaXNvZGVCdXR0b259XG4gICAgICB7cmV3aW5kQnV0dG9ufVxuICAgICAge2ZvcndhcmRCdXR0b259XG4gICAgPC8+XG4gICkgOiAoXG4gICAgPD5cbiAgICAgIHtyZXdpbmRCdXR0b259XG4gICAgICB7cHJldmlvdXNFcGlzb2RlQnV0dG9ufVxuICAgICAge3BsYXlCdXR0b259XG4gICAgICB7bmV4dEVwaXNvZGVCdXR0b259XG4gICAgICB7Zm9yd2FyZEJ1dHRvbn1cbiAgICA8Lz5cbiAgKVxuXG5jb25zdCBEZWZhdWx0TGF5b3V0ID0gKHtcbiAgdHlwZSA9ICdtb2JpbGUnLFxuICBzdHlsZSxcbiAgZGlzcGxheSxcbiAgY29udHJvbHNEaXNwbGF5ID0gZGlzcGxheSxcbiAgc2l6ZSxcbiAgdGl0bGUgPSAnJyxcbiAgY2hhbm5lbFRpdGxlID0gJycsXG4gIHZpZGVvLFxuICBoYXZlQm90dG9tSXRlbSxcbiAgc2Vla2JhciA9ICcnLFxuICBjb250cm9sQnV0dG9ucyxcbiAgdm9sdW1lQ29udHJvbCxcbiAgZnVsbHNjcmVlbkJ1dHRvbixcbiAgYmFja0J1dHRvbiA9ICcnLFxuICBhZFN0YXR1cyA9ICcnLFxuICBhZExpbmsgPSAnJyxcbiAgYWRTa2lwQnV0dG9uLFxuICBiYWNrSXRlbXMsXG4gIGNoaWxkcmVuLFxuICBjb250YWluZXJSZWYsXG4gIGJhY2tSZWYsXG4gIGFkQ29udGFpbmVyUmVmLFxuICAuLi5yZXN0XG59KSA9PiB7XG4gIGNvbnN0IHNsb3RSZWYgPSB1c2VSZWYoe30pXG5cbiAgcmV0dXJuIChcbiAgICA8ZGl2XG4gICAgICBjc3M9e1tcbiAgICAgICAgY29udGFpbmVyU3R5bGUsXG4gICAgICAgIHZpZGVvQ29udGFpbmVyU3R5bGUsXG4gICAgICAgIHJlc3BvbnNpdmVTdHlsZXNbc2l6ZV0sXG4gICAgICAgIHR5cGUgPT09ICdkZXNrdG9wJyAmJiBkZWtzdG9wU3R5bGUsXG4gICAgICAgIHN0eWxlLFxuICAgICAgXX1cbiAgICAgIHJlZj17Y29udGFpbmVyUmVmfVxuICAgICAgey4uLnJlc3R9XG4gICAgPlxuICAgICAge3ZpZGVvfVxuICAgICAgPGRpdlxuICAgICAgICByZWY9e2JhY2tSZWZ9XG4gICAgICAgIGNzcz17W1xuICAgICAgICAgIGJhY2tTdHlsZSxcbiAgICAgICAgICBkaXNwbGF5ICE9PSAnaGlkZGVuJyAmJiAoaGF2ZUJvdHRvbUl0ZW0gPyBkcm9wVG9wIDogZHJvcCksXG4gICAgICAgIF19XG4gICAgICA+XG4gICAgICAgIHt0eXBlICE9PSAnbW9iaWxlJyAmJiBiYWNrSXRlbXN9XG4gICAgICAgIHthZFNraXBCdXR0b24gJiYgPGRpdiBjc3M9e3NraXBTdHlsZX0+e2FkU2tpcEJ1dHRvbn08L2Rpdj59XG4gICAgICA8L2Rpdj5cbiAgICAgIDxkaXYgY3NzPXtbcm93U3R5bGUsIGluZm9TdHlsZSwgZGlzcGxheVN0eWxlc1tkaXNwbGF5XV19PlxuICAgICAgICB7YmFja0J1dHRvbn1cbiAgICAgICAgPGgxPlxuICAgICAgICAgIHt0aXRsZX1cbiAgICAgICAgICB7Y2hhbm5lbFRpdGxlICYmIDxkaXYgY3NzPXt7Zm9udFNpemU6ICcxNnB4J319PntjaGFubmVsVGl0bGV9PC9kaXY+fVxuICAgICAgICA8L2gxPlxuICAgICAgICA8ZGl2IGNzcz17ZXhwYW5kfSAvPlxuICAgICAgICB7dHlwZSA9PT0gJ21vYmlsZScgJiYgKFxuICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgIGNzcz17YWRTdGF0dXMgPyBoaWRkZW4gOiBbc2xvdFN0eWxlXX1cbiAgICAgICAgICAgIHJlZj17ZWxlbWVudCA9PiB7XG4gICAgICAgICAgICAgIHNsb3RSZWYuY3VycmVudC5mdW5jdGlvbkJhciA9IGVsZW1lbnRcbiAgICAgICAgICAgIH19XG4gICAgICAgICAgLz5cbiAgICAgICAgKX1cbiAgICAgICAge2FkTGluayAmJiA8ZGl2IGNsYXNzTmFtZT1cInBpbm5lZFwiPnthZExpbmt9PC9kaXY+fVxuICAgICAgPC9kaXY+XG4gICAgICA8ZGl2IHJlZj17YWRDb250YWluZXJSZWZ9IGNzcz17YWRDb250YWluZXJTdHlsZX0+XG4gICAgICAgIHt0eXBlID09PSAnbW9iaWxlJyAmJiAoXG4gICAgICAgICAgPGRpdiBjc3M9e1tjb250cm9sc1N0eWxlLCBkaXNwbGF5U3R5bGVzW2NvbnRyb2xzRGlzcGxheV1dfT5cbiAgICAgICAgICAgIDxDb250cm9sc0Jsb2NrIG9yZGVyPVwibW9iaWxlXCIgey4uLmNvbnRyb2xCdXR0b25zfSAvPlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICApfVxuICAgICAgPC9kaXY+XG4gICAgICA8ZGl2XG4gICAgICAgIGNzcz17W1xuICAgICAgICAgIHJvd1N0eWxlLFxuICAgICAgICAgIHttYXJnaW5Ub3A6ICdhdXRvJ30sXG4gICAgICAgICAgdHlwZSA9PT0gJ2Rlc2t0b3AnICYmIGRlc2t0b3BDb250cm9scyxcbiAgICAgICAgICBjb250cm9sc0Rpc3BsYXlTdHlsZXNbY29udHJvbHNEaXNwbGF5XSxcbiAgICAgICAgXX1cbiAgICAgID5cbiAgICAgICAge3NlZWtiYXIgfHwgPGRpdiAvPn1cbiAgICAgICAge3R5cGUgPT09ICdkZXNrdG9wJyAmJiAoXG4gICAgICAgICAgPENvbnRyb2xzQmxvY2sgb3JkZXI9XCJkZXNrdG9wXCIgey4uLmNvbnRyb2xCdXR0b25zfSAvPlxuICAgICAgICApfVxuICAgICAgICB7YWRTdGF0dXMgJiYgKFxuICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgIGNsYXNzTmFtZT1cInBpbm5lZFwiXG4gICAgICAgICAgICBjc3M9e3tmbGV4OiAxLCB0ZXh0U2hhZG93OiAnMnB4IDJweCAxcHggIzAwMCd9fVxuICAgICAgICAgID5cbiAgICAgICAgICAgIHthZFN0YXR1c31cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgKX1cbiAgICAgICAge3R5cGUgPT09ICdkZXNrdG9wJyAmJiAoXG4gICAgICAgICAgPD5cbiAgICAgICAgICAgIDxkaXYgY3NzPXtleHBhbmR9IC8+XG4gICAgICAgICAgICB7dm9sdW1lQ29udHJvbH1cbiAgICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgICAgY3NzPXthZFN0YXR1cyA/IGhpZGRlbiA6IFtzbG90U3R5bGVdfVxuICAgICAgICAgICAgICByZWY9e2VsZW1lbnQgPT4ge1xuICAgICAgICAgICAgICAgIHNsb3RSZWYuY3VycmVudC5mdW5jdGlvbkJhciA9IGVsZW1lbnRcbiAgICAgICAgICAgICAgfX1cbiAgICAgICAgICAgIC8+XG4gICAgICAgICAgPC8+XG4gICAgICAgICl9XG4gICAgICAgIHtmdWxsc2NyZWVuQnV0dG9ufVxuICAgICAgPC9kaXY+XG4gICAgICA8U2xvdFByb3ZpZGVyIHNsb3RSZWY9e3Nsb3RSZWZ9PntjaGlsZHJlbn08L1Nsb3RQcm92aWRlcj5cbiAgICA8L2Rpdj5cbiAgKVxufVxuXG5leHBvcnQgZGVmYXVsdCBEZWZhdWx0TGF5b3V0XG4iXX0= */"],
-        children: jsxRuntime$1.jsx(ControlsBlock, {
+        children: jsx$1(ControlsBlock, {
           order: "mobile",
           ...controlButtons
         })
       })
-    }), jsxRuntime$1.jsxs("div", {
+    }), jsxs("div", {
       css: [rowStyle, "margin-top:auto;", type === 'desktop' && desktopControls, controlsDisplayStyles[controlsDisplay], process.env.NODE_ENV === "production" ? "" : ";label:DefaultLayout;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkRlZmF1bHRMYXlvdXQuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBdVVRIiwiZmlsZSI6IkRlZmF1bHRMYXlvdXQuanMiLCJzb3VyY2VzQ29udGVudCI6WyIvKiBAanN4SW1wb3J0U291cmNlIEBlbW90aW9uL3JlYWN0ICovXG4vKiBlc2xpbnQtZGlzYWJsZSByZWFjdC9wcm9wLXR5cGVzICovXG5pbXBvcnQge3VzZVJlZn0gZnJvbSAncmVhY3QnXG5pbXBvcnQge1Nsb3RQcm92aWRlcn0gZnJvbSAnLi91aUV4dGVuc2lvbnMnXG5cbmNvbnN0IGV4cGFuZCA9IHtcbiAgbWFyZ2luOiAwLFxuICBmbGV4OiAnMScsXG59XG5cbmNvbnN0IGhpZGRlbiA9IHtkaXNwbGF5OiAnbm9uZSd9XG5cbmNvbnN0IGNvbnRhaW5lclN0eWxlID0ge1xuICB3aWR0aDogJzEwMCUnLFxuICBoZWlnaHQ6ICcxMDAlJyxcbiAgYm94U2l6aW5nOiAnYm9yZGVyLWJveCcsXG4gIGRpc3BsYXk6ICdmbGV4JyxcbiAgZmxleERpcmVjdGlvbjogJ2NvbHVtbicsXG4gIG92ZXJmbG93OiAnaGlkZGVuJyxcbiAgY29sb3I6ICd3aGl0ZScsXG4gIC8vIHByZXZlbnQgYW5pbWF0aW9uIGdsaWNoKGFmdGVyaW1hZ2UpIG9mIGRlc2NlbmRhbnQgZWxlbWVudHNcbiAgdHJhbnNmb3JtOiAndHJhbnNsYXRlWCgwKScsXG4gIHVzZXJTZWxlY3Q6ICdub25lJyxcbiAgaDE6IHtcbiAgICBtYXJnaW46IDAsXG4gICAgZm9udFNpemU6ICcxZW0nLFxuICAgIGxpbmVIZWlnaHQ6ICcxLjVlbScsXG4gIH0sXG4gICdhLCBhOmxpbmssIGE6dmlzaXRlZCc6IHtcbiAgICBjb2xvcjogJyNmZmYnLFxuICAgIG9wYWNpdHk6IDAuOCxcbiAgICB0ZXh0RGVjb3JhdGlvbjogJ25vbmUnLFxuICB9LFxuICBidXR0b246IHtcbiAgICBmb250U2l6ZTogJ2luaGVyaXQnLFxuICAgICc+IConOiB7XG4gICAgICBwb2ludGVyRXZlbnRzOiAnbm9uZScsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3QgdmlkZW9Db250YWluZXJTdHlsZSA9IHtcbiAgJz4gZGl2OmZpcnN0LW9mLXR5cGUnOiB7XG4gICAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gICAgekluZGV4OiAnLTEnLFxuICAgIHdpZHRoOiAnMTAwJScsXG4gICAgaGVpZ2h0OiAnMTAwJScsXG4gIH0sXG59XG5cbmNvbnN0IGRyb3AgPSB7XG4gIGJhY2tncm91bmRJbWFnZTogYGxpbmVhci1ncmFkaWVudChcbiAgICAwZGVnLFxuICAgIHJnYmEoMCwwLDAsMC41KSAwLFxuICAgIHJnYmEoMCwwLDAsMCkgOHJlbSBjYWxjKDEwMCUgLSA4cmVtKSxcbiAgICByZ2JhKDAsMCwwLDAuNSkgMTAwJVxuICApYCxcbn1cblxuY29uc3QgZHJvcFRvcCA9IHtcbiAgYmFja2dyb3VuZEltYWdlOiBgbGluZWFyLWdyYWRpZW50KFxuICAgIDBkZWcsXG4gICAgcmdiYSgwLDAsMCwwKSAwLFxuICAgIHJnYmEoMCwwLDAsMCkgOHJlbSBjYWxjKDEwMCUgLSA4cmVtKSxcbiAgICByZ2JhKDAsMCwwLDAuNSkgMTAwJVxuICApYCxcbn1cblxuY29uc3QgcmVzcG9uc2l2ZVN0eWxlcyA9IHtcbiAgZGVza3RvcDoge1xuICAgIGZvbnRTaXplOiAnMjRweCcsXG4gIH0sIC8vIGFkZCBpZiBuZWNlc3Nhcnk6IGJpZy1kZXNrdG9wXG59XG5cbmNvbnN0IHJvd1N0eWxlID0ge1xuICBib3hTaXppbmc6ICdib3JkZXItYm94JyxcbiAgd2lkdGg6ICcxMDAlJyxcbiAgcGFkZGluZzogJ2NhbGMoMmVtIC0gMTZweCknLFxuICBkaXNwbGF5OiAnZmxleCcsXG4gIGFsaWduSXRlbXM6ICdjZW50ZXInLFxuICBqdXN0aWZ5Q29udGVudDogJ2ZsZXgtZW5kJyxcbiAgYnV0dG9uOiB7XG4gICAgZmxleDogJzAgMCAxLjVlbScsXG4gICAgd2lkdGg6ICcxLjVlbScsXG4gICAgaGVpZ2h0OiAnMS41ZW0nLFxuICB9LFxuICAnPiBidXR0b246bm90KDpkaXNhYmxlZCkgfiBidXR0b246bm90KDpkaXNhYmxlZCksIGRpdiB+IGJ1dHRvbjpsYXN0LW9mLXR5cGUnOlxuICAgIHtcbiAgICAgIG1hcmdpbkxlZnQ6ICcwLjVyZW0nLFxuICAgIH0sXG4gICc+IGJ1dHRvbjpub3QoOmxhc3Qtb2YtdHlwZSknOiB7XG4gICAgbWFyZ2luUmlnaHQ6ICcwLjVyZW0nLFxuICB9LFxufVxuXG5jb25zdCBkaXNwbGF5U3R5bGVzID0ge1xuICBoaWRkZW46IHtcbiAgICAnPiBkaXY6bm90KC5waW5uZWQpLCA+IGJ1dHRvbjpub3QoLnBpbm5lZCksID4gaDE6bm90KC5waW5uZWQpJzoge1xuICAgICAgekluZGV4OiAtMixcbiAgICAgIG9wYWNpdHk6IDAsXG4gICAgICB0cmFuc2l0aW9uOiAnb3BhY2l0eSAwLjhzIGVhc2Utb3V0LCB6LWluZGV4IDBzIDAuOHMnLFxuICAgIH0sXG4gIH0sXG4gIHNob3duOiB7XG4gICAgJz4gZGl2Om5vdCgucGlubmVkKSwgPiBidXR0b246bm90KC5waW5uZWQpLCA+IGgxOm5vdCgucGlubmVkKSc6IHtcbiAgICAgIHRyYW5zaXRpb246ICdvcGFjaXR5IDAuM3MgZWFzZS1vdXQnLFxuICAgIH0sXG4gIH0sXG59XG5cbmNvbnN0IGNvbnRyb2xzRGlzcGxheVN0eWxlcyA9IHtcbiAgaGlkZGVuOiB7XG4gICAgLi4uZGlzcGxheVN0eWxlcy5oaWRkZW4sXG4gICAgJ34gZGl2Om5vdCgucGlubmVkKSc6IGRpc3BsYXlTdHlsZXMuaGlkZGVuLFxuICB9LFxuICBzaG93bjoge1xuICAgIC4uLmRpc3BsYXlTdHlsZXMuc2hvd24sXG4gICAgJ34gZGl2JzogZGlzcGxheVN0eWxlcy5zaG93bixcbiAgfSxcbn1cblxuY29uc3QgY29udHJvbHNTdHlsZSA9IHtcbiAgbWFyZ2luVG9wOiAnYXV0bycsXG4gIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICB6SW5kZXg6ICcyJyxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgJz4gYnV0dG9uJzoge1xuICAgIG1hcmdpbjogJzFlbScsXG4gICAgd2lkdGg6ICcxLjc1ZW0nLFxuICAgIGhlaWdodDogJzEuNzVlbScsXG4gICAgJyY6ZGlzYWJsZWQnOiB7XG4gICAgICBvcGFjaXR5OiAwLjMsXG4gICAgfSxcbiAgICAnJi5wbGF5LWJ1dHRvbic6IHtcbiAgICAgIHdpZHRoOiAnM2VtJyxcbiAgICAgIGhlaWdodDogJzNlbScsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3Qgc2xvdFN0eWxlID0ge1xuICBkaXNwbGF5OiAnZmxleCcsXG4gIG1hcmdpbkxlZnQ6ICcwLjc1ZW0nLFxuICBidXR0b246IHtcbiAgICBkaXNwbGF5OiAnYmxvY2snLFxuICAgIG1hcmdpbkxlZnQ6ICcwLjc1ZW0nLFxuICB9LFxufVxuXG5jb25zdCB0ZXh0RWxsaXBzaXMgPSB7XG4gIG92ZXJmbG93OiAnaGlkZGVuJyxcbiAgd2hpdGVTcGFjZTogJ25vd3JhcCcsXG4gIHRleHRPdmVyZmxvdzogJ2VsbGlwc2lzJyxcbn1cblxuY29uc3QgaW5mb1N0eWxlID0ge1xuICBhbGlnbkl0ZW1zOiAnZmxleC1zdGFydCcsXG4gIG92ZXJmbG93OiAndmlzaWJsZScsXG4gIGgxOiB7XG4gICAgaGVpZ2h0OiAnM2VtJyxcbiAgICBmb250V2VpZ2h0OiAnNTAwJyxcbiAgICAuLi50ZXh0RWxsaXBzaXMsXG4gICAgJz4gZGl2JzogdGV4dEVsbGlwc2lzLFxuICB9LFxuICAnYnV0dG9uICsgaDEnOiB7XG4gICAgbWFyZ2luTGVmdDogJzFlbScsXG4gIH0sXG59XG5cbmNvbnN0IGJhY2tTdHlsZSA9IHtcbiAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gIHpJbmRleDogMCxcbiAgd2lkdGg6ICcxMDAlJyxcbiAgaGVpZ2h0OiAnMTAwJScsXG4gIGRpc3BsYXk6ICdmbGV4JyxcbiAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gIGp1c3RpZnlDb250ZW50OiAnY2VudGVyJyxcbiAgJ34gKic6IHtcbiAgICB6SW5kZXg6IDAsXG4gIH0sXG59XG5cbmNvbnN0IHNraXBTdHlsZSA9IHtcbiAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gIHJpZ2h0OiAwLFxuICBib3R0b206ICc5cmVtJyxcbiAgdGV4dEFsaWduOiAncmlnaHQnLFxuICBidXR0b246IHtcbiAgICB3aWR0aDogJ2F1dG8nLFxuICAgIGhlaWdodDogJ2F1dG8nLFxuICB9LFxufVxuXG5jb25zdCBkZWtzdG9wU3R5bGUgPSB7XG4gICc+IGRpdic6IHtcbiAgICAnPiBidXR0b246bm90KDpkaXNhYmxlZCkgfiBidXR0b246bm90KDpkaXNhYmxlZCksID4gYnV0dG9uOmxhc3Qtb2YtdHlwZSc6IHtcbiAgICAgIG1hcmdpbkxlZnQ6ICcwLjc1ZW0nLFxuICAgIH0sXG4gICAgJz4gYnV0dG9uOmZpcnN0LW9mLXR5cGUnOiB7XG4gICAgICBtYXJnaW5MZWZ0OiAnMCcsXG4gICAgfSxcbiAgfSxcbn1cblxuY29uc3QgZGVza3RvcENvbnRyb2xzID0ge1xuICBmbGV4V3JhcDogJ3dyYXAnLFxuICAnPiBkaXY6Zmlyc3Qtb2YtdHlwZSc6IHtcbiAgICBmbGV4OiAnMTAwJScsXG4gICAgbWFyZ2luQm90dG9tOiAnMC44OGVtJyxcbiAgfSxcbiAgJ2J1dHRvbltkaXNhYmxlZF0nOiB7XG4gICAgZGlzcGxheTogJ25vbmUnLFxuICB9LFxufVxuXG5jb25zdCBhZENvbnRhaW5lclN0eWxlID0ge1xuICBmbGV4R3JvdzogMSxcbiAgZGlzcGxheTogJ2ZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAganVzdGlmeUNvbnRlbnQ6ICdjZW50ZXInLFxuICBwb2ludGVyRXZlbnRzOiAnbm9uZScsXG4gICc+IGlmcmFtZSc6IHtwb2ludGVyRXZlbnRzOiAnYXV0byd9LFxuICBidXR0b246IHtwb2ludGVyRXZlbnRzOiAnYXV0byd9LFxufVxuXG5jb25zdCBDb250cm9sc0Jsb2NrID0gKHtcbiAgb3JkZXIgPSAnbW9iaWxlJyxcbiAgcGxheUJ1dHRvbixcbiAgcmV3aW5kQnV0dG9uID0gJycsXG4gIGZvcndhcmRCdXR0b24gPSAnJyxcbiAgcHJldmlvdXNFcGlzb2RlQnV0dG9uID0gJycsXG4gIG5leHRFcGlzb2RlQnV0dG9uID0gJycsXG59KSA9PlxuICBvcmRlciA9PT0gJ2Rlc2t0b3AnID8gKFxuICAgIDw+XG4gICAgICB7cHJldmlvdXNFcGlzb2RlQnV0dG9ufVxuICAgICAge3BsYXlCdXR0b259XG4gICAgICB7bmV4dEVwaXNvZGVCdXR0b259XG4gICAgICB7cmV3aW5kQnV0dG9ufVxuICAgICAge2ZvcndhcmRCdXR0b259XG4gICAgPC8+XG4gICkgOiAoXG4gICAgPD5cbiAgICAgIHtyZXdpbmRCdXR0b259XG4gICAgICB7cHJldmlvdXNFcGlzb2RlQnV0dG9ufVxuICAgICAge3BsYXlCdXR0b259XG4gICAgICB7bmV4dEVwaXNvZGVCdXR0b259XG4gICAgICB7Zm9yd2FyZEJ1dHRvbn1cbiAgICA8Lz5cbiAgKVxuXG5jb25zdCBEZWZhdWx0TGF5b3V0ID0gKHtcbiAgdHlwZSA9ICdtb2JpbGUnLFxuICBzdHlsZSxcbiAgZGlzcGxheSxcbiAgY29udHJvbHNEaXNwbGF5ID0gZGlzcGxheSxcbiAgc2l6ZSxcbiAgdGl0bGUgPSAnJyxcbiAgY2hhbm5lbFRpdGxlID0gJycsXG4gIHZpZGVvLFxuICBoYXZlQm90dG9tSXRlbSxcbiAgc2Vla2JhciA9ICcnLFxuICBjb250cm9sQnV0dG9ucyxcbiAgdm9sdW1lQ29udHJvbCxcbiAgZnVsbHNjcmVlbkJ1dHRvbixcbiAgYmFja0J1dHRvbiA9ICcnLFxuICBhZFN0YXR1cyA9ICcnLFxuICBhZExpbmsgPSAnJyxcbiAgYWRTa2lwQnV0dG9uLFxuICBiYWNrSXRlbXMsXG4gIGNoaWxkcmVuLFxuICBjb250YWluZXJSZWYsXG4gIGJhY2tSZWYsXG4gIGFkQ29udGFpbmVyUmVmLFxuICAuLi5yZXN0XG59KSA9PiB7XG4gIGNvbnN0IHNsb3RSZWYgPSB1c2VSZWYoe30pXG5cbiAgcmV0dXJuIChcbiAgICA8ZGl2XG4gICAgICBjc3M9e1tcbiAgICAgICAgY29udGFpbmVyU3R5bGUsXG4gICAgICAgIHZpZGVvQ29udGFpbmVyU3R5bGUsXG4gICAgICAgIHJlc3BvbnNpdmVTdHlsZXNbc2l6ZV0sXG4gICAgICAgIHR5cGUgPT09ICdkZXNrdG9wJyAmJiBkZWtzdG9wU3R5bGUsXG4gICAgICAgIHN0eWxlLFxuICAgICAgXX1cbiAgICAgIHJlZj17Y29udGFpbmVyUmVmfVxuICAgICAgey4uLnJlc3R9XG4gICAgPlxuICAgICAge3ZpZGVvfVxuICAgICAgPGRpdlxuICAgICAgICByZWY9e2JhY2tSZWZ9XG4gICAgICAgIGNzcz17W1xuICAgICAgICAgIGJhY2tTdHlsZSxcbiAgICAgICAgICBkaXNwbGF5ICE9PSAnaGlkZGVuJyAmJiAoaGF2ZUJvdHRvbUl0ZW0gPyBkcm9wVG9wIDogZHJvcCksXG4gICAgICAgIF19XG4gICAgICA+XG4gICAgICAgIHt0eXBlICE9PSAnbW9iaWxlJyAmJiBiYWNrSXRlbXN9XG4gICAgICAgIHthZFNraXBCdXR0b24gJiYgPGRpdiBjc3M9e3NraXBTdHlsZX0+e2FkU2tpcEJ1dHRvbn08L2Rpdj59XG4gICAgICA8L2Rpdj5cbiAgICAgIDxkaXYgY3NzPXtbcm93U3R5bGUsIGluZm9TdHlsZSwgZGlzcGxheVN0eWxlc1tkaXNwbGF5XV19PlxuICAgICAgICB7YmFja0J1dHRvbn1cbiAgICAgICAgPGgxPlxuICAgICAgICAgIHt0aXRsZX1cbiAgICAgICAgICB7Y2hhbm5lbFRpdGxlICYmIDxkaXYgY3NzPXt7Zm9udFNpemU6ICcxNnB4J319PntjaGFubmVsVGl0bGV9PC9kaXY+fVxuICAgICAgICA8L2gxPlxuICAgICAgICA8ZGl2IGNzcz17ZXhwYW5kfSAvPlxuICAgICAgICB7dHlwZSA9PT0gJ21vYmlsZScgJiYgKFxuICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgIGNzcz17YWRTdGF0dXMgPyBoaWRkZW4gOiBbc2xvdFN0eWxlXX1cbiAgICAgICAgICAgIHJlZj17ZWxlbWVudCA9PiB7XG4gICAgICAgICAgICAgIHNsb3RSZWYuY3VycmVudC5mdW5jdGlvbkJhciA9IGVsZW1lbnRcbiAgICAgICAgICAgIH19XG4gICAgICAgICAgLz5cbiAgICAgICAgKX1cbiAgICAgICAge2FkTGluayAmJiA8ZGl2IGNsYXNzTmFtZT1cInBpbm5lZFwiPnthZExpbmt9PC9kaXY+fVxuICAgICAgPC9kaXY+XG4gICAgICA8ZGl2IHJlZj17YWRDb250YWluZXJSZWZ9IGNzcz17YWRDb250YWluZXJTdHlsZX0+XG4gICAgICAgIHt0eXBlID09PSAnbW9iaWxlJyAmJiAoXG4gICAgICAgICAgPGRpdiBjc3M9e1tjb250cm9sc1N0eWxlLCBkaXNwbGF5U3R5bGVzW2NvbnRyb2xzRGlzcGxheV1dfT5cbiAgICAgICAgICAgIDxDb250cm9sc0Jsb2NrIG9yZGVyPVwibW9iaWxlXCIgey4uLmNvbnRyb2xCdXR0b25zfSAvPlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICApfVxuICAgICAgPC9kaXY+XG4gICAgICA8ZGl2XG4gICAgICAgIGNzcz17W1xuICAgICAgICAgIHJvd1N0eWxlLFxuICAgICAgICAgIHttYXJnaW5Ub3A6ICdhdXRvJ30sXG4gICAgICAgICAgdHlwZSA9PT0gJ2Rlc2t0b3AnICYmIGRlc2t0b3BDb250cm9scyxcbiAgICAgICAgICBjb250cm9sc0Rpc3BsYXlTdHlsZXNbY29udHJvbHNEaXNwbGF5XSxcbiAgICAgICAgXX1cbiAgICAgID5cbiAgICAgICAge3NlZWtiYXIgfHwgPGRpdiAvPn1cbiAgICAgICAge3R5cGUgPT09ICdkZXNrdG9wJyAmJiAoXG4gICAgICAgICAgPENvbnRyb2xzQmxvY2sgb3JkZXI9XCJkZXNrdG9wXCIgey4uLmNvbnRyb2xCdXR0b25zfSAvPlxuICAgICAgICApfVxuICAgICAgICB7YWRTdGF0dXMgJiYgKFxuICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgIGNsYXNzTmFtZT1cInBpbm5lZFwiXG4gICAgICAgICAgICBjc3M9e3tmbGV4OiAxLCB0ZXh0U2hhZG93OiAnMnB4IDJweCAxcHggIzAwMCd9fVxuICAgICAgICAgID5cbiAgICAgICAgICAgIHthZFN0YXR1c31cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgKX1cbiAgICAgICAge3R5cGUgPT09ICdkZXNrdG9wJyAmJiAoXG4gICAgICAgICAgPD5cbiAgICAgICAgICAgIDxkaXYgY3NzPXtleHBhbmR9IC8+XG4gICAgICAgICAgICB7dm9sdW1lQ29udHJvbH1cbiAgICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgICAgY3NzPXthZFN0YXR1cyA/IGhpZGRlbiA6IFtzbG90U3R5bGVdfVxuICAgICAgICAgICAgICByZWY9e2VsZW1lbnQgPT4ge1xuICAgICAgICAgICAgICAgIHNsb3RSZWYuY3VycmVudC5mdW5jdGlvbkJhciA9IGVsZW1lbnRcbiAgICAgICAgICAgICAgfX1cbiAgICAgICAgICAgIC8+XG4gICAgICAgICAgPC8+XG4gICAgICAgICl9XG4gICAgICAgIHtmdWxsc2NyZWVuQnV0dG9ufVxuICAgICAgPC9kaXY+XG4gICAgICA8U2xvdFByb3ZpZGVyIHNsb3RSZWY9e3Nsb3RSZWZ9PntjaGlsZHJlbn08L1Nsb3RQcm92aWRlcj5cbiAgICA8L2Rpdj5cbiAgKVxufVxuXG5leHBvcnQgZGVmYXVsdCBEZWZhdWx0TGF5b3V0XG4iXX0= */"],
-      children: [seekbar || jsxRuntime$1.jsx("div", {}), type === 'desktop' && jsxRuntime$1.jsx(ControlsBlock, {
+      children: [seekbar || jsx$1("div", {}), type === 'desktop' && jsx$1(ControlsBlock, {
         order: "desktop",
         ...controlButtons
-      }), adStatus && jsxRuntime$1.jsx("div", {
+      }), adStatus && jsx$1("div", {
         className: "pinned",
         css: _ref2$2,
         children: adStatus
-      }), type === 'desktop' && jsxRuntime$1.jsxs(jsxRuntime$1.Fragment, {
-        children: [jsxRuntime$1.jsx("div", {
+      }), type === 'desktop' && jsxs(Fragment, {
+        children: [jsx$1("div", {
           css: expand
-        }), volumeControl, jsxRuntime$1.jsx("div", {
+        }), volumeControl, jsx$1("div", {
           css: adStatus ? hidden : [slotStyle],
           ref: element => {
             slotRef.current.functionBar = element;
           }
         })]
       }), fullscreenButton]
-    }), jsxRuntime$1.jsx(SlotProvider, {
+    }), jsx$1(SlotProvider, {
       slotRef: slotRef,
       children: children
     })]
@@ -4325,8 +2964,8 @@ const SimpleSlider = ({
   onChange,
   onChangeCommitted
 }) => {
-  const pointerState = React.useRef({});
-  const [focusValue, setFocusValue] = React.useState(-1);
+  const pointerState = useRef({});
+  const [focusValue, setFocusValue] = useState(-1);
   const thumbPosition = ((focusValue >= 0 ? focusValue : value) - min) / (max - min);
   const subTrackPosition = (secondaryTrackValue - min) / (max - min);
   const pointerHandlers = debouncedPointerHandlers({
@@ -4374,7 +3013,7 @@ const SimpleSlider = ({
     setFocusValue();
   };
 
-  return jsxRuntime$1.jsxs("div", {
+  return jsxs("div", {
     className: className,
     css: [style$8, disabled && disabledStyle, process.env.NODE_ENV === "production" ? "" : ";label:SimpleSlider;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlNpbXBsZVNsaWRlci5qc3giXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBZ0tNIiwiZmlsZSI6IlNpbXBsZVNsaWRlci5qc3giLCJzb3VyY2VzQ29udGVudCI6WyIvKiBlc2xpbnQtZGlzYWJsZSBuby1wYXJhbS1yZWFzc2lnbiAqL1xuLyogZXNsaW50LWRpc2FibGUganN4LWExMXkvbm8tc3RhdGljLWVsZW1lbnQtaW50ZXJhY3Rpb25zICovXG4vKiBlc2xpbnQtZGlzYWJsZSBqc3gtYTExeS9jbGljay1ldmVudHMtaGF2ZS1rZXktZXZlbnRzICovXG4vKiBAanN4SW1wb3J0U291cmNlIEBlbW90aW9uL3JlYWN0ICovXG5pbXBvcnQge3VzZVN0YXRlLCB1c2VSZWZ9IGZyb20gJ3JlYWN0J1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJ1xuXG5pbXBvcnQge2dldFBvaW50ZXJEYXRhfSBmcm9tICd1dGlsL3BvaW50ZXInXG5pbXBvcnQge2hhdmVQb2ludGVyUXVlcnl9IGZyb20gJ3V0aWwvZW52aXJvbm1lbnQnXG5cbmNvbnN0IHN0eWxlID0ge1xuICBwb3NpdGlvbjogJ3JlbGF0aXZlJyxcbiAgaGVpZ2h0OiAnMTAwJScsXG4gIGRpc3BsYXk6ICdmbGV4JyxcbiAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gIGN1cnNvcjogJ3BvaW50ZXInLFxuICB1c2VyU2VsZWN0OiAnbm9uZScsXG4gIHRvdWNoQWN0aW9uOiAnbm9uZScsXG59XG5cbmNvbnN0IGRpc2FibGVkU3R5bGUgPSB7XG4gIHBvaW50ZXJFdmVudHM6ICdub25lJyxcbn1cblxuY29uc3QgcmFpbFN0eWxlID0ge1xuICBwb3NpdGlvbjogJ3JlbGF0aXZlJyxcbiAgZmxleDogJzEwMCUnLFxuICBoZWlnaHQ6ICc0cHgnLFxuICBvdmVyZmxvdzogJ2hpZGRlbicsXG4gIGJhY2tncm91bmQ6ICdyZ2JhKDI1NSwgMjU1LCAyNTUsIDAuMiknLFxuICAnPiBkaXYnOiB7XG4gICAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gICAgdG9wOiAnMCcsXG4gICAgbGVmdDogJzAnLFxuICAgIHdpZHRoOiAnMTAwJScsXG4gICAgaGVpZ2h0OiAnMTAwJScsXG4gIH0sXG59XG5cbmNvbnN0IG1hcmtTdHlsZSA9IHtcbiAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gIGhlaWdodDogcmFpbFN0eWxlLmhlaWdodCxcbiAgd2lkdGg6ICc0cHgnLFxuICB0cmFuc2Zvcm06ICd0cmFuc2xhdGVYKC01MCUpJyxcbiAgYmFja2dyb3VuZENvbG9yOiAnI2ZmOTgzNScsXG59XG5cbmNvbnN0IHRodW1iU3R5bGUgPSB7XG4gIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICB0b3A6ICc1MCUnLFxuICBoZWlnaHQ6ICcxNHB4JyxcbiAgd2lkdGg6ICcxNHB4JyxcbiAgYm9yZGVyUmFkaXVzOiAnMTAwJScsXG4gIGJhY2tncm91bmRDb2xvcjogJyNmZmYnLFxuICBib3hTaGFkb3c6ICcwIDJweCAycHggMCByZ2JhKDAsIDAsIDAsIDAuNSknLFxuICB0cmFuc2Zvcm06ICd0cmFuc2xhdGUoLTUwJSwgLTUwJSknLFxufVxuXG5jb25zdCBnZXRTbGlkZXJWYWx1ZSA9ICh7eCwgbGVmdCwgd2lkdGh9KSA9PlxuICBNYXRoLm1heCgwLCBNYXRoLm1pbigoeCAtIGxlZnQpIC8gd2lkdGgsIDEpKVxuXG5jb25zdCBkZWJvdW5jZWRQb2ludGVySGFuZGxlcnMgPSAoe3N0YXRlLCBvbk1vdmUsIG9uTGVhdmV9KSA9PiB7XG4gIGNvbnN0IGVtaXQgPSAoKSA9PiB7XG4gICAgaWYgKCFzdGF0ZS5zY2hlZHVsZWQpIHtcbiAgICAgIHJldHVyblxuICAgIH1cbiAgICBpZiAoc3RhdGUudHlwZSA9PT0gJ2xlYXZlJykge1xuICAgICAgb25MZWF2ZT8uKHN0YXRlLmV2ZW50LCBzdGF0ZSlcbiAgICB9IGVsc2Uge1xuICAgICAgb25Nb3ZlKHN0YXRlLmV2ZW50LCBzdGF0ZSlcbiAgICB9XG4gICAgc3RhdGUuc2NoZWR1bGVkID0gZmFsc2VcbiAgfVxuICBjb25zdCBzY2hlZHVsZSA9ICgpID0+IHtcbiAgICBpZiAoc3RhdGUuc2NoZWR1bGVkKSB7XG4gICAgICByZXR1cm5cbiAgICB9XG4gICAgc3RhdGUuc2NoZWR1bGVkID0gdHJ1ZVxuICAgIHJlcXVlc3RBbmltYXRpb25GcmFtZShlbWl0KVxuICB9XG5cbiAgcmV0dXJuIHtcbiAgICBvblBvaW50ZXJNb3ZlOiBldmVudCA9PiB7XG4gICAgICBjb25zdCB0eXBlID1cbiAgICAgICAgZXZlbnQuYnV0dG9ucyA+IDAgfHwgZXZlbnQudG91Y2hlcz8ubGVuZ3RoID4gMCA/ICdjaGFuZ2UnIDogJ21vdmUnXG4gICAgICBPYmplY3QuYXNzaWduKHN0YXRlLCB7ZXZlbnQsIHR5cGUsIC4uLmdldFBvaW50ZXJEYXRhKGV2ZW50KX0pXG4gICAgICBzY2hlZHVsZSgpXG4gICAgfSxcbiAgICBvblBvaW50ZXJMZWF2ZTogZXZlbnQgPT4ge1xuICAgICAgY29uc3QgdHlwZSA9ICdsZWF2ZSdcbiAgICAgIE9iamVjdC5hc3NpZ24oc3RhdGUsIHtldmVudCwgdHlwZX0pXG4gICAgICBzY2hlZHVsZSgpXG4gICAgfSxcbiAgICBlbWl0LFxuICB9XG59XG5cbmNvbnN0IGV2ZW50SGFuZGxlcnMgPSAoe1xuICBvblBvaW50ZXJEb3duLFxuICBvblBvaW50ZXJNb3ZlLFxuICBvblBvaW50ZXJMZWF2ZSxcbiAgb25Qb2ludGVyVXAsXG59KSA9PlxuICB0eXBlb2Ygd2luZG93ICE9PSAndW5kZWZpbmVkJyAmJiB3aW5kb3cubWF0Y2hNZWRpYShoYXZlUG9pbnRlclF1ZXJ5KS5tYXRjaGVzXG4gICAgPyB7b25Qb2ludGVyRG93biwgb25Qb2ludGVyTW92ZSwgb25Qb2ludGVyTGVhdmUsIG9uUG9pbnRlclVwfVxuICAgIDoge1xuICAgICAgICBvblRvdWNoU3RhcnQ6IG9uUG9pbnRlckRvd24sXG4gICAgICAgIG9uVG91Y2hNb3ZlOiBvblBvaW50ZXJNb3ZlLFxuICAgICAgICBvblRvdWNoRW5kOiBldmVudCA9PiB7XG4gICAgICAgICAgb25Qb2ludGVyTGVhdmUoZXZlbnQpXG4gICAgICAgICAgb25Qb2ludGVyVXAoZXZlbnQpXG4gICAgICAgIH0sXG4gICAgICB9XG5cbi8vIFRPRE8gYWxpZ24gd2l0aCBtYXRlcmlhbCB1aSBtb3JlLCBtb3ZlIHNwZWNpYWwgaGFuZGxpbmcgb2YgcG9pbnRlciBldmVudHNcbmNvbnN0IFNpbXBsZVNsaWRlciA9ICh7XG4gIG1pbiA9IDAsXG4gIG1heCA9IDEwMCxcbiAgdmFsdWUsXG4gIHNlY29uZGFyeVRyYWNrVmFsdWUsIC8vIFRPRE8gYSBiZXR0ZXIgbmFtZVxuICBtYXJrcyA9IFtdLFxuICBjbGFzc05hbWUgPSAnJyxcbiAgY2xhc3NlcyA9IHt9LFxuICBkaXNhYmxlZCxcbiAgb25Qb2ludGVyTW92ZSxcbiAgb25Qb2ludGVyTGVhdmUsXG4gIG9uQ2hhbmdlLFxuICBvbkNoYW5nZUNvbW1pdHRlZCxcbn0pID0+IHtcbiAgY29uc3QgcG9pbnRlclN0YXRlID0gdXNlUmVmKHt9KVxuICBjb25zdCBbZm9jdXNWYWx1ZSwgc2V0Rm9jdXNWYWx1ZV0gPSB1c2VTdGF0ZSgtMSlcbiAgY29uc3QgdGh1bWJQb3NpdGlvbiA9XG4gICAgKChmb2N1c1ZhbHVlID49IDAgPyBmb2N1c1ZhbHVlIDogdmFsdWUpIC0gbWluKSAvIChtYXggLSBtaW4pXG4gIGNvbnN0IHN1YlRyYWNrUG9zaXRpb24gPSAoc2Vjb25kYXJ5VHJhY2tWYWx1ZSAtIG1pbikgLyAobWF4IC0gbWluKVxuICBjb25zdCBwb2ludGVySGFuZGxlcnMgPSBkZWJvdW5jZWRQb2ludGVySGFuZGxlcnMoe1xuICAgIHN0YXRlOiBwb2ludGVyU3RhdGUuY3VycmVudCxcbiAgICBvbk1vdmU6IChldmVudCwge3R5cGUsIHgsIHksIHdpZHRoLCBsZWZ0fSkgPT4ge1xuICAgICAgY29uc3QgcG9pbnRlclZhbHVlID0gKG1heCAtIG1pbikgKiBnZXRTbGlkZXJWYWx1ZSh7eCwgd2lkdGgsIGxlZnR9KSArIG1pblxuICAgICAgb25Qb2ludGVyTW92ZT8uKGV2ZW50LCB7dmFsdWU6IHBvaW50ZXJWYWx1ZSwgeCwgeX0pXG4gICAgICBpZiAodHlwZSA9PT0gJ2NoYW5nZScpIHtcbiAgICAgICAgc2V0Rm9jdXNWYWx1ZShwb2ludGVyVmFsdWUpXG4gICAgICAgIG9uQ2hhbmdlPy4oZXZlbnQsIHt2YWx1ZTogcG9pbnRlclZhbHVlLCB4LCB5fSlcbiAgICAgIH1cbiAgICB9LFxuICAgIG9uTGVhdmU6ICgpID0+IG9uUG9pbnRlckxlYXZlPy4oKSxcbiAgfSlcbiAgY29uc3QgaGFuZGxlUG9pbnRlclVwID0gZXZlbnQgPT4ge1xuICAgIGlmIChldmVudC5wb2ludGVySWQpIHtcbiAgICAgIGV2ZW50LmN1cnJlbnRUYXJnZXQucmVsZWFzZVBvaW50ZXJDYXB0dXJlKGV2ZW50LnBvaW50ZXJJZClcbiAgICB9XG4gICAgY29uc3QgcG9pbnRlclZhbHVlID1cbiAgICAgIChtYXggLSBtaW4pICogZ2V0U2xpZGVyVmFsdWUoZ2V0UG9pbnRlckRhdGEoZXZlbnQpKSArIG1pblxuICAgIHBvaW50ZXJIYW5kbGVycy5lbWl0KClcbiAgICBvbkNoYW5nZUNvbW1pdHRlZD8uKGV2ZW50LCB7dmFsdWU6IHBvaW50ZXJWYWx1ZX0pXG4gICAgc2V0Rm9jdXNWYWx1ZSgpXG4gIH1cblxuICByZXR1cm4gKFxuICAgIDxkaXZcbiAgICAgIGNsYXNzTmFtZT17Y2xhc3NOYW1lfVxuICAgICAgY3NzPXtbc3R5bGUsIGRpc2FibGVkICYmIGRpc2FibGVkU3R5bGVdfVxuICAgICAgb25DbGljaz17ZXZlbnQgPT4gZXZlbnQuc3RvcFByb3BhZ2F0aW9uKCl9XG4gICAgICB7Li4uZXZlbnRIYW5kbGVycyh7XG4gICAgICAgIG9uUG9pbnRlckRvd246IGV2ZW50ID0+IHtcbiAgICAgICAgICBpZiAoZXZlbnQudHlwZSA9PT0gJ3BvaW50ZXJkb3duJykge1xuICAgICAgICAgICAgZXZlbnQuY3VycmVudFRhcmdldC5zZXRQb2ludGVyQ2FwdHVyZShldmVudC5wb2ludGVySWQpXG4gICAgICAgICAgfVxuICAgICAgICAgIHBvaW50ZXJIYW5kbGVycy5vblBvaW50ZXJNb3ZlKGV2ZW50KVxuICAgICAgICB9LFxuICAgICAgICAuLi5wb2ludGVySGFuZGxlcnMsXG4gICAgICAgIG9uUG9pbnRlclVwOiBoYW5kbGVQb2ludGVyVXAsXG4gICAgICB9KX1cbiAgICA+XG4gICAgICA8ZGl2IGNsYXNzTmFtZT17Y2xhc3Nlcy5yYWlsfSBjc3M9e3JhaWxTdHlsZX0+XG4gICAgICAgIHtzZWNvbmRhcnlUcmFja1ZhbHVlICYmIChcbiAgICAgICAgICA8ZGl2XG4gICAgICAgICAgICBjc3M9e3tiYWNrZ3JvdW5kQ29sb3I6ICdyZ2JhKDI1NSwgMjU1LCAyNTUsIDAuMyknfX1cbiAgICAgICAgICAgIHN0eWxlPXt7dHJhbnNmb3JtOiBgdHJhbnNsYXRlWCgke3N1YlRyYWNrUG9zaXRpb24gKiAxMDAgLSAxMDB9JSlgfX1cbiAgICAgICAgICAvPlxuICAgICAgICApfVxuICAgICAgICA8ZGl2XG4gICAgICAgICAgY3NzPXt7YmFja2dyb3VuZENvbG9yOiAnI2ZmZid9fVxuICAgICAgICAgIGNsYXNzTmFtZT17Y2xhc3Nlcy50cmFja31cbiAgICAgICAgICBzdHlsZT17e3RyYW5zZm9ybTogYHRyYW5zbGF0ZVgoJHt0aHVtYlBvc2l0aW9uICogMTAwIC0gMTAwfSUpYH19XG4gICAgICAgIC8+XG4gICAgICA8L2Rpdj5cbiAgICAgIHttYXJrcy5tYXAocG9zaXRpb24gPT4gKFxuICAgICAgICA8ZGl2XG4gICAgICAgICAga2V5PXtwb3NpdGlvbn1cbiAgICAgICAgICBjc3M9e21hcmtTdHlsZX1cbiAgICAgICAgICBjbGFzc05hbWU9e2NsYXNzZXMubWFya2VkfVxuICAgICAgICAgIHN0eWxlPXt7bGVmdDogYCR7KHBvc2l0aW9uIC8gbWF4KSAqIDEwMH0lYH19XG4gICAgICAgIC8+XG4gICAgICApKX1cbiAgICAgIHtvbkNoYW5nZSAmJiAhZGlzYWJsZWQgPyAoXG4gICAgICAgIDxkaXZcbiAgICAgICAgICBjc3M9e3RodW1iU3R5bGV9XG4gICAgICAgICAgY2xhc3NOYW1lPXtjbGFzc2VzLnRodW1ifVxuICAgICAgICAgIHN0eWxlPXt7bGVmdDogYGNhbGMoJHt0aHVtYlBvc2l0aW9uICogMTAwfSUpYH19XG4gICAgICAgIC8+XG4gICAgICApIDogKFxuICAgICAgICA8ZGl2IC8+XG4gICAgICApfVxuICAgIDwvZGl2PlxuICApXG59XG5cblNpbXBsZVNsaWRlci5wcm9wVHlwZXMgPSB7XG4gIG1pbjogUHJvcFR5cGVzLm51bWJlcixcbiAgbWF4OiBQcm9wVHlwZXMubnVtYmVyLFxuICB2YWx1ZTogUHJvcFR5cGVzLm51bWJlcixcbiAgc2Vjb25kYXJ5VHJhY2tWYWx1ZTogUHJvcFR5cGVzLm51bWJlcixcbiAgbWFya3M6IFByb3BUeXBlcy5hcnJheSxcbiAgY2xhc3NOYW1lOiBQcm9wVHlwZXMuc3RyaW5nLFxuICBjbGFzc2VzOiBQcm9wVHlwZXMub2JqZWN0LFxuICBkaXNhYmxlZDogUHJvcFR5cGVzLmJvb2wsXG4gIG9uUG9pbnRlck1vdmU6IFByb3BUeXBlcy5mdW5jLFxuICBvblBvaW50ZXJMZWF2ZTogUHJvcFR5cGVzLmZ1bmMsXG4gIG9uQ2hhbmdlOiBQcm9wVHlwZXMuZnVuYyxcbiAgb25DaGFuZ2VDb21taXR0ZWQ6IFByb3BUeXBlcy5mdW5jLFxufVxuXG5leHBvcnQgZGVmYXVsdCBTaW1wbGVTbGlkZXJcbiJdfQ== */"],
     onClick: event => event.stopPropagation(),
@@ -4389,34 +3028,34 @@ const SimpleSlider = ({
       ...pointerHandlers,
       onPointerUp: handlePointerUp
     }),
-    children: [jsxRuntime$1.jsxs("div", {
+    children: [jsxs("div", {
       className: classes.rail,
       css: railStyle,
-      children: [secondaryTrackValue && jsxRuntime$1.jsx("div", {
+      children: [secondaryTrackValue && jsx$1("div", {
         css: _ref$3,
         style: {
           transform: `translateX(${subTrackPosition * 100 - 100}%)`
         }
-      }), jsxRuntime$1.jsx("div", {
+      }), jsx$1("div", {
         css: _ref2$1,
         className: classes.track,
         style: {
           transform: `translateX(${thumbPosition * 100 - 100}%)`
         }
       })]
-    }), marks.map(position => jsxRuntime$1.jsx("div", {
+    }), marks.map(position => jsx$1("div", {
       css: markStyle,
       className: classes.marked,
       style: {
         left: `${position / max * 100}%`
       }
-    }, position)), onChange && !disabled ? jsxRuntime$1.jsx("div", {
+    }, position)), onChange && !disabled ? jsx$1("div", {
       css: thumbStyle,
       className: classes.thumb,
       style: {
         left: `calc(${thumbPosition * 100}%)`
       }
-    }) : jsxRuntime$1.jsx("div", {})]
+    }) : jsx$1("div", {})]
   });
 };
 
@@ -4433,6 +3072,14 @@ SimpleSlider.propTypes = {
   onPointerLeave: PropTypes.func,
   onChange: PropTypes.func,
   onChangeCommitted: PropTypes.func
+};
+
+const formattedTime = sourceTime => {
+  const time = sourceTime >= 0 ? sourceTime : 0;
+  const seconds = Math.floor(time % 60).toString().padStart(2, '0');
+  const minutes = Math.floor(time / 60 % 60).toString().padStart(2, '0');
+  const hours = time >= 3600 && Math.floor(time / 60 / 60 % 60).toString();
+  return [hours, minutes, seconds].filter(Boolean).join(':');
 };
 
 /* @jsxImportSource @emotion/react */
@@ -4524,14 +3171,14 @@ const Seekbar$1 = ({
 }) => {
   var _ref$current;
 
-  const [pointerState, dispatchPointer] = React.useReducer(reducePointer, {});
+  const [pointerState, dispatchPointer] = useReducer(reducePointer, {});
   const pointerActive = pointerState.hover || pointerState.focused;
   const displayTime = pointerActive ? pointerState.value : currentTime; // to reflect boundary when container resized
 
   const {
     observe
-  } = useDimensions__default["default"]();
-  const ref = React.useRef();
+  } = useDimensions();
+  const ref = useRef();
   const rect = (_ref$current = ref.current) === null || _ref$current === void 0 ? void 0 : _ref$current.getBoundingClientRect();
   const handlers = seek && {
     onPointerMove: (_, {
@@ -4565,7 +3212,7 @@ const Seekbar$1 = ({
       play();
     }
   };
-  return jsxRuntime$1.jsxs("div", {
+  return jsxs("div", {
     ref: element => {
       observe(element);
       ref.current = element;
@@ -4577,10 +3224,10 @@ const Seekbar$1 = ({
       '--seekbar-right': `${rect.right}px`,
       '--pointer-x': `${pointerState.x}px`
     },
-    children: [formattedTime(displayTime), jsxRuntime$1.jsx(react.ClassNames, {
+    children: [formattedTime(displayTime), jsx$1(ClassNames, {
       children: ({
         css
-      }) => jsxRuntime$1.jsx(SimpleSlider, {
+      }) => jsx$1(SimpleSlider, {
         css: sliderStyle$1,
         classes: {
           track: css({
@@ -4598,7 +3245,7 @@ const Seekbar$1 = ({
         ...handlers,
         ...rest
       })
-    }), formattedTime(duration), children && [].concat(children).map(child => /*#__PURE__*/React.cloneElement(child, {
+    }), formattedTime(duration), children && [].concat(children).map(child => /*#__PURE__*/cloneElement(child, {
       time: pointerActive && displayTime
     }))]
   });
@@ -4619,7 +3266,7 @@ Seekbar$1.propTypes = {
 };
 
 /* @jsxImportSource @emotion/react */
-const rotateInfinite = react.keyframes`
+const rotateInfinite = keyframes`
   0% {
     opacity: 1;
     transform: translate(-50%, -50%) rotate(0deg);
@@ -4643,7 +3290,7 @@ const style$7 = {
   animation: `${rotateInfinite} 1.2s linear infinite`
 };
 
-const LoadingSpinner = () => jsxRuntime$1.jsx("div", {
+const LoadingSpinner = () => jsx$1("div", {
   className: "kks-player__loading",
   css: style$7
 });
@@ -4790,9 +3437,9 @@ const dekstopStyle = {
 
 const MenuItemText = ({
   text = ''
-}) => jsxRuntime$1.jsx(FormattedMessage, {
+}) => jsx$1(FormattedMessage, {
   id: text,
-  defaultMessage: jsxRuntime$1.jsx(FormattedMessage, {
+  defaultMessage: jsx$1(FormattedMessage, {
     id: `KKS.SETTING.${text}`,
     defaultMessage: text
   })
@@ -4802,14 +3449,14 @@ MenuItemText.propTypes = {
   text: PropTypes.string
 };
 
-const CloseButton = props => jsxRuntime$1.jsx("button", {
+const CloseButton = props => jsx$1("button", {
   type: "button",
   "aria-label": "Close Settings",
   css: mobileStyle.dismiss,
   ...props
 });
 
-const BackButton = props => jsxRuntime$1.jsx("button", {
+const BackButton = props => jsx$1("button", {
   type: "button",
   "aria-label": "Back",
   css: mobileStyle.back,
@@ -4827,13 +3474,13 @@ const Settings = ({
   onClose
 }) => {
   const commonStyle = type === 'desktop' ? dekstopStyle : mobileStyle;
-  const [path, setPath] = React.useState('/');
-  React.useEffect(() => {
+  const [path, setPath] = useState('/');
+  useEffect(() => {
     if (!open) {
       setPath('/');
     }
   }, [open]);
-  const ref = useOnclickOutside__default["default"](() => {
+  const ref = useOnclickOutside(() => {
     if (open) {
       onClose();
     }
@@ -4871,30 +3518,30 @@ const Settings = ({
 
   const navigate = dest => requestAnimationFrame(() => setPath(dest));
 
-  return jsxRuntime$1.jsxs("div", {
+  return jsxs("div", {
     // TODO replace with <Backdrop>
     role: "menu",
     tabIndex: "0",
     css: [commonStyle.overlay, open && mobileStyle.open, style, process.env.NODE_ENV === "production" ? "" : ";label:Settings;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlNldHRpbmdzLmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQTJPTSIsImZpbGUiOiJTZXR0aW5ncy5qcyIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCB7dXNlU3RhdGUsIHVzZUVmZmVjdH0gZnJvbSAncmVhY3QnXG5pbXBvcnQgUHJvcFR5cGVzIGZyb20gJ3Byb3AtdHlwZXMnXG5pbXBvcnQgdXNlT25jbGlja091dHNpZGUgZnJvbSAncmVhY3QtY29vbC1vbmNsaWNrb3V0c2lkZSdcblxuaW1wb3J0IGljb24gZnJvbSAnc3R5bGUvaWNvbidcbmltcG9ydCB7Rm9ybWF0dGVkTWVzc2FnZX0gZnJvbSAnY29udGV4dC9JMThuJ1xuaW1wb3J0IHtGdW5jdGlvbkJhckV4dGVuc2lvbn0gZnJvbSAnLi91aUV4dGVuc2lvbnMnXG5pbXBvcnQge0J1dHRvbn0gZnJvbSAnLi9idXR0b25zJ1xuXG5jb25zdCB1bFJlc2V0ID0ge1xuICBtYXJnaW5CbG9ja1N0YXJ0OiAwLFxuICBtYXJnaW5CbG9ja0VuZDogMCxcbiAgcGFkZGluZ0lubGluZVN0YXJ0OiAwLFxufVxuXG5jb25zdCBtb2JpbGVTdHlsZSA9IHtcbiAgaGVhZDoge1xuICAgIHBvc2l0aW9uOiAnc3RpY2t5JyxcbiAgICB6SW5kZXg6ICcxJyxcbiAgICB0b3A6ICcwJyxcbiAgICBkaXNwbGF5OiAnZmxleCcsXG4gICAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gICAgcGFkZGluZzogJzFyZW0gMS41cmVtJyxcbiAgICBjb2xvcjogJ3doaXRlJyxcbiAgICBiYWNrZ3JvdW5kQ29sb3I6ICdpbmhlcml0JyxcbiAgICBmb250U2l6ZTogJzE2cHgnLFxuICAgIGZvbnRXZWlnaHQ6ICdib2xkJyxcbiAgICBidXR0b246IHtcbiAgICAgIG1hcmdpblJpZ2h0OiAnMXJlbScsXG4gICAgICBwYWRkaW5nOiAnMCcsXG4gICAgICB3aWR0aDogJzFyZW0nLFxuICAgICAgaGVpZ2h0OiAnMXJlbScsXG4gICAgICBib3JkZXI6ICdub25lJyxcbiAgICB9LFxuICB9LFxuICBvdmVybGF5OiB7XG4gICAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gICAgdG9wOiAnMCcsXG4gICAgd2lkdGg6ICcxMDAlJyxcbiAgICBoZWlnaHQ6ICcxMDAlJyxcbiAgICBkaXNwbGF5OiAnZmxleCcsXG4gICAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gICAganVzdGlmeUNvbnRlbnQ6ICdjZW50ZXInLFxuICAgIGJhY2tncm91bmRDb2xvcjogJ3JnYmEoMCwgMCwgMCwgMC42KScsXG4gICAgb3BhY2l0eTogJzAnLFxuICAgIHRyYW5zZm9ybTogJ3RyYW5zbGF0ZVkoLTEwMCUpJyxcbiAgICB0cmFuc2l0aW9uOiAnb3BhY2l0eSAwLjJzIGVhc2UsIHRyYW5zZm9ybSAwcyBlYXNlIDAuMnMnLFxuICAgIHVsOiB1bFJlc2V0LFxuICB9LFxuICBjb250YWluZXI6IHtcbiAgICBmbGV4OiAnMCAxOHJlbScsXG4gICAgbWF4SGVpZ2h0OiAnY2FsYygxMDAlIC0gMnJlbSknLFxuICAgIGNvbG9yOiAnI2NjYycsXG4gICAgYmFja2dyb3VuZDogJyMzMzMzMzMnLFxuICAgIHdoaXRlU3BhY2U6ICdub3dyYXAnLFxuICAgIGJvcmRlclJhZGl1czogJzRweCcsXG4gICAgdXNlclNlbGVjdDogJ25vbmUnLFxuICAgIG92ZXJmbG93OiAnYXV0bycsXG4gIH0sXG4gIG9wZW46IHtcbiAgICBvcGFjaXR5OiAnMScsXG4gICAgdHJhbnNmb3JtOiAndHJhbnNsYXRlWSgwKScsXG4gICAgdHJhbnNpdGlvbjogJ29wYWNpdHkgMC4ycyBlYXNlLCB0cmFzZm9ybSAwcycsXG4gIH0sXG4gIHRpdGxlOiB7XG4gICAgcGFkZGluZzogJzEycHggMThweCcsXG4gIH0sXG4gIGRpc21pc3M6IHtcbiAgICBiYWNrZ3JvdW5kOiBgY2VudGVyIC8gMXJlbSBuby1yZXBlYXQgdXJsKCR7aWNvbi5jbG9zZX0pLCB0cmFuc3BhcmVudGAsXG4gIH0sXG4gIGJhY2s6IHtcbiAgICBiYWNrZ3JvdW5kOiBgY2VudGVyIC8gMXJlbSBuby1yZXBlYXQgdXJsKCR7aWNvbi5iYWNrfSksIHRyYW5zcGFyZW50YCxcbiAgfSxcbiAgcm93OiB7XG4gICAgY3Vyc29yOiAncG9pbnRlcicsXG4gICAgZGlzcGxheTogJ2ZsZXgnLFxuICAgIHBhZGRpbmc6ICcxcmVtIDEuNXJlbScsXG4gICAgZm9udFNpemU6ICcxNnB4JyxcbiAgICAnOjphZnRlcic6IHtcbiAgICAgIGNvbnRlbnQ6ICdcIiBcIicsXG4gICAgICBtYXJnaW5MZWZ0OiAnMXJlbScsXG4gICAgICB3aWR0aDogJzIwcHgnLFxuICAgICAgaGVpZ2h0OiAnMjBweCcsXG4gICAgICBkaXNwbGF5OiAnaW5saW5lLWJsb2NrJyxcbiAgICAgIGNvbG9yOiAnd2hpdGUnLFxuICAgICAgYmFja2dyb3VuZFBvc2l0aW9uOiAnY2VudGVyJyxcbiAgICAgIGJhY2tncm91bmRTaXplOiAnY292ZXInLFxuICAgIH0sXG4gIH0sXG4gIHNwYWNlOiB7XG4gICAgZmxleDogJzEnLFxuICB9LFxuICBoYXNPcHRpb25zOiB7XG4gICAgJzo6YWZ0ZXInOiB7XG4gICAgICBiYWNrZ3JvdW5kSW1hZ2U6IGB1cmwoJHtpY29uLmFycm93VG9wfSlgLFxuICAgICAgdHJhbnNmb3JtOiAncm90YXRlKDkwZGVnKScsXG4gICAgfSxcbiAgfSxcbiAgc2VsZWN0ZWQ6IHtcbiAgICBjb2xvcjogJ3doaXRlJyxcbiAgICAnOjphZnRlcic6IHtcbiAgICAgIGJhY2tncm91bmRJbWFnZTogYHVybCgke2ljb24uY2hlY2t9KWAsXG4gICAgfSxcbiAgfSxcbn1cblxuLy8gVE9ETyBzb21lIG9mIHN0eWxlcyBhcmUgZm9yIG9sZGVyIHZlcnNpb24gVUkgZGVzaWduLCBjYW4gYmUgc2ltcGxpZmllZFxuY29uc3QgZGVrc3RvcFN0eWxlID0ge1xuICBvdmVybGF5OiB7XG4gICAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gICAgYm90dG9tOiAnY2FsYyg1ZW0gKyB2YXIoLS1ib3R0b20tc3BhY2luZywgMHJlbSkpJyxcbiAgICByaWdodDogJzNyZW0nLFxuICAgIGRpc3BsYXk6ICdmbGV4JyxcbiAgICBhbGlnbkl0ZW1zOiAnZmxleC1lbmQnLFxuICAgIHdpZHRoOiAnMTVyZW0nLFxuICAgIGhlaWdodDogJ2NhbGMoMTAwJSAtIDhyZW0gLSB2YXIoLS1ib3R0b20tc3BhY2luZywgMHJlbSkpJyxcbiAgICBvdXRsaW5lOiAnbm9uZScsXG4gICAgb3BhY2l0eTogJzAnLFxuICAgIHRyYW5zZm9ybTogJ3RyYW5zbGF0ZVkoLTEwMHZoKScsXG4gICAgdWw6IHVsUmVzZXQsXG4gIH0sXG4gIGNvbnRhaW5lcjoge1xuICAgIC4uLm1vYmlsZVN0eWxlLmNvbnRhaW5lcixcbiAgICBtYXhIZWlnaHQ6ICcxMDAlJyxcbiAgICBiYWNrZ3JvdW5kOiAncmdiYSgwLCAwLCAwLCAwLjcpJyxcbiAgfSxcbiAgaGVhZDoge1xuICAgIC4uLm1vYmlsZVN0eWxlLmhlYWQsXG4gICAgYmFja2dyb3VuZDogJyMwMDAnLFxuICB9LFxuICByb3c6IHtcbiAgICAuLi5tb2JpbGVTdHlsZS5yb3csXG4gICAgJzo6YmVmb3JlJzoge1xuICAgICAgLi4ubW9iaWxlU3R5bGUucm93Wyc6OmFmdGVyJ10sXG4gICAgICBtYXJnaW5MZWZ0OiAnMCcsXG4gICAgICBtYXJnaW5SaWdodDogJzRweCcsXG4gICAgfSxcbiAgfSxcbiAgaGFzT3B0aW9uczoge1xuICAgICc6OmJlZm9yZSc6IHtcbiAgICAgIGRpc3BsYXk6ICdub25lJyxcbiAgICB9LFxuICAgICc6OmFmdGVyJzoge1xuICAgICAgYmFja2dyb3VuZEltYWdlOiBgdXJsKCR7aWNvbi5hcnJvd1RvcH0pYCxcbiAgICAgIHRyYW5zZm9ybTogJ3JvdGF0ZSg5MGRlZyknLFxuICAgIH0sXG4gIH0sXG4gIHNlbGVjdGVkOiB7XG4gICAgJzo6YmVmb3JlJzoge1xuICAgICAgYmFja2dyb3VuZEltYWdlOiBgdXJsKCR7aWNvbi5jaGVja30pYCxcbiAgICB9LFxuICB9LFxufVxuXG5jb25zdCBNZW51SXRlbVRleHQgPSAoe3RleHQgPSAnJ30pID0+IChcbiAgPEZvcm1hdHRlZE1lc3NhZ2VcbiAgICBpZD17dGV4dH1cbiAgICBkZWZhdWx0TWVzc2FnZT17XG4gICAgICA8Rm9ybWF0dGVkTWVzc2FnZSBpZD17YEtLUy5TRVRUSU5HLiR7dGV4dH1gfSBkZWZhdWx0TWVzc2FnZT17dGV4dH0gLz5cbiAgICB9XG4gIC8+XG4pXG5cbk1lbnVJdGVtVGV4dC5wcm9wVHlwZXMgPSB7XG4gIHRleHQ6IFByb3BUeXBlcy5zdHJpbmcsXG59XG5cbmNvbnN0IENsb3NlQnV0dG9uID0gcHJvcHMgPT4gKFxuICA8YnV0dG9uXG4gICAgdHlwZT1cImJ1dHRvblwiXG4gICAgYXJpYS1sYWJlbD1cIkNsb3NlIFNldHRpbmdzXCJcbiAgICBjc3M9e21vYmlsZVN0eWxlLmRpc21pc3N9XG4gICAgey4uLnByb3BzfVxuICAvPlxuKVxuXG5jb25zdCBCYWNrQnV0dG9uID0gcHJvcHMgPT4gKFxuICA8YnV0dG9uIHR5cGU9XCJidXR0b25cIiBhcmlhLWxhYmVsPVwiQmFja1wiIGNzcz17bW9iaWxlU3R5bGUuYmFja30gey4uLnByb3BzfSAvPlxuKVxuXG5jb25zdCBTZXR0aW5ncyA9ICh7XG4gIG9wZW4sXG4gIHZhbHVlcyxcbiAgc2VjdGlvbnMsXG4gIHR5cGUsXG4gIHN0eWxlLFxuICBvbkNoYW5nZSxcbiAgb25PcGVuLFxuICBvbkNsb3NlLFxufSkgPT4ge1xuICBjb25zdCBjb21tb25TdHlsZSA9IHR5cGUgPT09ICdkZXNrdG9wJyA/IGRla3N0b3BTdHlsZSA6IG1vYmlsZVN0eWxlXG4gIGNvbnN0IFtwYXRoLCBzZXRQYXRoXSA9IHVzZVN0YXRlKCcvJylcbiAgdXNlRWZmZWN0KCgpID0+IHtcbiAgICBpZiAoIW9wZW4pIHtcbiAgICAgIHNldFBhdGgoJy8nKVxuICAgIH1cbiAgfSwgW29wZW5dKVxuXG4gIGNvbnN0IHJlZiA9IHVzZU9uY2xpY2tPdXRzaWRlKFxuICAgICgpID0+IHtcbiAgICAgIGlmIChvcGVuKSB7XG4gICAgICAgIG9uQ2xvc2UoKVxuICAgICAgfVxuICAgIH0sXG4gICAge2V2ZW50VHlwZXM6IFsnY2xpY2snXX1cbiAgKVxuICBjb25zdCBjdXJyZW50U2VjdGlvbiA9IHNlY3Rpb25zLmZpbmQoaXQgPT4gcGF0aCA9PT0gYC8ke2l0Lm5hbWV9YClcbiAgY29uc3QgbWVudSA9XG4gICAgcGF0aCA9PT0gJy8nXG4gICAgICA/IHtcbiAgICAgICAgICB0aXRsZTogJ0tLUy5TRVRUSU5HJyxcbiAgICAgICAgICBpdGVtczogc2VjdGlvbnMubWFwKCh7bmFtZSwgdGl0bGUsIGl0ZW1zfSkgPT4gKHtcbiAgICAgICAgICAgIGxpbms6IGAvJHtuYW1lfWAsXG4gICAgICAgICAgICBsYWJlbDogdGl0bGUsXG4gICAgICAgICAgICB2YWx1ZTpcbiAgICAgICAgICAgICAgaXRlbXMuZmluZChpdGVtID0+IGl0ZW0udmFsdWUgPT09IHZhbHVlc1tuYW1lXSk/LmxhYmVsIHx8XG4gICAgICAgICAgICAgIHZhbHVlc1tuYW1lXSxcbiAgICAgICAgICB9KSksXG4gICAgICAgIH1cbiAgICAgIDoge1xuICAgICAgICAgIHRpdGxlOiBjdXJyZW50U2VjdGlvbi50aXRsZSxcbiAgICAgICAgICBpdGVtczogY3VycmVudFNlY3Rpb24uaXRlbXMubWFwKCh7dmFsdWUsIGxhYmVsID0gdmFsdWV9KSA9PiAoe1xuICAgICAgICAgICAgbGFiZWwsXG4gICAgICAgICAgICBjaGVja2VkOiB2YWx1ZXNbY3VycmVudFNlY3Rpb24ubmFtZV0gPT09IHZhbHVlLFxuICAgICAgICAgICAgZGF0YTogdmFsdWUsXG4gICAgICAgICAgfSkpLFxuICAgICAgICAgIHByZXZpb3VzOiAnLycsXG4gICAgICAgIH1cbiAgY29uc3QgbmF2aWdhdGUgPSBkZXN0ID0+IHJlcXVlc3RBbmltYXRpb25GcmFtZSgoKSA9PiBzZXRQYXRoKGRlc3QpKVxuXG4gIHJldHVybiAoXG4gICAgPGRpdiAvLyBUT0RPIHJlcGxhY2Ugd2l0aCA8QmFja2Ryb3A+XG4gICAgICByb2xlPVwibWVudVwiXG4gICAgICB0YWJJbmRleD1cIjBcIlxuICAgICAgY3NzPXtbY29tbW9uU3R5bGUub3ZlcmxheSwgb3BlbiAmJiBtb2JpbGVTdHlsZS5vcGVuLCBzdHlsZV19XG4gICAgICBvbkNsaWNrPXtldmVudCA9PiBldmVudC5zdG9wUHJvcGFnYXRpb24oKX1cbiAgICA+XG4gICAgICA8RnVuY3Rpb25CYXJFeHRlbnNpb24+XG4gICAgICAgIDxCdXR0b25cbiAgICAgICAgICBzdGFydEljb249XCJzZXR0aW5nXCJcbiAgICAgICAgICB0aXRsZT1cIktLUy5TRVRUSU5HXCJcbiAgICAgICAgICBkaXNhYmxlZD17c2VjdGlvbnMubGVuZ3RoID09PSAwfVxuICAgICAgICAgIG9uQ2xpY2s9e29uT3Blbn1cbiAgICAgICAgLz5cbiAgICAgIDwvRnVuY3Rpb25CYXJFeHRlbnNpb24+XG4gICAgICA8dWwgcm9sZT1cIm1lbnVcIiByZWY9e3JlZn0gY3NzPXtjb21tb25TdHlsZS5jb250YWluZXJ9PlxuICAgICAgICA8ZGl2IGNzcz17Y29tbW9uU3R5bGUuaGVhZH0+XG4gICAgICAgICAge21lbnUucHJldmlvdXMgPyAoXG4gICAgICAgICAgICA8QmFja0J1dHRvbiBvbkNsaWNrPXsoKSA9PiBuYXZpZ2F0ZSgnLycpfSAvPlxuICAgICAgICAgICkgOiAoXG4gICAgICAgICAgICB0eXBlICE9PSAnZGVza3RvcCcgJiYgPENsb3NlQnV0dG9uIG9uQ2xpY2s9e29uQ2xvc2V9IC8+XG4gICAgICAgICAgKX1cbiAgICAgICAgICA8Rm9ybWF0dGVkTWVzc2FnZSBpZD17bWVudS50aXRsZX0gLz5cbiAgICAgICAgPC9kaXY+XG4gICAgICAgIHttZW51Lml0ZW1zLm1hcCgoe2xhYmVsLCBsaW5rLCB2YWx1ZSwgZGF0YSwgY2hlY2tlZH0pID0+IChcbiAgICAgICAgICAvLyBlc2xpbnQtZGlzYWJsZS1uZXh0LWxpbmUganN4LWExMXkvbm8tbm9uaW50ZXJhY3RpdmUtZWxlbWVudC1pbnRlcmFjdGlvbnNcbiAgICAgICAgICA8bGlcbiAgICAgICAgICAgIHJvbGU9e2xpbmsgPyAnbWVudWl0ZW0nIDogJ21lbnVpdGVtcmFkaW8nfVxuICAgICAgICAgICAgYXJpYS1jaGVja2VkPXtjaGVja2VkfVxuICAgICAgICAgICAgY3NzPXtbXG4gICAgICAgICAgICAgIGNvbW1vblN0eWxlLnJvdyxcbiAgICAgICAgICAgICAgbGluayAmJiBjb21tb25TdHlsZS5oYXNPcHRpb25zLFxuICAgICAgICAgICAgICBjaGVja2VkICYmIGNvbW1vblN0eWxlLnNlbGVjdGVkLFxuICAgICAgICAgICAgXX1cbiAgICAgICAgICAgIGtleT17bGFiZWx9XG4gICAgICAgICAgICBvbkNsaWNrPXsoKSA9PlxuICAgICAgICAgICAgICBsaW5rXG4gICAgICAgICAgICAgICAgPyBuYXZpZ2F0ZShsaW5rKVxuICAgICAgICAgICAgICAgIDogb25DaGFuZ2Uoe25hbWU6IGN1cnJlbnRTZWN0aW9uLm5hbWUsIHZhbHVlOiBkYXRhfSlcbiAgICAgICAgICAgIH1cbiAgICAgICAgICA+XG4gICAgICAgICAgICA8TWVudUl0ZW1UZXh0IHRleHQ9e2xhYmVsfSAvPlxuICAgICAgICAgICAgPGRpdiBjc3M9e21vYmlsZVN0eWxlLnNwYWNlfSAvPlxuICAgICAgICAgICAge3ZhbHVlICYmIDxNZW51SXRlbVRleHQgdGV4dD17dmFsdWV9IC8+fVxuICAgICAgICAgIDwvbGk+XG4gICAgICAgICkpfVxuICAgICAgPC91bD5cbiAgICA8L2Rpdj5cbiAgKVxufVxuXG5TZXR0aW5ncy5wcm9wVHlwZXMgPSB7XG4gIG9wZW46IFByb3BUeXBlcy5ib29sLFxuICB2YWx1ZXM6IFByb3BUeXBlcy5vYmplY3QsXG4gIHNlY3Rpb25zOiBQcm9wVHlwZXMuYXJyYXksXG4gIHR5cGU6IFByb3BUeXBlcy5zdHJpbmcsXG4gIHN0eWxlOiBQcm9wVHlwZXMuYm9vbCxcbiAgb25DaGFuZ2U6IFByb3BUeXBlcy5mdW5jLFxuICBvbk9wZW46IFByb3BUeXBlcy5mdW5jLFxuICBvbkNsb3NlOiBQcm9wVHlwZXMuZnVuYyxcbn1cblxuZXhwb3J0IGRlZmF1bHQgU2V0dGluZ3NcbiJdfQ== */"],
     onClick: event => event.stopPropagation(),
-    children: [jsxRuntime$1.jsx(FunctionBarExtension, {
-      children: jsxRuntime$1.jsx(Button, {
+    children: [jsx$1(FunctionBarExtension, {
+      children: jsx$1(Button, {
         startIcon: "setting",
         title: "KKS.SETTING",
         disabled: sections.length === 0,
         onClick: onOpen
       })
-    }), jsxRuntime$1.jsxs("ul", {
+    }), jsxs("ul", {
       role: "menu",
       ref: ref,
       css: commonStyle.container,
-      children: [jsxRuntime$1.jsxs("div", {
+      children: [jsxs("div", {
         css: commonStyle.head,
-        children: [menu.previous ? jsxRuntime$1.jsx(BackButton, {
+        children: [menu.previous ? jsx$1(BackButton, {
           onClick: () => navigate('/')
-        }) : type !== 'desktop' && jsxRuntime$1.jsx(CloseButton, {
+        }) : type !== 'desktop' && jsx$1(CloseButton, {
           onClick: onClose
-        }), jsxRuntime$1.jsx(FormattedMessage, {
+        }), jsx$1(FormattedMessage, {
           id: menu.title
         })]
       }), menu.items.map(({
@@ -4904,7 +3551,7 @@ const Settings = ({
         data,
         checked
       }) => // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
-      jsxRuntime$1.jsxs("li", {
+      jsxs("li", {
         role: link ? 'menuitem' : 'menuitemradio',
         "aria-checked": checked,
         css: [commonStyle.row, link && commonStyle.hasOptions, checked && commonStyle.selected, process.env.NODE_ENV === "production" ? "" : ";label:Settings;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlNldHRpbmdzLmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQW9RWSIsImZpbGUiOiJTZXR0aW5ncy5qcyIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCB7dXNlU3RhdGUsIHVzZUVmZmVjdH0gZnJvbSAncmVhY3QnXG5pbXBvcnQgUHJvcFR5cGVzIGZyb20gJ3Byb3AtdHlwZXMnXG5pbXBvcnQgdXNlT25jbGlja091dHNpZGUgZnJvbSAncmVhY3QtY29vbC1vbmNsaWNrb3V0c2lkZSdcblxuaW1wb3J0IGljb24gZnJvbSAnc3R5bGUvaWNvbidcbmltcG9ydCB7Rm9ybWF0dGVkTWVzc2FnZX0gZnJvbSAnY29udGV4dC9JMThuJ1xuaW1wb3J0IHtGdW5jdGlvbkJhckV4dGVuc2lvbn0gZnJvbSAnLi91aUV4dGVuc2lvbnMnXG5pbXBvcnQge0J1dHRvbn0gZnJvbSAnLi9idXR0b25zJ1xuXG5jb25zdCB1bFJlc2V0ID0ge1xuICBtYXJnaW5CbG9ja1N0YXJ0OiAwLFxuICBtYXJnaW5CbG9ja0VuZDogMCxcbiAgcGFkZGluZ0lubGluZVN0YXJ0OiAwLFxufVxuXG5jb25zdCBtb2JpbGVTdHlsZSA9IHtcbiAgaGVhZDoge1xuICAgIHBvc2l0aW9uOiAnc3RpY2t5JyxcbiAgICB6SW5kZXg6ICcxJyxcbiAgICB0b3A6ICcwJyxcbiAgICBkaXNwbGF5OiAnZmxleCcsXG4gICAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gICAgcGFkZGluZzogJzFyZW0gMS41cmVtJyxcbiAgICBjb2xvcjogJ3doaXRlJyxcbiAgICBiYWNrZ3JvdW5kQ29sb3I6ICdpbmhlcml0JyxcbiAgICBmb250U2l6ZTogJzE2cHgnLFxuICAgIGZvbnRXZWlnaHQ6ICdib2xkJyxcbiAgICBidXR0b246IHtcbiAgICAgIG1hcmdpblJpZ2h0OiAnMXJlbScsXG4gICAgICBwYWRkaW5nOiAnMCcsXG4gICAgICB3aWR0aDogJzFyZW0nLFxuICAgICAgaGVpZ2h0OiAnMXJlbScsXG4gICAgICBib3JkZXI6ICdub25lJyxcbiAgICB9LFxuICB9LFxuICBvdmVybGF5OiB7XG4gICAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gICAgdG9wOiAnMCcsXG4gICAgd2lkdGg6ICcxMDAlJyxcbiAgICBoZWlnaHQ6ICcxMDAlJyxcbiAgICBkaXNwbGF5OiAnZmxleCcsXG4gICAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gICAganVzdGlmeUNvbnRlbnQ6ICdjZW50ZXInLFxuICAgIGJhY2tncm91bmRDb2xvcjogJ3JnYmEoMCwgMCwgMCwgMC42KScsXG4gICAgb3BhY2l0eTogJzAnLFxuICAgIHRyYW5zZm9ybTogJ3RyYW5zbGF0ZVkoLTEwMCUpJyxcbiAgICB0cmFuc2l0aW9uOiAnb3BhY2l0eSAwLjJzIGVhc2UsIHRyYW5zZm9ybSAwcyBlYXNlIDAuMnMnLFxuICAgIHVsOiB1bFJlc2V0LFxuICB9LFxuICBjb250YWluZXI6IHtcbiAgICBmbGV4OiAnMCAxOHJlbScsXG4gICAgbWF4SGVpZ2h0OiAnY2FsYygxMDAlIC0gMnJlbSknLFxuICAgIGNvbG9yOiAnI2NjYycsXG4gICAgYmFja2dyb3VuZDogJyMzMzMzMzMnLFxuICAgIHdoaXRlU3BhY2U6ICdub3dyYXAnLFxuICAgIGJvcmRlclJhZGl1czogJzRweCcsXG4gICAgdXNlclNlbGVjdDogJ25vbmUnLFxuICAgIG92ZXJmbG93OiAnYXV0bycsXG4gIH0sXG4gIG9wZW46IHtcbiAgICBvcGFjaXR5OiAnMScsXG4gICAgdHJhbnNmb3JtOiAndHJhbnNsYXRlWSgwKScsXG4gICAgdHJhbnNpdGlvbjogJ29wYWNpdHkgMC4ycyBlYXNlLCB0cmFzZm9ybSAwcycsXG4gIH0sXG4gIHRpdGxlOiB7XG4gICAgcGFkZGluZzogJzEycHggMThweCcsXG4gIH0sXG4gIGRpc21pc3M6IHtcbiAgICBiYWNrZ3JvdW5kOiBgY2VudGVyIC8gMXJlbSBuby1yZXBlYXQgdXJsKCR7aWNvbi5jbG9zZX0pLCB0cmFuc3BhcmVudGAsXG4gIH0sXG4gIGJhY2s6IHtcbiAgICBiYWNrZ3JvdW5kOiBgY2VudGVyIC8gMXJlbSBuby1yZXBlYXQgdXJsKCR7aWNvbi5iYWNrfSksIHRyYW5zcGFyZW50YCxcbiAgfSxcbiAgcm93OiB7XG4gICAgY3Vyc29yOiAncG9pbnRlcicsXG4gICAgZGlzcGxheTogJ2ZsZXgnLFxuICAgIHBhZGRpbmc6ICcxcmVtIDEuNXJlbScsXG4gICAgZm9udFNpemU6ICcxNnB4JyxcbiAgICAnOjphZnRlcic6IHtcbiAgICAgIGNvbnRlbnQ6ICdcIiBcIicsXG4gICAgICBtYXJnaW5MZWZ0OiAnMXJlbScsXG4gICAgICB3aWR0aDogJzIwcHgnLFxuICAgICAgaGVpZ2h0OiAnMjBweCcsXG4gICAgICBkaXNwbGF5OiAnaW5saW5lLWJsb2NrJyxcbiAgICAgIGNvbG9yOiAnd2hpdGUnLFxuICAgICAgYmFja2dyb3VuZFBvc2l0aW9uOiAnY2VudGVyJyxcbiAgICAgIGJhY2tncm91bmRTaXplOiAnY292ZXInLFxuICAgIH0sXG4gIH0sXG4gIHNwYWNlOiB7XG4gICAgZmxleDogJzEnLFxuICB9LFxuICBoYXNPcHRpb25zOiB7XG4gICAgJzo6YWZ0ZXInOiB7XG4gICAgICBiYWNrZ3JvdW5kSW1hZ2U6IGB1cmwoJHtpY29uLmFycm93VG9wfSlgLFxuICAgICAgdHJhbnNmb3JtOiAncm90YXRlKDkwZGVnKScsXG4gICAgfSxcbiAgfSxcbiAgc2VsZWN0ZWQ6IHtcbiAgICBjb2xvcjogJ3doaXRlJyxcbiAgICAnOjphZnRlcic6IHtcbiAgICAgIGJhY2tncm91bmRJbWFnZTogYHVybCgke2ljb24uY2hlY2t9KWAsXG4gICAgfSxcbiAgfSxcbn1cblxuLy8gVE9ETyBzb21lIG9mIHN0eWxlcyBhcmUgZm9yIG9sZGVyIHZlcnNpb24gVUkgZGVzaWduLCBjYW4gYmUgc2ltcGxpZmllZFxuY29uc3QgZGVrc3RvcFN0eWxlID0ge1xuICBvdmVybGF5OiB7XG4gICAgcG9zaXRpb246ICdhYnNvbHV0ZScsXG4gICAgYm90dG9tOiAnY2FsYyg1ZW0gKyB2YXIoLS1ib3R0b20tc3BhY2luZywgMHJlbSkpJyxcbiAgICByaWdodDogJzNyZW0nLFxuICAgIGRpc3BsYXk6ICdmbGV4JyxcbiAgICBhbGlnbkl0ZW1zOiAnZmxleC1lbmQnLFxuICAgIHdpZHRoOiAnMTVyZW0nLFxuICAgIGhlaWdodDogJ2NhbGMoMTAwJSAtIDhyZW0gLSB2YXIoLS1ib3R0b20tc3BhY2luZywgMHJlbSkpJyxcbiAgICBvdXRsaW5lOiAnbm9uZScsXG4gICAgb3BhY2l0eTogJzAnLFxuICAgIHRyYW5zZm9ybTogJ3RyYW5zbGF0ZVkoLTEwMHZoKScsXG4gICAgdWw6IHVsUmVzZXQsXG4gIH0sXG4gIGNvbnRhaW5lcjoge1xuICAgIC4uLm1vYmlsZVN0eWxlLmNvbnRhaW5lcixcbiAgICBtYXhIZWlnaHQ6ICcxMDAlJyxcbiAgICBiYWNrZ3JvdW5kOiAncmdiYSgwLCAwLCAwLCAwLjcpJyxcbiAgfSxcbiAgaGVhZDoge1xuICAgIC4uLm1vYmlsZVN0eWxlLmhlYWQsXG4gICAgYmFja2dyb3VuZDogJyMwMDAnLFxuICB9LFxuICByb3c6IHtcbiAgICAuLi5tb2JpbGVTdHlsZS5yb3csXG4gICAgJzo6YmVmb3JlJzoge1xuICAgICAgLi4ubW9iaWxlU3R5bGUucm93Wyc6OmFmdGVyJ10sXG4gICAgICBtYXJnaW5MZWZ0OiAnMCcsXG4gICAgICBtYXJnaW5SaWdodDogJzRweCcsXG4gICAgfSxcbiAgfSxcbiAgaGFzT3B0aW9uczoge1xuICAgICc6OmJlZm9yZSc6IHtcbiAgICAgIGRpc3BsYXk6ICdub25lJyxcbiAgICB9LFxuICAgICc6OmFmdGVyJzoge1xuICAgICAgYmFja2dyb3VuZEltYWdlOiBgdXJsKCR7aWNvbi5hcnJvd1RvcH0pYCxcbiAgICAgIHRyYW5zZm9ybTogJ3JvdGF0ZSg5MGRlZyknLFxuICAgIH0sXG4gIH0sXG4gIHNlbGVjdGVkOiB7XG4gICAgJzo6YmVmb3JlJzoge1xuICAgICAgYmFja2dyb3VuZEltYWdlOiBgdXJsKCR7aWNvbi5jaGVja30pYCxcbiAgICB9LFxuICB9LFxufVxuXG5jb25zdCBNZW51SXRlbVRleHQgPSAoe3RleHQgPSAnJ30pID0+IChcbiAgPEZvcm1hdHRlZE1lc3NhZ2VcbiAgICBpZD17dGV4dH1cbiAgICBkZWZhdWx0TWVzc2FnZT17XG4gICAgICA8Rm9ybWF0dGVkTWVzc2FnZSBpZD17YEtLUy5TRVRUSU5HLiR7dGV4dH1gfSBkZWZhdWx0TWVzc2FnZT17dGV4dH0gLz5cbiAgICB9XG4gIC8+XG4pXG5cbk1lbnVJdGVtVGV4dC5wcm9wVHlwZXMgPSB7XG4gIHRleHQ6IFByb3BUeXBlcy5zdHJpbmcsXG59XG5cbmNvbnN0IENsb3NlQnV0dG9uID0gcHJvcHMgPT4gKFxuICA8YnV0dG9uXG4gICAgdHlwZT1cImJ1dHRvblwiXG4gICAgYXJpYS1sYWJlbD1cIkNsb3NlIFNldHRpbmdzXCJcbiAgICBjc3M9e21vYmlsZVN0eWxlLmRpc21pc3N9XG4gICAgey4uLnByb3BzfVxuICAvPlxuKVxuXG5jb25zdCBCYWNrQnV0dG9uID0gcHJvcHMgPT4gKFxuICA8YnV0dG9uIHR5cGU9XCJidXR0b25cIiBhcmlhLWxhYmVsPVwiQmFja1wiIGNzcz17bW9iaWxlU3R5bGUuYmFja30gey4uLnByb3BzfSAvPlxuKVxuXG5jb25zdCBTZXR0aW5ncyA9ICh7XG4gIG9wZW4sXG4gIHZhbHVlcyxcbiAgc2VjdGlvbnMsXG4gIHR5cGUsXG4gIHN0eWxlLFxuICBvbkNoYW5nZSxcbiAgb25PcGVuLFxuICBvbkNsb3NlLFxufSkgPT4ge1xuICBjb25zdCBjb21tb25TdHlsZSA9IHR5cGUgPT09ICdkZXNrdG9wJyA/IGRla3N0b3BTdHlsZSA6IG1vYmlsZVN0eWxlXG4gIGNvbnN0IFtwYXRoLCBzZXRQYXRoXSA9IHVzZVN0YXRlKCcvJylcbiAgdXNlRWZmZWN0KCgpID0+IHtcbiAgICBpZiAoIW9wZW4pIHtcbiAgICAgIHNldFBhdGgoJy8nKVxuICAgIH1cbiAgfSwgW29wZW5dKVxuXG4gIGNvbnN0IHJlZiA9IHVzZU9uY2xpY2tPdXRzaWRlKFxuICAgICgpID0+IHtcbiAgICAgIGlmIChvcGVuKSB7XG4gICAgICAgIG9uQ2xvc2UoKVxuICAgICAgfVxuICAgIH0sXG4gICAge2V2ZW50VHlwZXM6IFsnY2xpY2snXX1cbiAgKVxuICBjb25zdCBjdXJyZW50U2VjdGlvbiA9IHNlY3Rpb25zLmZpbmQoaXQgPT4gcGF0aCA9PT0gYC8ke2l0Lm5hbWV9YClcbiAgY29uc3QgbWVudSA9XG4gICAgcGF0aCA9PT0gJy8nXG4gICAgICA/IHtcbiAgICAgICAgICB0aXRsZTogJ0tLUy5TRVRUSU5HJyxcbiAgICAgICAgICBpdGVtczogc2VjdGlvbnMubWFwKCh7bmFtZSwgdGl0bGUsIGl0ZW1zfSkgPT4gKHtcbiAgICAgICAgICAgIGxpbms6IGAvJHtuYW1lfWAsXG4gICAgICAgICAgICBsYWJlbDogdGl0bGUsXG4gICAgICAgICAgICB2YWx1ZTpcbiAgICAgICAgICAgICAgaXRlbXMuZmluZChpdGVtID0+IGl0ZW0udmFsdWUgPT09IHZhbHVlc1tuYW1lXSk/LmxhYmVsIHx8XG4gICAgICAgICAgICAgIHZhbHVlc1tuYW1lXSxcbiAgICAgICAgICB9KSksXG4gICAgICAgIH1cbiAgICAgIDoge1xuICAgICAgICAgIHRpdGxlOiBjdXJyZW50U2VjdGlvbi50aXRsZSxcbiAgICAgICAgICBpdGVtczogY3VycmVudFNlY3Rpb24uaXRlbXMubWFwKCh7dmFsdWUsIGxhYmVsID0gdmFsdWV9KSA9PiAoe1xuICAgICAgICAgICAgbGFiZWwsXG4gICAgICAgICAgICBjaGVja2VkOiB2YWx1ZXNbY3VycmVudFNlY3Rpb24ubmFtZV0gPT09IHZhbHVlLFxuICAgICAgICAgICAgZGF0YTogdmFsdWUsXG4gICAgICAgICAgfSkpLFxuICAgICAgICAgIHByZXZpb3VzOiAnLycsXG4gICAgICAgIH1cbiAgY29uc3QgbmF2aWdhdGUgPSBkZXN0ID0+IHJlcXVlc3RBbmltYXRpb25GcmFtZSgoKSA9PiBzZXRQYXRoKGRlc3QpKVxuXG4gIHJldHVybiAoXG4gICAgPGRpdiAvLyBUT0RPIHJlcGxhY2Ugd2l0aCA8QmFja2Ryb3A+XG4gICAgICByb2xlPVwibWVudVwiXG4gICAgICB0YWJJbmRleD1cIjBcIlxuICAgICAgY3NzPXtbY29tbW9uU3R5bGUub3ZlcmxheSwgb3BlbiAmJiBtb2JpbGVTdHlsZS5vcGVuLCBzdHlsZV19XG4gICAgICBvbkNsaWNrPXtldmVudCA9PiBldmVudC5zdG9wUHJvcGFnYXRpb24oKX1cbiAgICA+XG4gICAgICA8RnVuY3Rpb25CYXJFeHRlbnNpb24+XG4gICAgICAgIDxCdXR0b25cbiAgICAgICAgICBzdGFydEljb249XCJzZXR0aW5nXCJcbiAgICAgICAgICB0aXRsZT1cIktLUy5TRVRUSU5HXCJcbiAgICAgICAgICBkaXNhYmxlZD17c2VjdGlvbnMubGVuZ3RoID09PSAwfVxuICAgICAgICAgIG9uQ2xpY2s9e29uT3Blbn1cbiAgICAgICAgLz5cbiAgICAgIDwvRnVuY3Rpb25CYXJFeHRlbnNpb24+XG4gICAgICA8dWwgcm9sZT1cIm1lbnVcIiByZWY9e3JlZn0gY3NzPXtjb21tb25TdHlsZS5jb250YWluZXJ9PlxuICAgICAgICA8ZGl2IGNzcz17Y29tbW9uU3R5bGUuaGVhZH0+XG4gICAgICAgICAge21lbnUucHJldmlvdXMgPyAoXG4gICAgICAgICAgICA8QmFja0J1dHRvbiBvbkNsaWNrPXsoKSA9PiBuYXZpZ2F0ZSgnLycpfSAvPlxuICAgICAgICAgICkgOiAoXG4gICAgICAgICAgICB0eXBlICE9PSAnZGVza3RvcCcgJiYgPENsb3NlQnV0dG9uIG9uQ2xpY2s9e29uQ2xvc2V9IC8+XG4gICAgICAgICAgKX1cbiAgICAgICAgICA8Rm9ybWF0dGVkTWVzc2FnZSBpZD17bWVudS50aXRsZX0gLz5cbiAgICAgICAgPC9kaXY+XG4gICAgICAgIHttZW51Lml0ZW1zLm1hcCgoe2xhYmVsLCBsaW5rLCB2YWx1ZSwgZGF0YSwgY2hlY2tlZH0pID0+IChcbiAgICAgICAgICAvLyBlc2xpbnQtZGlzYWJsZS1uZXh0LWxpbmUganN4LWExMXkvbm8tbm9uaW50ZXJhY3RpdmUtZWxlbWVudC1pbnRlcmFjdGlvbnNcbiAgICAgICAgICA8bGlcbiAgICAgICAgICAgIHJvbGU9e2xpbmsgPyAnbWVudWl0ZW0nIDogJ21lbnVpdGVtcmFkaW8nfVxuICAgICAgICAgICAgYXJpYS1jaGVja2VkPXtjaGVja2VkfVxuICAgICAgICAgICAgY3NzPXtbXG4gICAgICAgICAgICAgIGNvbW1vblN0eWxlLnJvdyxcbiAgICAgICAgICAgICAgbGluayAmJiBjb21tb25TdHlsZS5oYXNPcHRpb25zLFxuICAgICAgICAgICAgICBjaGVja2VkICYmIGNvbW1vblN0eWxlLnNlbGVjdGVkLFxuICAgICAgICAgICAgXX1cbiAgICAgICAgICAgIGtleT17bGFiZWx9XG4gICAgICAgICAgICBvbkNsaWNrPXsoKSA9PlxuICAgICAgICAgICAgICBsaW5rXG4gICAgICAgICAgICAgICAgPyBuYXZpZ2F0ZShsaW5rKVxuICAgICAgICAgICAgICAgIDogb25DaGFuZ2Uoe25hbWU6IGN1cnJlbnRTZWN0aW9uLm5hbWUsIHZhbHVlOiBkYXRhfSlcbiAgICAgICAgICAgIH1cbiAgICAgICAgICA+XG4gICAgICAgICAgICA8TWVudUl0ZW1UZXh0IHRleHQ9e2xhYmVsfSAvPlxuICAgICAgICAgICAgPGRpdiBjc3M9e21vYmlsZVN0eWxlLnNwYWNlfSAvPlxuICAgICAgICAgICAge3ZhbHVlICYmIDxNZW51SXRlbVRleHQgdGV4dD17dmFsdWV9IC8+fVxuICAgICAgICAgIDwvbGk+XG4gICAgICAgICkpfVxuICAgICAgPC91bD5cbiAgICA8L2Rpdj5cbiAgKVxufVxuXG5TZXR0aW5ncy5wcm9wVHlwZXMgPSB7XG4gIG9wZW46IFByb3BUeXBlcy5ib29sLFxuICB2YWx1ZXM6IFByb3BUeXBlcy5vYmplY3QsXG4gIHNlY3Rpb25zOiBQcm9wVHlwZXMuYXJyYXksXG4gIHR5cGU6IFByb3BUeXBlcy5zdHJpbmcsXG4gIHN0eWxlOiBQcm9wVHlwZXMuYm9vbCxcbiAgb25DaGFuZ2U6IFByb3BUeXBlcy5mdW5jLFxuICBvbk9wZW46IFByb3BUeXBlcy5mdW5jLFxuICBvbkNsb3NlOiBQcm9wVHlwZXMuZnVuYyxcbn1cblxuZXhwb3J0IGRlZmF1bHQgU2V0dGluZ3NcbiJdfQ== */"],
@@ -4912,11 +3559,11 @@ const Settings = ({
           name: currentSection.name,
           value: data
         }),
-        children: [jsxRuntime$1.jsx(MenuItemText, {
+        children: [jsx$1(MenuItemText, {
           text: label
-        }), jsxRuntime$1.jsx("div", {
+        }), jsx$1("div", {
           css: mobileStyle.space
-        }), value && jsxRuntime$1.jsx(MenuItemText, {
+        }), value && jsx$1(MenuItemText, {
           text: value
         })]
       }, label))]
@@ -4949,7 +3596,7 @@ const style$6 = {
 
 const PlayPanel = ({
   onClick
-}) => jsxRuntime$1.jsx("div", {
+}) => jsx$1("div", {
   css: style$6,
   onClick: onClick
 });
@@ -4980,20 +3627,20 @@ const VolumeControl = ({
   const [{
     volume,
     muted
-  }, setState] = React.useState({
+  }, setState] = useState({
     muted: false,
     volume: 1
   });
-  React.useEffect(() => subscribe(setState), []);
+  useEffect(() => subscribe(setState), []);
   const iconName = muted ? 'mute' : volume < 0.5 ? 'volumeLow' : 'volumeHight';
-  return jsxRuntime$1.jsxs("div", {
+  return jsxs("div", {
     className: "kks-player__volume",
     css: style$5,
-    children: [jsxRuntime$1.jsx(Button, {
+    children: [jsx$1(Button, {
       startIcon: iconName,
       title: muted ? 'KKS.PLAYER.UNMUTE' : 'KKS.PLAYER.MUTE',
       onClick: toggleMute
-    }), slider && jsxRuntime$1.jsx(SimpleSlider, {
+    }), slider && jsx$1(SimpleSlider, {
       css: _ref$2,
       value: muted ? 0 : volume,
       max: 1,
@@ -5345,7 +3992,7 @@ const loadShaka = async (videoElement, config = {}) => {
   getUrlObject(mediaSource => {
     player.mediaSource = mediaSource;
   });
-  const shaka = await Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require('shaka-player')); });
+  const shaka = await import('shaka-player');
   window.shaka = shaka;
   shaka.polyfill.installAll();
   player = new shaka.Player(videoElement);
@@ -5492,9 +4139,9 @@ const loadBitmovin = async ({
   const {
     Player,
     PlayerEvent
-  } = await Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require('bitmovin-player/modules/bitmovinplayer-core')); });
+  } = await import('bitmovin-player/modules/bitmovinplayer-core');
   const nativeHls = needNativeHls();
-  const bitmovinModules = [].concat(await Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require('bitmovin-player/modules/bitmovinplayer-engine-bitmovin')); }), nativeHls && (await Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require('bitmovin-player/modules/bitmovinplayer-engine-native')); })), await Promise.all([Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require('bitmovin-player/modules/bitmovinplayer-drm')); }), Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require('bitmovin-player/modules/bitmovinplayer-abr')); }), Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require('bitmovin-player/modules/bitmovinplayer-subtitles')); }), Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require('bitmovin-player/modules/bitmovinplayer-container-mp4')); })]), nativeHls && (await Promise.all([Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require('bitmovin-player/modules/bitmovinplayer-hls')); }), Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require('bitmovin-player/modules/bitmovinplayer-subtitles-native')); })])), !nativeHls && (await Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require('bitmovin-player/modules/bitmovinplayer-subtitles-vtt')); })), !nativeHls && (await Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require('bitmovin-player/modules/bitmovinplayer-xml')); })), !nativeHls && (await Promise.all([Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require('bitmovin-player/modules/bitmovinplayer-dash')); }), Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require('bitmovin-player/modules/bitmovinplayer-mserenderer')); }), Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require('bitmovin-player/modules/bitmovinplayer-polyfill')); })]))).filter(Boolean);
+  const bitmovinModules = [].concat(await import('bitmovin-player/modules/bitmovinplayer-engine-bitmovin'), nativeHls && (await import('bitmovin-player/modules/bitmovinplayer-engine-native')), await Promise.all([import('bitmovin-player/modules/bitmovinplayer-drm'), import('bitmovin-player/modules/bitmovinplayer-abr'), import('bitmovin-player/modules/bitmovinplayer-subtitles'), import('bitmovin-player/modules/bitmovinplayer-container-mp4')]), nativeHls && (await Promise.all([import('bitmovin-player/modules/bitmovinplayer-hls'), import('bitmovin-player/modules/bitmovinplayer-subtitles-native')])), !nativeHls && (await import('bitmovin-player/modules/bitmovinplayer-subtitles-vtt')), !nativeHls && (await import('bitmovin-player/modules/bitmovinplayer-xml')), !nativeHls && (await Promise.all([import('bitmovin-player/modules/bitmovinplayer-dash'), import('bitmovin-player/modules/bitmovinplayer-mserenderer'), import('bitmovin-player/modules/bitmovinplayer-polyfill')]))).filter(Boolean);
   bitmovinModules.forEach(module => Player.addModule(module.default));
   const extensionOptions = {
     drm: {}
@@ -5710,18 +4357,18 @@ const Video = ({
   onBlockedAutoplay,
   ...videoAttributes
 }) => {
-  const handlers = React.useRef();
+  const handlers = useRef();
   handlers.current = {
     onPlaybackStateChange,
     onBlockedAutoplay
   };
-  const videoContainer = React.useRef();
-  const videoElement = React.useRef();
-  const [playbackState, setPlaybackState] = React.useState('');
-  const [player, setPlayer] = React.useState();
-  const [contentLoaded, setContentLoaded] = React.useState(false);
+  const videoContainer = useRef();
+  const videoElement = useRef();
+  const [playbackState, setPlaybackState] = useState('');
+  const [player, setPlayer] = useState();
+  const [contentLoaded, setContentLoaded] = useState(false);
   const ready = player && contentLoaded && playbackState !== 'loading';
-  React.useEffect(() => {
+  useEffect(() => {
     const loadTask = loadPlayer(videoElement.current, {
       container: videoContainer.current,
       autoplay: false,
@@ -5740,7 +4387,7 @@ const Video = ({
     });
     return () => loadTask.then(currentPlayer => currentPlayer === null || currentPlayer === void 0 ? void 0 : currentPlayer.destroy());
   }, []);
-  React.useEffect(() => {
+  useEffect(() => {
     if (source && (source.length > 0 || source.src || source.hls || source.dash) && player) {
       setPlaybackState('loading');
       load(videoElement.current, {
@@ -5757,7 +4404,7 @@ const Video = ({
       setContentLoaded(false);
     };
   }, [player, source]);
-  React.useEffect(() => subscribePlaybackState(videoElement.current, (event, state) => {
+  useEffect(() => subscribePlaybackState(videoElement.current, (event, state) => {
     var _handlers$current$onP, _handlers$current;
 
     (_handlers$current$onP = (_handlers$current = handlers.current).onPlaybackStateChange) === null || _handlers$current$onP === void 0 ? void 0 : _handlers$current$onP.call(_handlers$current, event, state); // external logic may want to change targetState, hold playbackState update
@@ -5767,7 +4414,7 @@ const Video = ({
   }), []); // useEffect is too late to unlock play on Safari
   // TODO check if this work after upgrading React 18
 
-  React.useLayoutEffect(() => {
+  useLayoutEffect(() => {
     // TODO ensure previous play() is finished or catch exception
     if (player && (targetState === 'paused' || /playing|paused|ended/.test(playbackState))) {
       var _syncPlaybackState;
@@ -5782,7 +4429,7 @@ const Video = ({
       });
     }
   }, [playbackState, targetState]);
-  React.useEffect(() => {
+  useEffect(() => {
     const {
       currentTime
     } = getMediaTime(videoElement.current, plugins);
@@ -5794,35 +4441,35 @@ const Video = ({
       }, targetTime);
     }
   }, [targetTime, ready]);
-  React.useEffect(() => {
+  useEffect(() => {
     setPlaybackRate(videoElement.current, {
       player
     }, playbackRate);
   }, [playbackRate]);
-  React.useEffect(() => {
+  useEffect(() => {
     if (player) {
       setQuality(videoElement.current, {
         player
       }, quality);
     }
   }, [quality, player]);
-  React.useEffect(() => {
+  useEffect(() => {
     if (player) {
       setSubtitle(videoElement.current, {
         player
       }, subtitles);
     }
   }, [subtitles, player]);
-  React.useEffect(() => {
+  useEffect(() => {
     if (player) {
       setAudio(videoElement.current, {
         player
       }, audio);
     }
   }, [audio, player]);
-  return jsxRuntime$1.jsx("div", {
+  return jsx$1("div", {
     ref: videoContainer,
-    children: jsxRuntime$1.jsx("video", {
+    children: jsx$1("video", {
       ref: multiRef(videoRef, videoElement),
       muted: true,
       playsInline: true,
@@ -6000,7 +4647,7 @@ const syncVolume = (video, setInitVolume) => {
     setInitVolume((_JSON$parse = JSON.parse(localStorage.getItem(volumeStorageKey))) !== null && _JSON$parse !== void 0 ? _JSON$parse : 1); // eslint-disable-next-line no-empty
   } catch (e) {}
 
-  return on$1(video, 'volumechange', () => {
+  return on(video, 'volumechange', () => {
     localStorage.setItem(volumeStorageKey, video.volume);
   });
 };
@@ -6012,7 +4659,7 @@ const linkMediaVolume = getOptions => {
       setUnmuteVolume
     } = getOptions();
     setUnmuteVolume(media.volume);
-    on$1(media, 'volumechange', () => handler({
+    on(media, 'volumechange', () => handler({
       volume: media.volume,
       muted: media.muted
     }));
@@ -6107,7 +4754,7 @@ const showStyle = {
   opacity: 1,
   transition: 'z-index 0s linear, opacity 0.5s ease'
 };
-const VideoThumbnail = /*#__PURE__*/React.forwardRef(({
+const VideoThumbnail = /*#__PURE__*/forwardRef(({
   className,
   style,
   time,
@@ -6116,12 +4763,12 @@ const VideoThumbnail = /*#__PURE__*/React.forwardRef(({
   y,
   width,
   height
-}, ref) => jsxRuntime$1.jsxs("div", {
+}, ref) => jsxs("div", {
   ref: ref,
   css: [containerStyle, Number.isFinite(time) && time >= 0 && showStyle, process.env.NODE_ENV === "production" ? "" : ";label:VideoThumbnail;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlZpZGVvVGh1bWJuYWlsLmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQWtDTSIsImZpbGUiOiJWaWRlb1RodW1ibmFpbC5qcyIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCB7Zm9yd2FyZFJlZn0gZnJvbSAncmVhY3QnXG5pbXBvcnQgUHJvcFR5cGVzIGZyb20gJ3Byb3AtdHlwZXMnXG5cbmltcG9ydCBmb3JtYXR0ZWRUaW1lIGZyb20gJ3V0aWwvZm9ybWF0dGVkVGltZSdcblxuY29uc3QgY29udGFpbmVyU3R5bGUgPSB7XG4gIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICB6SW5kZXg6IC0yLFxuICBsZWZ0OiAwLFxuICBib3R0b206ICcyOHB4JyxcbiAgdGV4dEFsaWduOiAnY2VudGVyJyxcbiAgb3BhY2l0eTogMCxcbiAgdHJhbnNmb3JtOiBgdHJhbnNsYXRlWChtYXgoMHB4LCBtaW4oXG4gICAgY2FsYyh2YXIoLS1wb2ludGVyLXgpIC0gdmFyKC0tc2Vla2Jhci1sZWZ0KSAtIDUwJSksXG4gICAgY2FsYyh2YXIoLS1zZWVrYmFyLXJpZ2h0KSAtIDEwMCUgLSAyZW0pXG4gICkpKWAsXG4gICc+IGRpdic6IHtcbiAgICBib3JkZXI6ICcxcHggc29saWQgd2hpdGUnLFxuICAgIGJveFNoYWRvdzogJzAgMCA1cHggMnB4IHJnYmEoMCwgMCwgMCwgMC4zKScsXG4gICAgYmFja2dyb3VuZENvbG9yOiAnIzAwMCcsXG4gIH0sXG59XG5cbmNvbnN0IHNob3dTdHlsZSA9IHtcbiAgekluZGV4OiAxLFxuICBvcGFjaXR5OiAxLFxuICB0cmFuc2l0aW9uOiAnei1pbmRleCAwcyBsaW5lYXIsIG9wYWNpdHkgMC41cyBlYXNlJyxcbn1cblxuY29uc3QgVmlkZW9UaHVtYm5haWwgPSBmb3J3YXJkUmVmKFxuICAoe2NsYXNzTmFtZSwgc3R5bGUsIHRpbWUsIGltYWdlLCB4LCB5LCB3aWR0aCwgaGVpZ2h0fSwgcmVmKSA9PiAoXG4gICAgPGRpdlxuICAgICAgcmVmPXtyZWZ9XG4gICAgICBjc3M9e1tjb250YWluZXJTdHlsZSwgTnVtYmVyLmlzRmluaXRlKHRpbWUpICYmIHRpbWUgPj0gMCAmJiBzaG93U3R5bGVdfVxuICAgICAgY2xhc3NOYW1lPXtjbGFzc05hbWV9XG4gICAgICBzdHlsZT17c3R5bGV9XG4gICAgPlxuICAgICAgPGRpdlxuICAgICAgICBzdHlsZT17e1xuICAgICAgICAgIHdpZHRoOiBgJHt3aWR0aH1weGAsXG4gICAgICAgICAgaGVpZ2h0OiBgJHtoZWlnaHR9cHhgLFxuICAgICAgICAgIGJhY2tncm91bmRJbWFnZTogYHVybCgke2ltYWdlfSlgLFxuICAgICAgICAgIGJhY2tncm91bmRQb3NpdGlvbjogYC0ke3h9cHggLSR7eX1weGAsXG4gICAgICAgIH19XG4gICAgICAvPlxuICAgICAge2Zvcm1hdHRlZFRpbWUodGltZSl9XG4gICAgPC9kaXY+XG4gIClcbilcblxuVmlkZW9UaHVtYm5haWwucHJvcFR5cGVzID0ge1xuICBjbGFzc05hbWU6IFByb3BUeXBlcy5zdHJpbmcsXG4gIHN0eWxlOiBQcm9wVHlwZXMub2JqZWN0LFxuICB0aW1lOiBQcm9wVHlwZXMubnVtYmVyLFxuICBpbWFnZTogUHJvcFR5cGVzLnN0cmluZyxcbiAgeDogUHJvcFR5cGVzLm51bWJlcixcbiAgeTogUHJvcFR5cGVzLm51bWJlcixcbiAgd2lkdGg6IFByb3BUeXBlcy5udW1iZXIsXG4gIGhlaWdodDogUHJvcFR5cGVzLm51bWJlcixcbn1cblxuZXhwb3J0IGRlZmF1bHQgVmlkZW9UaHVtYm5haWxcbiJdfQ== */"],
   className: className,
   style: style,
-  children: [jsxRuntime$1.jsx("div", {
+  children: [jsx$1("div", {
     style: {
       width: `${width}px`,
       height: `${height}px`,
@@ -6149,17 +4796,17 @@ const SeekPreview = ({
   thumbnailsUrl,
   time
 }) => {
-  const thumbnailRef = React.useRef();
-  const [thumbnails, setThumbnails] = React.useState([]);
-  React.useEffect(() => {
+  const thumbnailRef = useRef();
+  const [thumbnails, setThumbnails] = useState([]);
+  useEffect(() => {
     setThumbnails([]);
 
     if (thumbnailsUrl) {
-      axios__default["default"].get(thumbnailsUrl).then(result => parseThumbnails(result.data, thumbnailsUrl)).then(setThumbnails);
+      axios.get(thumbnailsUrl).then(result => parseThumbnails(result.data, thumbnailsUrl)).then(setThumbnails);
     }
   }, [thumbnailsUrl]);
-  const currentThumbnail = React.useMemo(() => thumbnails.find(t => t.startTime <= time && time <= t.endTime) || at(thumbnails, -1) || '', [time]);
-  return thumbnails.length > 0 && jsxRuntime$1.jsx(VideoThumbnail, {
+  const currentThumbnail = useMemo(() => thumbnails.find(t => t.startTime <= time && time <= t.endTime) || at(thumbnails, -1) || '', [time]);
+  return thumbnails.length > 0 && jsx$1(VideoThumbnail, {
     ref: thumbnailRef,
     time: time,
     image: currentThumbnail.image,
@@ -6189,9 +4836,9 @@ const subtitlesStyle = {
 
 const Subtitles = ({
   text
-}) => jsxRuntime$1.jsx("div", {
+}) => jsx$1("div", {
   css: subtitlesStyle,
-  children: jsxRuntime$1.jsx("span", {
+  children: jsx$1("span", {
     children: text
   })
 });
@@ -6205,21 +4852,21 @@ Subtitles.propTypes = {
 const ActiveSubtitles = ({
   player
 }) => {
-  const [subtitles, setSubtitles] = React.useState({});
-  React.useEffect(() => {
+  const [subtitles, setSubtitles] = useState({});
+  useEffect(() => {
     if (player) {
       return subscribeSubtitles({}, {
         player
       }, currentSubtitles => setSubtitles(currentSubtitles));
     }
   }, [player]);
-  return /*#__PURE__*/jsxRuntime.jsx(Subtitles, {
+  return /*#__PURE__*/jsx(Subtitles, {
     text: subtitles.text
   });
 };
 
 /* eslint-disable no-param-reassign */
-const sizes$1 = {
+const sizes$2 = {
   'small-embed': 200,
   embed: 400,
   'tablet-portrait': 600,
@@ -6228,8 +4875,8 @@ const sizes$1 = {
 };
 
 const useLinkState = (request, dependencies = []) => {
-  const [state, setState] = React.useState();
-  React.useEffect(() => {
+  const [state, setState] = useState();
+  useEffect(() => {
     request(setState);
   }, dependencies);
   return state;
@@ -6302,24 +4949,24 @@ const PremiumPlayer = ({
   var _videoRef$current2;
 
   const uiType = isDesktop() ? 'desktop' : 'mobile';
-  const videoRef = React.useRef();
-  const containerRef = React.useRef();
-  const playerRef = React.useRef();
-  const adContainerRef = React.useRef(); // TODO move RWD related to Layout
+  const videoRef = useRef();
+  const containerRef = useRef();
+  const playerRef = useRef();
+  const adContainerRef = useRef(); // TODO move RWD related to Layout
 
   const {
     currentBreakpoint: size,
     width,
     observe
-  } = useDimensions__default["default"]({
-    polyfill: resizeObserver.ResizeObserver,
-    breakpoints: sizes$1
+  } = useDimensions({
+    polyfill: ResizeObserver,
+    breakpoints: sizes$2
   });
-  const [targetState, setTargetState] = React.useState(() => ({
+  const [targetState, setTargetState] = useState(() => ({
     playbackState: autoplay ? 'playing' : 'paused',
     currentTime: startTime
   }));
-  const [playbackTime, setPlaybackTime] = React.useState({
+  const [playbackTime, setPlaybackTime] = useState({
     currentTime: 0,
     bufferTime: 0
   });
@@ -6334,12 +4981,12 @@ const PremiumPlayer = ({
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (appPlaybackState) {
       togglePlay(appPlaybackState);
     }
   }, [appPlaybackState]);
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isDesktop()) {
       return blurPause(videoRef.current, () => togglePlay('paused'));
     }
@@ -6366,15 +5013,15 @@ const PremiumPlayer = ({
     updatePlaybackTime();
   };
 
-  const [playbackState, setPlaybackState] = React.useState('init');
-  React.useEffect(() => {
+  const [playbackState, setPlaybackState] = useState('init');
+  useEffect(() => {
     setPlaybackState('loading');
   }, [source]);
-  React.useEffect(() => {
+  useEffect(() => {
     if (typeof appCurrentTime === 'number') setTargetTime(appCurrentTime || 0);
     if (typeof appCurrentTime === 'object') setTargetTime((appCurrentTime === null || appCurrentTime === void 0 ? void 0 : appCurrentTime.value) || 0);
   }, [appCurrentTime]);
-  const [errorData, setErrorData] = React.useState();
+  const [errorData, setErrorData] = useState();
 
   const handleError = ({
     nativeEvent: event
@@ -6400,7 +5047,7 @@ const PremiumPlayer = ({
     });
   };
 
-  const [settings, setSettings] = React.useState(() => ({
+  const [settings, setSettings] = useState(() => ({
     sections: [],
     values: {
       speed: 1
@@ -6429,7 +5076,7 @@ const PremiumPlayer = ({
     });
   };
 
-  const lastState = React.useRef(playbackState);
+  const lastState = useRef(playbackState);
 
   const handlePlaybackStateChange = (event, state) => {
     if (lastState.current === 'error') {
@@ -6466,7 +5113,7 @@ const PremiumPlayer = ({
     setPlaybackState(state);
   };
 
-  const [activePanel, setActivePanel] = React.useState('');
+  const [activePanel, setActivePanel] = useState('');
 
   const changeSettings = (name, value) => {
     // TODO consider merge into useReducer?
@@ -6502,7 +5149,7 @@ const PremiumPlayer = ({
     return animationFrame;
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (appPlaybackRate > 0) {
       setSettings(current => ({ ...current,
         values: { ...current.values,
@@ -6511,10 +5158,10 @@ const PremiumPlayer = ({
       }));
     }
   }, [appPlaybackRate]);
-  React.useEffect(() => {
+  useEffect(() => {
     sendLog === null || sendLog === void 0 ? void 0 : sendLog(activePanel === 'settings' ? 'openSettings' : 'closeSettings', playbackTime);
   }, [activePanel === 'settings']);
-  const qualityOptions = React.useMemo(() => getQualityOptions(settings), [settings.values.quality]);
+  const qualityOptions = useMemo(() => getQualityOptions(settings), [settings.values.quality]);
   const viewMode = useLinkState(update => onViewModeChange(videoRef.current, update));
   const sourceOverride = useLinkState(async update => {
     var _quality$rewriteManif;
@@ -6536,12 +5183,12 @@ const PremiumPlayer = ({
   const mode = controls.autohide ? autoHideMode : controls ? 'shown' : 'hidden';
   const controlsDisplay = controls === 'title-only' ? 'hidden' : mode;
   const shouldHidePanels = (controls === 'no-panel' || controlsDisplay === 'hidden') && activePanel;
-  React.useEffect(() => {
+  useEffect(() => {
     if (shouldHidePanels) {
       setActivePanel('');
     }
   }, [shouldHidePanels]);
-  const unmuteVolume = React.useRef(1);
+  const unmuteVolume = useRef(1);
   const {
     subscribe,
     onChange,
@@ -6569,12 +5216,12 @@ const PremiumPlayer = ({
     sendLog === null || sendLog === void 0 ? void 0 : sendLog('nextEpisode', playbackTime);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (appVolume >= 0) {
       onChange(appVolume);
     }
   }, [appVolume]);
-  React.useEffect(() => {
+  useEffect(() => {
     if (targetSettings) {
       setSettings(current => ({ ...current,
         // Keep the same object reference if there is nothing to change in the revalant properties
@@ -6593,7 +5240,7 @@ const PremiumPlayer = ({
       }));
     }
   }, [targetSettings]);
-  React.useEffect(() => {
+  useEffect(() => {
     // The adContainer should be set before `load` because ImaDai.load needs it.
     plugins.forEach(plugin => {
       var _plugin$setAdContaine;
@@ -6616,32 +5263,32 @@ const PremiumPlayer = ({
     title,
     channelTitle,
     controlButtons: {
-      playButton: /*#__PURE__*/jsxRuntime.jsx(PlayButton$1, {
+      playButton: /*#__PURE__*/jsx(PlayButton$1, {
         playbackState: targetState.playbackState,
         ended: playbackState === 'ended',
         hidden: uiType !== 'desktop' && (waiting || /loading/.test(playbackState)),
         onClick: () => togglePlay()
       }),
       ...(isFinite(playbackTime.duration) && {
-        rewindButton: /*#__PURE__*/jsxRuntime.jsx(Button, {
+        rewindButton: /*#__PURE__*/jsx(Button, {
           startIcon: "rewind10",
           title: "KKS.PLAYER.REWIND",
           disabled: !canSeek,
           onClick: () => setTargetTime(playbackTime.currentTime - 10, 'rewind')
         }),
-        forwardButton: /*#__PURE__*/jsxRuntime.jsx(Button, {
+        forwardButton: /*#__PURE__*/jsx(Button, {
           startIcon: "forward10",
           title: "KKS.PLAYER.FORWARD",
           disabled: !canSeek,
           onClick: () => setTargetTime(playbackTime.currentTime + 10, 'forward')
         }),
-        nextEpisodeButton: /*#__PURE__*/jsxRuntime.jsx(Button, {
+        nextEpisodeButton: /*#__PURE__*/jsx(Button, {
           startIcon: "nextEpisode",
           title: "KKS.PLAYER.NEXT",
           disabled: !onChangeNext,
           onClick: changeNext
         }),
-        previousEpisodeButton: /*#__PURE__*/jsxRuntime.jsx(Button, {
+        previousEpisodeButton: /*#__PURE__*/jsx(Button, {
           startIcon: "previousEpisode",
           title: "KKS.PLAYER.PREVIOUS",
           disabled: !onChangePrevious,
@@ -6650,7 +5297,7 @@ const PremiumPlayer = ({
       }),
       ...targetControlButtons
     },
-    seekbar: !seekbarHide && /*#__PURE__*/jsxRuntime.jsx(Seekbar$1 // TODO ensure response quickly to forward backward 10
+    seekbar: !seekbarHide && /*#__PURE__*/jsx(Seekbar$1 // TODO ensure response quickly to forward backward 10
     , {
       currentTime: playbackTime.currentTime,
       bufferTime: playbackTime.bufferTime,
@@ -6662,49 +5309,49 @@ const PremiumPlayer = ({
       marks: marks,
       plugins: plugins,
       ...seekBarOverrides,
-      children: !activePanel && source && /*#__PURE__*/jsxRuntime.jsx(SeekPreview, {
+      children: !activePanel && source && /*#__PURE__*/jsx(SeekPreview, {
         thumbnailsUrl: getThumbnailsUrl(source) || thumbnailsUrl,
         duration: playbackTime.duration
       })
     }),
-    backButton: onBack && /*#__PURE__*/jsxRuntime.jsx(Button, {
+    backButton: onBack && /*#__PURE__*/jsx(Button, {
       startIcon: "back",
       title: "KKS.BACK",
       onClick: onBack
     }),
-    fullscreenButton: /*#__PURE__*/jsxRuntime.jsx(FullscreenButton, {
+    fullscreenButton: /*#__PURE__*/jsx(FullscreenButton, {
       viewMode: viewMode,
       onClick: () => toggleFullscreen(containerRef.current)
     }),
-    volumeControl: width >= sizes$1['small-embed'] && /*#__PURE__*/jsxRuntime.jsx(VolumeControl // iOS video volume locks to 1, sliders is no use (OTP-1878)
+    volumeControl: width >= sizes$2['small-embed'] && /*#__PURE__*/jsx(VolumeControl // iOS video volume locks to 1, sliders is no use (OTP-1878)
     , {
       slider: !isIOS(),
       subscribe,
       onChange,
       toggleMute
     }),
-    backItems: /*#__PURE__*/jsxRuntime.jsxs(jsxRuntime.Fragment, {
-      children: [/*#__PURE__*/jsxRuntime.jsx(ActiveSubtitles, {
+    backItems: /*#__PURE__*/jsxs$1(Fragment$1, {
+      children: [/*#__PURE__*/jsx(ActiveSubtitles, {
         player: playerRef.current
       }), uiType === 'desktop' && !waiting && ( // In autohide mode, PlayPanel should work well.
-      controls.autohide || mode !== 'hidden') && !activePanel && /*#__PURE__*/jsxRuntime.jsx(PlayPanel, {
+      controls.autohide || mode !== 'hidden') && !activePanel && /*#__PURE__*/jsx(PlayPanel, {
         onClick: () => togglePlay()
       })]
     }),
     ...targetUIElements
   };
-  React.useImperativeHandle(innerRef, () => ({
+  useImperativeHandle(innerRef, () => ({
     setVolume: onChange,
     toggleMute
   }));
-  return /*#__PURE__*/jsxRuntime.jsx(IntlProvider, { ...intl,
-    children: /*#__PURE__*/jsxRuntime.jsxs(DefaultLayout, {
+  return /*#__PURE__*/jsx(IntlProvider, { ...intl,
+    children: /*#__PURE__*/jsxs$1(DefaultLayout, {
       style: style,
       type: uiType,
       display: mode,
       controlsDisplay: controlsDisplay,
       size: size,
-      video: /*#__PURE__*/jsxRuntime.jsx(Video, { ...videoProps,
+      video: /*#__PURE__*/jsx(Video, { ...videoProps,
         videoRef: multiRef(videoRef, videoProps.videoRef),
         source: playbackState !== 'error' && sourceOverride,
         drm: drm,
@@ -6733,7 +5380,7 @@ const PremiumPlayer = ({
       ...uiElements,
       onClick: onClick,
       onMouseMove: onMouseMove,
-      children: [children, /*#__PURE__*/jsxRuntime.jsx(Settings, {
+      children: [children, /*#__PURE__*/jsx(Settings, {
         type: uiType,
         sections: settings.sections // TODO hasBottomPanel bottom: 8em
         ,
@@ -6745,15 +5392,883 @@ const PremiumPlayer = ({
           value
         }) => changeSettings(name, value),
         onClose: () => setActivePanel('')
-      }), waiting && /*#__PURE__*/jsxRuntime.jsx(LoadingSpinner, {}), /*#__PURE__*/jsxRuntime.jsx(Backdrop, {
+      }), waiting && /*#__PURE__*/jsx(LoadingSpinner, {}), /*#__PURE__*/jsx(Backdrop, {
         open: !playbackState || playbackState === 'loading',
-        children: /*#__PURE__*/jsxRuntime.jsx(LoadingSpinner, {})
-      }), playbackState === 'error' && /*#__PURE__*/jsxRuntime.jsx(Error$1, {
+        children: /*#__PURE__*/jsx(LoadingSpinner, {})
+      }), playbackState === 'error' && /*#__PURE__*/jsx(Error$1, {
         error: errorData,
         onBack: onBack
       })]
     })
   });
+};
+const PremiumPlayerForwardingRef = /*#__PURE__*/forwardRef((props, ref) => /*#__PURE__*/jsx(PremiumPlayer, { ...props,
+  innerRef: ref
+}));
+
+/* @jsxImportSource @emotion/react */
+const styles = {
+  flex: '100%',
+  margin: '1rem 0',
+  textAlign: 'center',
+  h2: {
+    fontSize: '120%',
+    fontWeight: 'bold'
+  }
+};
+
+const LiveEnd = ({
+  reload,
+  goBack
+}) => jsxs(Backdrop, {
+  open: true,
+  children: [jsxs("div", {
+    css: styles,
+    children: [jsx$1("h2", {
+      children: jsx$1(FormattedMessage, {
+        id: "KKS.PROGRAM.TITLE"
+      })
+    }), jsx$1(FormattedMessage, {
+      id: "KKS.PROGRAM.MESSAGE"
+    })]
+  }), jsx$1(Button, {
+    variant: "outlined",
+    onClick: reload,
+    children: jsx$1(FormattedMessage, {
+      id: "KKS.TRYAGAIN"
+    })
+  }), jsx$1(Button, {
+    variant: "outlined",
+    onClick: goBack,
+    children: jsx$1(FormattedMessage, {
+      id: "KKS.PLAYER.EXIT"
+    })
+  })]
+});
+
+LiveEnd.propTypes = {
+  reload: PropTypes.func,
+  goBack: PropTypes.func
+};
+
+/* @jsxImportSource @emotion/react */
+const imageStyle = {
+  zIndex: 1,
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  width: '100%',
+  height: '100%',
+  objectFit: 'contain',
+  transform: 'translate(-50%, -50%)',
+  background: '#000'
+};
+
+const CoverImage = ({
+  src
+}) => jsx$1("img", {
+  alt: "Cover",
+  css: imageStyle,
+  src: src
+});
+
+CoverImage.propTypes = {
+  src: PropTypes.string
+};
+
+/* eslint-disable no-bitwise */
+const uuidv4 = () => {
+  const crypto = window.crypto || window.msCrypto;
+  return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+};
+
+const modes = {
+  videos: 'video',
+  lives: 'live'
+};
+const logEventNames = {
+  playbackBegan: 'video_playback_began',
+  playbackStarted: 'video_playback_started',
+  playbackStopped: 'video_playback_stopped',
+  playbackEnded: 'video_playback_ended',
+  bufferingStarted: 'video_buffering_started',
+  bufferingEnded: 'video_buffering_ended',
+  seeked: 'video_seeking_ended',
+  playbackError: 'video_playback_error_occurred',
+  playing: 'play',
+  paused: 'pause',
+  rewind: 'rewind',
+  forward: 'forward',
+  previousEpisode: 'previous_episode',
+  nextEpisode: 'next_episode',
+  openSettings: 'setting_page_entered',
+  closeSettings: 'setting_page_exited',
+  adPlaybackStarted: 'ad_playback_started',
+  adPlaybackStopped: 'ad_playback_stopped'
+};
+
+const mapLogEvents = ({
+  video,
+  session = video,
+  version,
+  playerName,
+  getPlaybackStatus = () => video
+}) => {
+  var _session$getContent;
+
+  const emitter = mitt();
+  const state = {
+    status: 'init',
+    seeking: false,
+    playerStartTime: Date.now(),
+    moduleStartTime: Date.now(),
+    content: ((_session$getContent = session.getContent) === null || _session$getContent === void 0 ? void 0 : _session$getContent.call(session)) || {}
+  };
+
+  const commonPropties = () => {
+    var _state$content$sectio;
+
+    return {
+      player_name: playerName,
+      playback_module_version: version,
+      playback_mode: modes[state.content.type],
+      playback_session_id: state.sessionId,
+      id: state.content.id,
+      name: state.content.title,
+      ...(state.content.type === 'videos' && {
+        current_position: state.currentTime,
+        video_total_duration: state.duration
+      }),
+      ...(state.content.type === 'lives' && {
+        section_id: (_state$content$sectio = state.content.section) === null || _state$content$sectio === void 0 ? void 0 : _state$content$sectio.id,
+        name_2: state.content.channelName
+      }),
+      SSAI: state.ssaiProvider || 'None'
+    };
+  };
+
+  const dispatchStart = () => {
+    if (state.status === 'started') {
+      return;
+    }
+
+    state.status = 'started';
+    state.lastStartTime = Date.now();
+    const eventName = state.isPlayingAd ? 'adPlaybackStarted' : 'playbackStarted';
+    emitter.emit(eventName, commonPropties());
+  };
+
+  const dispatchStop = () => {
+    if (state.status !== 'started') {
+      return;
+    }
+
+    state.status = 'stopped';
+    const played = (Date.now() - state.lastStartTime) / 1000;
+
+    if (state.isPlayingAd) {
+      state.adPlayedDuration += played;
+    } else {
+      state.playedDuration += played;
+    }
+
+    const eventName = state.isPlayingAd ? 'adPlaybackStopped' : 'playbackStopped';
+    emitter.emit(eventName, { ...commonPropties(),
+      ...(state.isPlayingAd && {
+        ad_played_duration: played
+      })
+    });
+  };
+
+  const registered = [on(video, 'error', event => {
+    var _event$error, _event$error2, _event$error2$data;
+
+    emitter.emit('playbackError', {
+      module_error_code: ((_event$error = event.error) === null || _event$error === void 0 ? void 0 : _event$error.code) || ((_event$error2 = event.error) === null || _event$error2 === void 0 ? void 0 : (_event$error2$data = _event$error2.data) === null || _event$error2$data === void 0 ? void 0 : _event$error2$data.code),
+      ...commonPropties()
+    });
+  }), once(video, 'playerStarted', () => {
+    state.playerStartTime = Date.now();
+  }), on(video, 'durationchange', () => {
+    // duration may change when playing an ad stitched stream, take only initial value
+    if (!state.duration) {
+      state.duration = getPlaybackStatus().duration;
+    }
+  }), once(video, 'canplay', () => {
+    state.status = 'began';
+    state.sessionId = uuidv4();
+    state.playedDuration = 0;
+    emitter.emit('playbackBegan', {
+      player_startup_time: (state.playerStartTime - state.moduleStartTime) / 1000,
+      video_startup_time: (Date.now() - state.moduleStartTime) / 1000,
+      ...commonPropties()
+    });
+  }), on(video, 'playing', dispatchStart), on(video, 'waiting', () => {
+    if (!state.bufferingStartTime) {
+      emitter.emit('bufferingStarted', commonPropties());
+      state.bufferingStartTime = Date.now();
+    }
+  }), on(video, 'timeupdate', () => {
+    state.currentTime = getPlaybackStatus().currentTime;
+
+    if (state.bufferingStartTime) {
+      emitter.emit('bufferingEnded', {
+        buffering_second: (Date.now() - state.bufferingStartTime) / 1000,
+        ...commonPropties()
+      });
+      state.bufferingStartTime = undefined;
+    }
+  }), on(video, 'pause', dispatchStop), on(video, 'seeking', () => {
+    state.seekingFrom = state.currentTime;
+  }), on(session, 'userSeeking', () => {
+    state.seeking = true;
+  }), on(video, 'seeked', () => {
+    if (state.seeking) {
+      emitter.emit('seeked', {
+        seeking_from: state.seekingFrom,
+        seeking_to: video.currentTime,
+        ...commonPropties()
+      });
+    }
+
+    state.seeking = false;
+  }), on(session, 'sectionChange', () => {
+    dispatchStop();
+    state.content = session.getContent();
+    dispatchStart();
+  }), once(video, 'emptied', () => {
+    if (state.status === 'started') {
+      dispatchStop();
+    }
+
+    state.status = 'init';
+    emitter.emit('playbackEnded', {
+      video_playback_ended_at_percentage: state.currentTime / state.duration,
+      video_total_played_duration: state.playedDuration,
+      ...(state.ssaiProvider && {
+        ad_total_played_duration: state.adPlayedDuration
+      }),
+      ...commonPropties()
+    });
+  }), once(video, 'loadedAdMetadata', event => {
+    state.ssaiProvider = event.data.provider;
+    state.adPlayedDuration = 0;
+  }), on(session, 'adBreakStarted', () => {
+    dispatchStop();
+    state.isPlayingAd = true;
+
+    if (!state.seeking) {
+      dispatchStart();
+    }
+  }), on(session, 'adBreakEnded', () => {
+    dispatchStop();
+    state.isPlayingAd = false;
+
+    if (!state.seeking) {
+      dispatchStart();
+    }
+  })];
+  return {
+    addEventListener: (name, handler) => emitter.on(name, handler),
+    all: handler => emitter.on('*', handler),
+    emit: (name, {
+      currentTime
+    }) => {
+      emitter.emit(name, {
+        current_position: currentTime,
+        ...commonPropties()
+      });
+    },
+    updateContent: content => {
+      state.content = content;
+    },
+    reset: () => registered.forEach(off => off())
+  };
+};
+
+const deepEqual = (current, updated) => JSON.stringify(current) === JSON.stringify(updated);
+
+const HEARTBEAT_INTERVAL_MS = 10000;
+const UPDATE_INTERVAL_MS = 10000;
+
+const isContentExpired = content => typeof (content === null || content === void 0 ? void 0 : content.end_time) === 'number' && content.end_time * 1000 <= Date.now();
+
+const startPlaybackSession = async (playbackApi, options = {}) => {
+  const emitter = mitt();
+  const {
+    type,
+    id,
+    getCurrentTime,
+    cache
+  } = options;
+  const {
+    onChangeContent,
+    onSourceChange,
+    onInvalidToken,
+    heartbeatTime = HEARTBEAT_INTERVAL_MS,
+    updateTime = UPDATE_INTERVAL_MS
+  } = options;
+  const state = {}; // get last playback time to start playback fast
+  // getContent is not critical, so don't block playback if it hangs or fails(ignored in API logic)
+
+  const loadContent = () => {
+    var _options$cache, _options$cache$get;
+
+    return Promise.race([// eslint-disable-next-line no-use-before-define
+    updateContent((_options$cache = options.cache) === null || _options$cache === void 0 ? void 0 : (_options$cache$get = _options$cache.get(`${type}/${id}`)) === null || _options$cache$get === void 0 ? void 0 : _options$cache$get.content), new Promise(resolve => {
+      setTimeout(resolve, UPDATE_INTERVAL_MS);
+    })]);
+  };
+
+  const getPlaybackInfo = async () => {
+    var _cache$get;
+
+    state.sources = ((cache === null || cache === void 0 ? void 0 : (_cache$get = cache.get(`${type}/${id}`)) === null || _cache$get === void 0 ? void 0 : _cache$get.playbackInfo) || (await playbackApi.getPlaybackInfo({
+      type,
+      id,
+      token: state.token
+    }))).sources;
+    onSourceChange === null || onSourceChange === void 0 ? void 0 : onSourceChange(state.sources);
+  };
+
+  async function updateContent(contentInCache) {
+    var _state$content;
+
+    const content = !contentInCache || isContentExpired(contentInCache) ? await playbackApi.getContent({
+      type,
+      id
+    }) : contentInCache;
+
+    if (!deepEqual(content, state.content)) {
+      state.content = content;
+      onChangeContent === null || onChangeContent === void 0 ? void 0 : onChangeContent({
+        type,
+        ...content,
+        sources: state.sources
+      });
+    }
+
+    if (content.end_time && content.end_time === ((_state$content = state.content) === null || _state$content === void 0 ? void 0 : _state$content.end_time)) {
+      clearTimeout(state.endTimeoutId);
+      state.endTimeoutId = setTimeout(() => {
+        loadContent();
+        getPlaybackInfo();
+      }, content.end_time * 1000 - Date.now());
+    }
+  }
+
+  const waitForContent = loadContent();
+  const sessionInfo = await playbackApi.startPlayback({
+    type,
+    id
+  });
+  const requestParams = {
+    type,
+    id,
+    token: sessionInfo.token
+  };
+  state.token = sessionInfo.token;
+  await getPlaybackInfo();
+  let updateIntervalId;
+
+  if (type === 'lives') {
+    updateIntervalId = setInterval(updateContent, updateTime);
+  }
+
+  let lastPlayedTime;
+
+  const updateLastPlayed = () => {
+    const currentTime = getCurrentTime === null || getCurrentTime === void 0 ? void 0 : getCurrentTime();
+
+    if (currentTime >= 0 && lastPlayedTime !== currentTime) {
+      lastPlayedTime = currentTime;
+      playbackApi.updateLastPlayed({ ...requestParams,
+        time: currentTime
+      });
+    }
+  };
+
+  if (type === 'videos') {
+    updateIntervalId = setInterval(updateLastPlayed, updateTime);
+  }
+
+  const heartbeatIntervalId = setInterval(() => playbackApi.heartbeat(requestParams).catch(error => {
+    var _error$response;
+
+    if (/4\d\d/.test((_error$response = error.response) === null || _error$response === void 0 ? void 0 : _error$response.status)) {
+      clearInterval(heartbeatIntervalId);
+      onInvalidToken === null || onInvalidToken === void 0 ? void 0 : onInvalidToken(error);
+    }
+  }), heartbeatTime);
+
+  const end = () => {
+    updateLastPlayed();
+    clearInterval(updateIntervalId);
+    clearInterval(heartbeatIntervalId);
+    clearTimeout(state.endTimeoutId);
+    emitter.emit('playbackEnded');
+    return playbackApi.endPlayback(requestParams);
+  };
+
+  await waitForContent;
+  return { ...state,
+    token: sessionInfo.token,
+    drmPortalUrl: sessionInfo.drm_portal_url,
+    updateLastPlayed,
+    end
+  };
+};
+
+const preload = (playbackApi, preloadList, currentContent, cache, options = {}) => {
+  const {
+    updateTime = 10000
+  } = options;
+
+  const fetchData = () => {
+    preloadList.forEach(async ({
+      contentType: type,
+      contentId: id
+    }) => {
+      var _cache$get, _cache$get$content;
+
+      if (id === currentContent.id && type === currentContent.type) return;
+      const endTime = (_cache$get = cache.get(`${type}/${id}`)) === null || _cache$get === void 0 ? void 0 : (_cache$get$content = _cache$get.content) === null || _cache$get$content === void 0 ? void 0 : _cache$get$content.end_time;
+      if (typeof endTime === 'number' && endTime * 1000 >= Date.now()) return;
+
+      try {
+        const {
+          token
+        } = await playbackApi.startPlayback({
+          type,
+          id
+        });
+        const waitForContent = playbackApi.getContent({
+          type,
+          id
+        });
+        const waitForPlaybackInfo = playbackApi.getPlaybackInfo({
+          type,
+          id,
+          token
+        });
+        const [content, playbackInfo] = await Promise.all([waitForContent, waitForPlaybackInfo]);
+        cache.set(`${type}/${id}`, {
+          content,
+          playbackInfo
+        });
+        playbackApi.endPlayback({
+          type,
+          id,
+          token
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  };
+
+  fetchData();
+  const fetchDataIntervalID = setInterval(fetchData, updateTime);
+  return () => clearInterval(fetchDataIntervalID);
+};
+
+const getSourceTypeSettings = sources => {
+  if (!((sources === null || sources === void 0 ? void 0 : sources.length) > 1)) {
+    return;
+  }
+
+  const items = sources.map(source => {
+    var _source$subdub, _source$type;
+
+    return {
+      value: source.subdub || source.type,
+      label: ((_source$subdub = source.subdub) === null || _source$subdub === void 0 ? void 0 : _source$subdub.toUpperCase()) || ((_source$type = source.type) === null || _source$type === void 0 ? void 0 : _source$type.toUpperCase())
+    };
+  });
+
+  const getDefault = preferred => (items.find(item => item.value === preferred) || items[0] || {}).value;
+
+  return {
+    name: 'source-type',
+    title: 'KKS.SETTING.VERSION',
+    items,
+    getDefault
+  };
+};
+
+/* eslint-disable no-param-reassign */
+
+const waitMs = time => new Promise(resolve => {
+  setTimeout(resolve, time);
+});
+
+const handleRequestError = (result, {
+  onError,
+  retryTimes = 0
+}) => result.catch(error => onError(error, {
+  retry: () => handleRequestError(axios(error.config), {
+    onError,
+    retryTimes: retryTimes + 1
+  }),
+  retryTimes
+}));
+
+const ignoreMinorError = async (event, {
+  retry,
+  retryTimes
+} = {}) => {
+  var _event$response, _event$response2, _event$config;
+
+  console.warn(event);
+
+  if ((((_event$response = event.response) === null || _event$response === void 0 ? void 0 : _event$response.message) === 'Network Error' || /502|503/.test((_event$response2 = event.response) === null || _event$response2 === void 0 ? void 0 : _event$response2.status)) && retryTimes < 3) {
+    await waitMs(3000);
+    return retry();
+  }
+
+  if (/start$|info$|heartbeat$/.test((_event$config = event.config) === null || _event$config === void 0 ? void 0 : _event$config.url)) {
+    return Promise.reject(event);
+  }
+
+  console.log('Ignore non-critical playback API fail', event);
+  return new Promise(() => {});
+};
+
+const createApi = ({
+  host,
+  accessToken,
+  deviceId,
+  headers,
+  params
+}, {
+  onError = ignoreMinorError
+} = {}) => {
+  const getHeaders = () => ({ ...(accessToken && {
+      Authorization: accessToken
+    }),
+    ...(deviceId && {
+      'X-Device-ID': deviceId
+    }),
+    'Content-type': 'application/json',
+    ...headers
+  });
+
+  const request = (url, {
+    method
+  } = {}) => handleRequestError(axios(url, {
+    method,
+    headers: getHeaders(),
+    params
+  }), {
+    onError
+  }).then(response => response.data);
+
+  const sessionRequest = (path, {
+    method = 'POST',
+    type,
+    id,
+    token
+  }) => handleRequestError(axios(`${host}/sessions/${type}/${id}/playback/${deviceId}/${path}`, {
+    method,
+    headers: getHeaders(),
+    params: { ...params,
+      playback_token: token
+    }
+  }), {
+    onError
+  }).then(response => response.data);
+
+  return {
+    getContent: ({
+      type,
+      id
+    }) => request(`${host}/${type}/${id}`, {}),
+    startPlayback: ({
+      type,
+      id
+    }) => request(`${host}/sessions/${type}/${id}/playback/${deviceId}/start`, {
+      method: 'POST'
+    }),
+    getPlaybackInfo: ({
+      type,
+      id,
+      token
+    }) => sessionRequest('info', {
+      method: 'GET',
+      type,
+      id,
+      token
+    }),
+    heartbeat: ({
+      type,
+      id,
+      token
+    }) => sessionRequest('heartbeat', {
+      type,
+      id,
+      token
+    }),
+    updateLastPlayed: ({
+      type,
+      id,
+      token,
+      time
+    }) => sessionRequest(`position/${Math.floor(time)}`, {
+      type,
+      id,
+      token
+    }),
+    endPlayback: ({
+      type,
+      id,
+      token
+    }) => sessionRequest('end', {
+      type,
+      id,
+      token
+    })
+  };
+};
+
+const getStreamInfo = (sources = [], {
+  type = '',
+  licenseUri,
+  certificateUri,
+  licenseHeaders: headers,
+  thumbnailEnabled
+} = {}) => {
+  const activeSource = sources.find(source => (source.subdub || source.type) === type) || sources[0];
+  return ((activeSource === null || activeSource === void 0 ? void 0 : activeSource.manifests) || []).map(manifest => ({ ...manifest,
+    type: manifest.protocol,
+    src: manifest.url,
+    drm: {
+      fairplay: {
+        licenseUri,
+        certificateUri,
+        headers
+      },
+      widevine: {
+        licenseUri,
+        headers
+      },
+      playready: {
+        licenseUri,
+        headers
+      }
+    },
+    qualityOptions: manifest.resolutions.map(({
+      height
+    }) => ({
+      label: height,
+      value: height,
+      options: {
+        maxHeight: height
+      }
+    }))
+  })).concat(thumbnailEnabled && activeSource !== null && activeSource !== void 0 && activeSource.thumbnail_seeking_url ? {
+    type: 'thumbnail',
+    src: activeSource.thumbnail_seeking_url
+  } : []);
+};
+
+const getContentInfo = data => {
+  var _data$time, _data$time2;
+
+  return {
+    title: data.title,
+    channelTitle: data.subtitle,
+    end: data.end,
+    section: {
+      id: data.section_id,
+      start: data.start_time,
+      end: data.end_time
+    },
+    previous: data.prev_video,
+    next: data.next_video,
+    startTime: (_data$time = data.time) === null || _data$time === void 0 ? void 0 : _data$time.last_position,
+    chapters: [((_data$time2 = data.time) === null || _data$time2 === void 0 ? void 0 : _data$time2.end_start_position) && {
+      type: 'ending',
+      start: data.time.end_start_position
+    }].filter(Boolean)
+  };
+};
+
+const linkPluginEvents = (plugins, handlers) => {
+  const registered = plugins.map(plugin => Object.entries(handlers).map(([eventName, handler]) => {
+    var _plugin$on;
+
+    return (_plugin$on = plugin.on) === null || _plugin$on === void 0 ? void 0 : _plugin$on.call(plugin, eventName, event => handler(event, plugin));
+  }));
+  return () => [].concat(...registered).forEach(removeListener => removeListener === null || removeListener === void 0 ? void 0 : removeListener());
+};
+
+const type = {
+  SELECT_MEDIA_SOURCE: 'UI_SELECT_MEDIA_SOURCE',
+  SET_MEDIA_SOURCES: 'UI_SET_MEDIA_SOURCES',
+  CHANGE_RECOMMENDATION_PANEL: 'CHANGE_RECOMMENDATION_PANEL',
+  TOGGLE_RECOMMENDATION_PANEL: 'TOGGLE_RECOMMENDATION_PANEL',
+  OPEN_PANEL: 'OPEN_PANEL',
+  HIDE_PANEL: 'HIDE_PANEL',
+  OFFER_AUTOPLAY: 'OFFER_AUTOPLAY',
+  DISMISS_AUTOPLAY: 'DISMISS_AUTOPLAY',
+  ERROR: 'UI_ERROR',
+  RESET_END_ROLL: 'RESET_END_ROLL',
+  STREAM_EVENTS_CHANGED: 'STREAM_EVENTS_CHANGED',
+  AD_BREAK_STARTED: 'AD_BREAK_STARTED',
+  AD_BREAK_ENDED: 'AD_BREAK_ENDED',
+  VISIBILITY_CHANGE: 'VISIBILITY_CHANGE',
+  PLAYBACK_END: 'PLAYBACK_END'
+};
+var uiActions = {
+  selectMediaSource: mediaSource => ({
+    type: type.SELECT_MEDIA_SOURCE,
+    mediaSource
+  }),
+  setMediaSources: (items = []) => ({
+    type: type.SET_MEDIA_SOURCES,
+    items
+  }),
+  enableRecommendationPanel: () => ({
+    type: type.CHANGE_RECOMMENDATION_PANEL,
+    enabled: true
+  }),
+  disableRecommendationPanel: () => ({
+    type: type.CHANGE_RECOMMENDATION_PANEL,
+    enabled: false
+  }),
+  toggleRecommendationPanel: () => ({
+    type: type.TOGGLE_RECOMMENDATION_PANEL
+  }),
+  openPanel: panel => ({
+    type: type.OPEN_PANEL,
+    panel
+  }),
+  hidePanel: () => ({
+    type: type.HIDE_PANEL
+  }),
+  offerAutoplay: state => ({
+    type: type.OFFER_AUTOPLAY,
+    endState: state
+  }),
+  dismissAutoplay: () => ({
+    type: type.DISMISS_AUTOPLAY
+  }),
+  streamEventsChanged: (streamEvents, playbackStatus) => ({
+    type: type.STREAM_EVENTS_CHANGED,
+    streamEvents,
+    playbackStatus
+  }),
+  adBreakStarted: (adProgressData, skipTimeOffset) => ({
+    type: type.AD_BREAK_STARTED,
+    adProgressData,
+    skipTimeOffset
+  }),
+  adBreakEnded: () => ({
+    type: type.AD_BREAK_ENDED
+  }),
+  playbackEnd: () => ({
+    type: type.PLAYBACK_END
+  })
+};
+
+/* eslint-disable react/prop-types */
+
+const linkAdState = ({
+  contentType,
+  dispatch,
+  plugins,
+  onAdSkip
+}) => {
+  const handleStart = event => {
+    var _event$getAd;
+
+    // TODO playlog ad start event
+    dispatch(uiActions.adBreakStarted(event.getStreamData().adProgressData, contentType !== 'lives' && ((_event$getAd = event.getAd()) === null || _event$getAd === void 0 ? void 0 : _event$getAd.getSkipTimeOffset())));
+  };
+
+  return linkPluginEvents(plugins, {
+    cuepointsChanged: (event, plugin) => dispatch(uiActions.streamEventsChanged(event.cuepoints, plugin.getPlaybackStatus())),
+    adBreakStarted: handleStart,
+    adBreakEnded: () => {
+      // TODO playlog ad end event
+      dispatch(uiActions.adBreakEnded());
+    },
+    skip: onAdSkip
+  });
+};
+
+const useIntervalUpdate = get => {
+  const [value, setValue] = useState(get());
+  useEffect(() => {
+    const intervalId = setInterval(() => setValue(get()), 500);
+    return () => clearInterval(intervalId);
+  }, []);
+  return value;
+};
+
+const SkipAdButton = ({
+  skipAd,
+  getWaitTime
+}) => {
+  const waitTime = useIntervalUpdate(getWaitTime);
+  return isFinite(waitTime) && /*#__PURE__*/jsx(SkipButton, {
+    waitTime: waitTime,
+    onClick: skipAd
+  });
+};
+
+const Status = ({
+  total,
+  position,
+  getRemainingTime
+}) => {
+  const remainingTime = useIntervalUpdate(getRemainingTime);
+  return total > 0 && `Ad ${position} of ${total}・${formattedTime(remainingTime)}`;
+};
+
+const getAdUi = ({
+  position,
+  total,
+  adBreakDuration,
+  skipTimeOffset,
+  clickThroughUrl
+}, plugins, media) => {
+  const getRemainingTime = () => getMediaTime(media, plugins).adRemainingTime;
+
+  const getSkipWaitTime = () => skipTimeOffset >= 0 ? getRemainingTime() - (adBreakDuration - skipTimeOffset) : Infinity;
+
+  return {
+    title: false,
+    channelTitle: false,
+    controlButtons: {
+      rewindButton: false,
+      forwardButton: false,
+      nextEpisodeButton: false,
+      previousEpisodeButton: false
+    },
+    seekbar: false,
+    adLink: clickThroughUrl && /*#__PURE__*/jsx("a", {
+      href: clickThroughUrl,
+      rel: "noreferrer",
+      target: "_blank",
+      children: /*#__PURE__*/jsx(FormattedMessage, {
+        id: "KKS.SSAI.LEARN.MORE"
+      })
+    }),
+    adStatus: /*#__PURE__*/jsx(Status, {
+      position: position,
+      total: total,
+      getRemainingTime: getRemainingTime
+    }),
+    adSkipButton: /*#__PURE__*/jsx(SkipAdButton, {
+      getWaitTime: getSkipWaitTime,
+      skipAd: () => plugins.forEach(plugin => {
+        var _plugin$skipAd;
+
+        return (_plugin$skipAd = plugin.skipAd) === null || _plugin$skipAd === void 0 ? void 0 : _plugin$skipAd.call(plugin);
+      })
+    })
+  };
 };
 
 const loadScript = url => new Promise(resolve => {
@@ -6874,7 +6389,7 @@ const subscribeCastState = handleStateChange => {
 };
 
 /* @jsxImportSource @emotion/react */
-const connectingAnimation = react.keyframes`
+const connectingAnimation = keyframes`
   0% {
     background-image: url("${icon.castConntecting0}");
   }
@@ -6901,8 +6416,8 @@ const connectingStyle = {
 }; // data: {itemType: contentType, mediaSource, customQuery: data.params, licenseId ?}
 
 const CastButton = props => {
-  const [state, setState] = React.useState(CastState.NO_DEVICES_AVAILABLE);
-  React.useEffect(() => {
+  const [state, setState] = useState(CastState.NO_DEVICES_AVAILABLE);
+  useEffect(() => {
     const setup = ensureSenderFramework().then(() => subscribeCastState(setState));
     return () => setup === null || setup === void 0 ? void 0 : setup.then(unsubscribe => unsubscribe());
   }, []);
@@ -6916,8 +6431,8 @@ const CastButton = props => {
     }
   };
 
-  return state !== CastState.NO_DEVICES_AVAILABLE && jsxRuntime$1.jsx(Button, {
-    startIcon: jsxRuntime$1.jsx(Icon, {
+  return state !== CastState.NO_DEVICES_AVAILABLE && jsx$1(Button, {
+    startIcon: jsx$1(Icon, {
       type: icons[state],
       css: [invertColor, state === CastState.CONNECTING && connectingStyle, process.env.NODE_ENV === "production" ? "" : ";label:CastButton;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkNhc3RCdXR0b24uanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBb0VZIiwiZmlsZSI6IkNhc3RCdXR0b24uanMiLCJzb3VyY2VzQ29udGVudCI6WyIvKiBAanN4SW1wb3J0U291cmNlIEBlbW90aW9uL3JlYWN0ICovXG5pbXBvcnQge3VzZUVmZmVjdCwgdXNlU3RhdGV9IGZyb20gJ3JlYWN0J1xuaW1wb3J0IHtrZXlmcmFtZXN9IGZyb20gJ0BlbW90aW9uL3JlYWN0J1xuXG5pbXBvcnQgaWNvblVybHMgZnJvbSAnc3R5bGUvaWNvbidcbmltcG9ydCBJY29uIGZyb20gJ3BsYXllclVpL0ljb24nXG5pbXBvcnQge0J1dHRvbn0gZnJvbSAncGxheWVyVWkvYnV0dG9ucydcbmltcG9ydCB7XG4gIGNvbm5lY3QsXG4gIGRpc2Nvbm5lY3QsXG4gIHN1YnNjcmliZUNhc3RTdGF0ZSxcbiAgZW5zdXJlU2VuZGVyRnJhbWV3b3JrLFxufSBmcm9tICdjYXN0L2ZyYW1ld29yaydcbmltcG9ydCB7Q2FzdFN0YXRlfSBmcm9tICdFbnVtJ1xuXG5jb25zdCBjb25uZWN0aW5nQW5pbWF0aW9uID0ga2V5ZnJhbWVzYFxuICAwJSB7XG4gICAgYmFja2dyb3VuZC1pbWFnZTogdXJsKFwiJHtpY29uVXJscy5jYXN0Q29ubnRlY3RpbmcwfVwiKTtcbiAgfVxuICAzMyUge1xuICAgIGJhY2tncm91bmQtaW1hZ2U6IHVybChcIiR7aWNvblVybHMuY2FzdENvbm50ZWN0aW5nMX1cIik7XG4gIH1cbiAgNjYlIHtcbiAgICBiYWNrZ3JvdW5kLWltYWdlOiB1cmwoXCIke2ljb25VcmxzLmNhc3RDb25udGVjdGluZzJ9XCIpO1xuICB9XG4gIDEwMCUge1xuICAgIGJhY2tncm91bmQtaW1hZ2U6IHVybChcIiR7aWNvblVybHMuY2FzdENvbm50ZWN0aW5nMH1cIik7XG4gIH1cbmBcblxuY29uc3QgaWNvbnMgPSB7XG4gIFtDYXN0U3RhdGUuTk9UX0NPTk5FQ1RFRF06ICdjYXN0Tm90Q29ubmVjdGVkJyxcbiAgW0Nhc3RTdGF0ZS5DT05ORUNUSU5HXTogJ2Nhc3RDb25udGVjdGluZzAnLFxuICBbQ2FzdFN0YXRlLkNPTk5FQ1RFRF06ICdjYXN0Q29ubmVjdGVkJyxcbn1cblxuY29uc3QgaW52ZXJ0Q29sb3IgPSB7XG4gIGZpbHRlcjogJ2ludmVydCgxMDAlKScsXG59XG5cbmNvbnN0IGNvbm5lY3RpbmdTdHlsZSA9IHtcbiAgYW5pbWF0aW9uOiBgJHtjb25uZWN0aW5nQW5pbWF0aW9ufSAzcyBpbmZpbml0ZWAsXG59XG5cbi8vIGRhdGE6IHtpdGVtVHlwZTogY29udGVudFR5cGUsIG1lZGlhU291cmNlLCBjdXN0b21RdWVyeTogZGF0YS5wYXJhbXMsIGxpY2Vuc2VJZCA/fVxuY29uc3QgQ2FzdEJ1dHRvbiA9IHByb3BzID0+IHtcbiAgY29uc3QgW3N0YXRlLCBzZXRTdGF0ZV0gPSB1c2VTdGF0ZShDYXN0U3RhdGUuTk9fREVWSUNFU19BVkFJTEFCTEUpXG4gIHVzZUVmZmVjdCgoKSA9PiB7XG4gICAgY29uc3Qgc2V0dXAgPSBlbnN1cmVTZW5kZXJGcmFtZXdvcmsoKS50aGVuKCgpID0+XG4gICAgICBzdWJzY3JpYmVDYXN0U3RhdGUoc2V0U3RhdGUpXG4gICAgKVxuICAgIHJldHVybiAoKSA9PiBzZXR1cD8udGhlbih1bnN1YnNjcmliZSA9PiB1bnN1YnNjcmliZSgpKVxuICB9LCBbXSlcbiAgY29uc3QgdG9nZ2xlQ29ubmVjdCA9ICgpID0+IHtcbiAgICBpZiAoc3RhdGUgPT09IENhc3RTdGF0ZS5DT05ORUNURUQpIHtcbiAgICAgIGRpc2Nvbm5lY3QoKVxuICAgIH0gZWxzZSB7XG4gICAgICBjb25uZWN0KClcbiAgICAgIHNldFN0YXRlKENhc3RTdGF0ZS5DT05ORUNUSU5HKVxuICAgIH1cbiAgfVxuXG4gIHJldHVybiAoXG4gICAgc3RhdGUgIT09IENhc3RTdGF0ZS5OT19ERVZJQ0VTX0FWQUlMQUJMRSAmJiAoXG4gICAgICA8QnV0dG9uXG4gICAgICAgIHN0YXJ0SWNvbj17XG4gICAgICAgICAgPEljb25cbiAgICAgICAgICAgIHR5cGU9e2ljb25zW3N0YXRlXX1cbiAgICAgICAgICAgIGNzcz17W1xuICAgICAgICAgICAgICBpbnZlcnRDb2xvcixcbiAgICAgICAgICAgICAgc3RhdGUgPT09IENhc3RTdGF0ZS5DT05ORUNUSU5HICYmIGNvbm5lY3RpbmdTdHlsZSxcbiAgICAgICAgICAgIF19XG4gICAgICAgICAgLz5cbiAgICAgICAgfVxuICAgICAgICBvbkNsaWNrPXt0b2dnbGVDb25uZWN0fVxuICAgICAgICB7Li4ucHJvcHN9XG4gICAgICAvPlxuICAgIClcbiAgKVxufVxuXG5leHBvcnQgZGVmYXVsdCBDYXN0QnV0dG9uXG4iXX0= */"]
     }),
@@ -6927,52 +6442,7 @@ const CastButton = props => {
 };
 
 /* @jsxImportSource @emotion/react */
-const styles = {
-  flex: '100%',
-  margin: '1rem 0',
-  textAlign: 'center',
-  h2: {
-    fontSize: '120%',
-    fontWeight: 'bold'
-  }
-};
-
-const LiveEnd = ({
-  reload,
-  goBack
-}) => jsxRuntime$1.jsxs(Backdrop, {
-  open: true,
-  children: [jsxRuntime$1.jsxs("div", {
-    css: styles,
-    children: [jsxRuntime$1.jsx("h2", {
-      children: jsxRuntime$1.jsx(FormattedMessage, {
-        id: "KKS.PROGRAM.TITLE"
-      })
-    }), jsxRuntime$1.jsx(FormattedMessage, {
-      id: "KKS.PROGRAM.MESSAGE"
-    })]
-  }), jsxRuntime$1.jsx(Button, {
-    variant: "outlined",
-    onClick: reload,
-    children: jsxRuntime$1.jsx(FormattedMessage, {
-      id: "KKS.TRYAGAIN"
-    })
-  }), jsxRuntime$1.jsx(Button, {
-    variant: "outlined",
-    onClick: goBack,
-    children: jsxRuntime$1.jsx(FormattedMessage, {
-      id: "KKS.PLAYER.EXIT"
-    })
-  })]
-});
-
-LiveEnd.propTypes = {
-  reload: PropTypes.func,
-  goBack: PropTypes.func
-};
-
-/* @jsxImportSource @emotion/react */
-const sizes = {
+const sizes$1 = {
   normal: {
     bottom: '1rem',
     padding: '0.5rem',
@@ -7048,31 +6518,31 @@ const PlayDialog = ({
   const {
     observe,
     currentBreakpoint: size
-  } = useDimensions__default["default"]({
-    polyfill: resizeObserver.ResizeObserver,
+  } = useDimensions({
+    polyfill: ResizeObserver,
     breakpoints: {
       normal: 0,
       big: 600
     }
   });
-  const containerRef = React.useRef();
-  React.useEffect(() => {
+  const containerRef = useRef();
+  useEffect(() => {
     observe(containerRef.current.parentElement);
   });
-  return jsxRuntime$1.jsxs("div", {
-    css: [style$4.container, sizes[size], opening && style$4.opening, process.env.NODE_ENV === "production" ? "" : ";label:PlayDialog;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkVwaXNvZGVDYXJkLmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQTZGTSIsImZpbGUiOiJFcGlzb2RlQ2FyZC5qcyIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCB7dXNlRWZmZWN0LCB1c2VSZWZ9IGZyb20gJ3JlYWN0J1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJ1xuaW1wb3J0IHtSZXNpemVPYnNlcnZlcn0gZnJvbSAnQGp1Z2dsZS9yZXNpemUtb2JzZXJ2ZXInXG5pbXBvcnQgdXNlRGltZW5zaW9ucyBmcm9tICdyZWFjdC1jb29sLWRpbWVuc2lvbnMnXG5cbmltcG9ydCBpY29uIGZyb20gJ3N0eWxlL2ljb24nXG5cbmNvbnN0IHNpemVzID0ge1xuICBub3JtYWw6IHtcbiAgICBib3R0b206ICcxcmVtJyxcbiAgICBwYWRkaW5nOiAnMC41cmVtJyxcbiAgICB3aWR0aDogJzE4LjVyZW0nLFxuICAgIGhlaWdodDogJzUuMjVyZW0nLFxuICAgIGZvbnRTaXplOiAnMTJweCcsXG4gICAgJy0tc3BhY2luZyc6ICcwcmVtJyxcbiAgfSxcbiAgYmlnOiB7XG4gICAgYm90dG9tOiAnNXJlbScsXG4gICAgcGFkZGluZzogJzAuNzVyZW0nLFxuICAgIHdpZHRoOiAnMzJyZW0nLFxuICAgIGhlaWdodDogJzEwcmVtJyxcbiAgICBmb250U2l6ZTogJzIwcHgnLFxuICAgICctLXNwYWNpbmcnOiAnMC41cmVtJyxcbiAgfSxcbn1cblxuY29uc3Qgc3R5bGUgPSB7XG4gIGNvbnRhaW5lcjoge1xuICAgIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICAgIHpJbmRleDogJy0xJyxcbiAgICByaWdodDogJzAnLFxuICAgIGRpc3BsYXk6ICdmbGV4JyxcbiAgICBib3JkZXJSYWRpdXM6ICc0cHgnLFxuICAgIGNvbG9yOiAnI2ZmZicsXG4gICAgYmFja2dyb3VuZENvbG9yOiAncmdiYSgyMCwgMjAsIDIwLCAwLjgpJyxcbiAgICBvcGFjaXR5OiAnMCcsXG4gICAgdHJhbnNpdGlvbjogJ29wYWNpdHkgMXMgZWFzZScsXG4gICAgJ2J1dHRvbjpmb2N1cyc6IHtcbiAgICAgIG91dGxpbmU6ICdub25lJyxcbiAgICB9LFxuICB9LFxuICBvcGVuaW5nOiB7XG4gICAgekluZGV4OiAnaW5oZXJpdCcsXG4gICAgb3BhY2l0eTogJzEnLFxuICB9LFxuICBjb3ZlcjogaW1hZ2VVcmwgPT4gKHtcbiAgICBmbGV4OiAnMCA0MCUnLFxuICAgIGJvcmRlcjogJ25vbmUnLFxuICAgIGJvcmRlclJhZGl1czogJzRweCcsXG4gICAgYmFja2dyb3VuZDogYFxuICAgICAgY2VudGVyIC8gMzMlIG5vLXJlcGVhdCB1cmwoJHtpY29uLnBsYXlDaXJjbGVCb3JkZXJ9KSxcbiAgICAgICR7aW1hZ2VVcmwgPyBgY2VudGVyIC8gY292ZXIgdXJsKCR7aW1hZ2VVcmx9KSxgIDogJyd9IFxuICAgICAgI2NjY1xuICAgIGAsXG4gIH0pLFxuICBpbmZvOiB7XG4gICAgbWFyZ2luTGVmdDogJzAuNXJlbScsXG4gICAgZmxleDogJzEnLFxuICB9LFxuICBtZXNzYWdlOiB7XG4gICAgbWFyZ2luQm90dG9tOiBbJzFyZW0nLCAndmFyKC0tc3BhY2luZyknXSxcbiAgICBkaXNwbGF5OiAnZmxleCcsXG4gIH0sXG4gIGRpc21pc3M6IHtcbiAgICBtYXJnaW5MZWZ0OiAnYXV0bycsXG4gICAgd2lkdGg6IFsnMnJlbScsICdjYWxjKDEuNXJlbSArIHZhcigtLXNwYWNpbmcpKSddLFxuICAgIGhlaWdodDogWycycmVtJywgJ2NhbGMoMS41cmVtICsgdmFyKC0tc3BhY2luZykpJ10sXG4gICAgYm9yZGVyOiAnbm9uZScsXG4gICAgYmFja2dyb3VuZDogYGNlbnRlciAvIDFyZW0gbm8tcmVwZWF0IHVybCgke2ljb24uY2xvc2V9KSwgdHJhbnNwYXJlbnRgLFxuICB9LFxufVxuXG5jb25zdCBQbGF5RGlhbG9nID0gKHtcbiAgb3BlbmluZyxcbiAgY292ZXJJbWFnZVVybCxcbiAgbWVzc2FnZSxcbiAgdGl0bGUsXG4gIHBsYXksXG4gIGRpc21pc3MsXG4gIC4uLnJlc3Rcbn0pID0+IHtcbiAgY29uc3Qge29ic2VydmUsIGN1cnJlbnRCcmVha3BvaW50OiBzaXplfSA9IHVzZURpbWVuc2lvbnMoe1xuICAgIHBvbHlmaWxsOiBSZXNpemVPYnNlcnZlcixcbiAgICBicmVha3BvaW50czoge25vcm1hbDogMCwgYmlnOiA2MDB9LFxuICB9KVxuICBjb25zdCBjb250YWluZXJSZWYgPSB1c2VSZWYoKVxuICB1c2VFZmZlY3QoKCkgPT4ge1xuICAgIG9ic2VydmUoY29udGFpbmVyUmVmLmN1cnJlbnQucGFyZW50RWxlbWVudClcbiAgfSlcblxuICByZXR1cm4gKFxuICAgIDxkaXZcbiAgICAgIGNzcz17W3N0eWxlLmNvbnRhaW5lciwgc2l6ZXNbc2l6ZV0sIG9wZW5pbmcgJiYgc3R5bGUub3BlbmluZ119XG4gICAgICByZWY9e2NvbnRhaW5lclJlZn1cbiAgICAgIHsuLi5yZXN0fVxuICAgID5cbiAgICAgIDxidXR0b25cbiAgICAgICAgdHlwZT1cImJ1dHRvblwiXG4gICAgICAgIGFyaWEtbGFiZWw9XCJQbGF5IG5leHRcIlxuICAgICAgICBjc3M9e3N0eWxlLmNvdmVyKGNvdmVySW1hZ2VVcmwpfVxuICAgICAgICBvbkNsaWNrPXtwbGF5fVxuICAgICAgLz5cbiAgICAgIDxkaXYgY3NzPXtzdHlsZS5pbmZvfT5cbiAgICAgICAgPGRpdiBjc3M9e3N0eWxlLm1lc3NhZ2V9PlxuICAgICAgICAgIHttZXNzYWdlfVxuICAgICAgICAgIDxidXR0b25cbiAgICAgICAgICAgIHR5cGU9XCJidXR0b25cIlxuICAgICAgICAgICAgYXJpYS1sYWJlbD1cIkRpc21pc3NcIlxuICAgICAgICAgICAgY3NzPXtzdHlsZS5kaXNtaXNzfVxuICAgICAgICAgICAgb25DbGljaz17ZGlzbWlzc31cbiAgICAgICAgICAvPlxuICAgICAgICA8L2Rpdj5cbiAgICAgICAge3RpdGxlfVxuICAgICAgPC9kaXY+XG4gICAgPC9kaXY+XG4gIClcbn1cblBsYXlEaWFsb2cucHJvcFR5cGVzID0ge1xuICBvcGVuaW5nOiBQcm9wVHlwZXMuYm9vbCxcbiAgY292ZXJJbWFnZVVybDogUHJvcFR5cGVzLnN0cmluZyxcbiAgbWVzc2FnZTogUHJvcFR5cGVzLm5vZGUsXG4gIHRpdGxlOiBQcm9wVHlwZXMubm9kZSxcbiAgY29udGFpbmVyUmVmOiBQcm9wVHlwZXMub2JqZWN0LFxuICBwbGF5OiBQcm9wVHlwZXMuZnVuYyxcbiAgZGlzbWlzczogUHJvcFR5cGVzLmZ1bmMsXG59XG5cbmV4cG9ydCBkZWZhdWx0IFBsYXlEaWFsb2dcbiJdfQ== */"],
+  return jsxs("div", {
+    css: [style$4.container, sizes$1[size], opening && style$4.opening, process.env.NODE_ENV === "production" ? "" : ";label:PlayDialog;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkVwaXNvZGVDYXJkLmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQTZGTSIsImZpbGUiOiJFcGlzb2RlQ2FyZC5qcyIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCB7dXNlRWZmZWN0LCB1c2VSZWZ9IGZyb20gJ3JlYWN0J1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJ1xuaW1wb3J0IHtSZXNpemVPYnNlcnZlcn0gZnJvbSAnQGp1Z2dsZS9yZXNpemUtb2JzZXJ2ZXInXG5pbXBvcnQgdXNlRGltZW5zaW9ucyBmcm9tICdyZWFjdC1jb29sLWRpbWVuc2lvbnMnXG5cbmltcG9ydCBpY29uIGZyb20gJ3N0eWxlL2ljb24nXG5cbmNvbnN0IHNpemVzID0ge1xuICBub3JtYWw6IHtcbiAgICBib3R0b206ICcxcmVtJyxcbiAgICBwYWRkaW5nOiAnMC41cmVtJyxcbiAgICB3aWR0aDogJzE4LjVyZW0nLFxuICAgIGhlaWdodDogJzUuMjVyZW0nLFxuICAgIGZvbnRTaXplOiAnMTJweCcsXG4gICAgJy0tc3BhY2luZyc6ICcwcmVtJyxcbiAgfSxcbiAgYmlnOiB7XG4gICAgYm90dG9tOiAnNXJlbScsXG4gICAgcGFkZGluZzogJzAuNzVyZW0nLFxuICAgIHdpZHRoOiAnMzJyZW0nLFxuICAgIGhlaWdodDogJzEwcmVtJyxcbiAgICBmb250U2l6ZTogJzIwcHgnLFxuICAgICctLXNwYWNpbmcnOiAnMC41cmVtJyxcbiAgfSxcbn1cblxuY29uc3Qgc3R5bGUgPSB7XG4gIGNvbnRhaW5lcjoge1xuICAgIHBvc2l0aW9uOiAnYWJzb2x1dGUnLFxuICAgIHpJbmRleDogJy0xJyxcbiAgICByaWdodDogJzAnLFxuICAgIGRpc3BsYXk6ICdmbGV4JyxcbiAgICBib3JkZXJSYWRpdXM6ICc0cHgnLFxuICAgIGNvbG9yOiAnI2ZmZicsXG4gICAgYmFja2dyb3VuZENvbG9yOiAncmdiYSgyMCwgMjAsIDIwLCAwLjgpJyxcbiAgICBvcGFjaXR5OiAnMCcsXG4gICAgdHJhbnNpdGlvbjogJ29wYWNpdHkgMXMgZWFzZScsXG4gICAgJ2J1dHRvbjpmb2N1cyc6IHtcbiAgICAgIG91dGxpbmU6ICdub25lJyxcbiAgICB9LFxuICB9LFxuICBvcGVuaW5nOiB7XG4gICAgekluZGV4OiAnaW5oZXJpdCcsXG4gICAgb3BhY2l0eTogJzEnLFxuICB9LFxuICBjb3ZlcjogaW1hZ2VVcmwgPT4gKHtcbiAgICBmbGV4OiAnMCA0MCUnLFxuICAgIGJvcmRlcjogJ25vbmUnLFxuICAgIGJvcmRlclJhZGl1czogJzRweCcsXG4gICAgYmFja2dyb3VuZDogYFxuICAgICAgY2VudGVyIC8gMzMlIG5vLXJlcGVhdCB1cmwoJHtpY29uLnBsYXlDaXJjbGVCb3JkZXJ9KSxcbiAgICAgICR7aW1hZ2VVcmwgPyBgY2VudGVyIC8gY292ZXIgdXJsKCR7aW1hZ2VVcmx9KSxgIDogJyd9IFxuICAgICAgI2NjY1xuICAgIGAsXG4gIH0pLFxuICBpbmZvOiB7XG4gICAgbWFyZ2luTGVmdDogJzAuNXJlbScsXG4gICAgZmxleDogJzEnLFxuICB9LFxuICBtZXNzYWdlOiB7XG4gICAgbWFyZ2luQm90dG9tOiBbJzFyZW0nLCAndmFyKC0tc3BhY2luZyknXSxcbiAgICBkaXNwbGF5OiAnZmxleCcsXG4gIH0sXG4gIGRpc21pc3M6IHtcbiAgICBtYXJnaW5MZWZ0OiAnYXV0bycsXG4gICAgd2lkdGg6IFsnMnJlbScsICdjYWxjKDEuNXJlbSArIHZhcigtLXNwYWNpbmcpKSddLFxuICAgIGhlaWdodDogWycycmVtJywgJ2NhbGMoMS41cmVtICsgdmFyKC0tc3BhY2luZykpJ10sXG4gICAgYm9yZGVyOiAnbm9uZScsXG4gICAgYmFja2dyb3VuZDogYGNlbnRlciAvIDFyZW0gbm8tcmVwZWF0IHVybCgke2ljb24uY2xvc2V9KSwgdHJhbnNwYXJlbnRgLFxuICB9LFxufVxuXG5jb25zdCBQbGF5RGlhbG9nID0gKHtcbiAgb3BlbmluZyxcbiAgY292ZXJJbWFnZVVybCxcbiAgbWVzc2FnZSxcbiAgdGl0bGUsXG4gIHBsYXksXG4gIGRpc21pc3MsXG4gIC4uLnJlc3Rcbn0pID0+IHtcbiAgY29uc3Qge29ic2VydmUsIGN1cnJlbnRCcmVha3BvaW50OiBzaXplfSA9IHVzZURpbWVuc2lvbnMoe1xuICAgIHBvbHlmaWxsOiBSZXNpemVPYnNlcnZlcixcbiAgICBicmVha3BvaW50czoge25vcm1hbDogMCwgYmlnOiA2MDB9LFxuICB9KVxuICBjb25zdCBjb250YWluZXJSZWYgPSB1c2VSZWYoKVxuICB1c2VFZmZlY3QoKCkgPT4ge1xuICAgIG9ic2VydmUoY29udGFpbmVyUmVmLmN1cnJlbnQucGFyZW50RWxlbWVudClcbiAgfSlcblxuICByZXR1cm4gKFxuICAgIDxkaXZcbiAgICAgIGNzcz17W3N0eWxlLmNvbnRhaW5lciwgc2l6ZXNbc2l6ZV0sIG9wZW5pbmcgJiYgc3R5bGUub3BlbmluZ119XG4gICAgICByZWY9e2NvbnRhaW5lclJlZn1cbiAgICAgIHsuLi5yZXN0fVxuICAgID5cbiAgICAgIDxidXR0b25cbiAgICAgICAgdHlwZT1cImJ1dHRvblwiXG4gICAgICAgIGFyaWEtbGFiZWw9XCJQbGF5IG5leHRcIlxuICAgICAgICBjc3M9e3N0eWxlLmNvdmVyKGNvdmVySW1hZ2VVcmwpfVxuICAgICAgICBvbkNsaWNrPXtwbGF5fVxuICAgICAgLz5cbiAgICAgIDxkaXYgY3NzPXtzdHlsZS5pbmZvfT5cbiAgICAgICAgPGRpdiBjc3M9e3N0eWxlLm1lc3NhZ2V9PlxuICAgICAgICAgIHttZXNzYWdlfVxuICAgICAgICAgIDxidXR0b25cbiAgICAgICAgICAgIHR5cGU9XCJidXR0b25cIlxuICAgICAgICAgICAgYXJpYS1sYWJlbD1cIkRpc21pc3NcIlxuICAgICAgICAgICAgY3NzPXtzdHlsZS5kaXNtaXNzfVxuICAgICAgICAgICAgb25DbGljaz17ZGlzbWlzc31cbiAgICAgICAgICAvPlxuICAgICAgICA8L2Rpdj5cbiAgICAgICAge3RpdGxlfVxuICAgICAgPC9kaXY+XG4gICAgPC9kaXY+XG4gIClcbn1cblBsYXlEaWFsb2cucHJvcFR5cGVzID0ge1xuICBvcGVuaW5nOiBQcm9wVHlwZXMuYm9vbCxcbiAgY292ZXJJbWFnZVVybDogUHJvcFR5cGVzLnN0cmluZyxcbiAgbWVzc2FnZTogUHJvcFR5cGVzLm5vZGUsXG4gIHRpdGxlOiBQcm9wVHlwZXMubm9kZSxcbiAgY29udGFpbmVyUmVmOiBQcm9wVHlwZXMub2JqZWN0LFxuICBwbGF5OiBQcm9wVHlwZXMuZnVuYyxcbiAgZGlzbWlzczogUHJvcFR5cGVzLmZ1bmMsXG59XG5cbmV4cG9ydCBkZWZhdWx0IFBsYXlEaWFsb2dcbiJdfQ== */"],
     ref: containerRef,
     ...rest,
-    children: [jsxRuntime$1.jsx("button", {
+    children: [jsx$1("button", {
       type: "button",
       "aria-label": "Play next",
       css: style$4.cover(coverImageUrl),
       onClick: play
-    }), jsxRuntime$1.jsxs("div", {
+    }), jsxs("div", {
       css: style$4.info,
-      children: [jsxRuntime$1.jsxs("div", {
+      children: [jsxs("div", {
         css: style$4.message,
-        children: [message, jsxRuntime$1.jsx("button", {
+        children: [message, jsx$1("button", {
           type: "button",
           "aria-label": "Dismiss",
           css: style$4.dismiss,
@@ -7100,14 +6570,14 @@ const useCountdownSecond = ({
   enabled,
   onEnd
 }) => {
-  const [timeLeft, setTimeLeft] = React.useState();
-  React.useEffect(() => {
+  const [timeLeft, setTimeLeft] = useState();
+  useEffect(() => {
     if (!enabled) return;
     setTimeLeft(time);
     const intervalId = setInterval(() => setTimeLeft(current => current - 1), 1000);
     return () => clearInterval(intervalId);
   }, [time, enabled]);
-  React.useEffect(() => {
+  useEffect(() => {
     if (timeLeft <= 0) {
       onEnd === null || onEnd === void 0 ? void 0 : onEnd();
     }
@@ -7125,26 +6595,26 @@ const AutoplayPrompt = ({
   onOpen,
   onDismiss
 }) => {
-  const [chapterType, setChapterType] = React.useState('');
-  const [dismissedAt, setDismissedAt] = React.useState('');
+  const [chapterType, setChapterType] = useState('');
+  const [dismissedAt, setDismissedAt] = useState('');
 
   const updateChapter = ({
     endStart
   }) => setChapterType(getCurrentTime() >= endStart ? 'ending' : '');
 
-  React.useEffect(() => {
+  useEffect(() => {
     var _chapters$find;
 
     const endStart = (_chapters$find = chapters.find(chapter => chapter.type === 'ending')) === null || _chapters$find === void 0 ? void 0 : _chapters$find.start;
     updateChapter({
       endStart
     });
-    return on$1(videoRef.current, 'timeupdate', () => updateChapter({
+    return on(videoRef.current, 'timeupdate', () => updateChapter({
       endStart
     }));
   }, [chapters]);
   const endStatus = ended ? 'ended' : chapterType;
-  React.useEffect(() => {
+  useEffect(() => {
     if (!endStatus) {
       setDismissedAt('');
     } // don't open when seek back to endStart after ended
@@ -7155,7 +6625,7 @@ const AutoplayPrompt = ({
     }
   }, [endStatus]);
   const open = endStatus && endStatus !== dismissedAt;
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       onOpen === null || onOpen === void 0 ? void 0 : onOpen(endStatus);
     } else {
@@ -7173,10 +6643,10 @@ const AutoplayPrompt = ({
     enabled: open,
     onEnd: playNext
   });
-  return /*#__PURE__*/jsxRuntime.jsx(PlayDialog, {
+  return /*#__PURE__*/jsx(PlayDialog, {
     className: "pinned",
     opening: open,
-    message: /*#__PURE__*/jsxRuntime.jsx(FormattedMessage, {
+    message: /*#__PURE__*/jsx(FormattedMessage, {
       id: "KKS.ENDROLL.COUNTDOWN",
       values: {
         timeLeft
@@ -7187,31 +6657,6 @@ const AutoplayPrompt = ({
     play: playNext,
     dismiss: () => setDismissedAt(endStatus)
   });
-};
-
-/* @jsxImportSource @emotion/react */
-const imageStyle = {
-  zIndex: 1,
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  width: '100%',
-  height: '100%',
-  objectFit: 'contain',
-  transform: 'translate(-50%, -50%)',
-  background: '#000'
-};
-
-const CoverImage = ({
-  src
-}) => jsxRuntime$1.jsx("img", {
-  alt: "Cover",
-  css: imageStyle,
-  src: src
-});
-
-CoverImage.propTypes = {
-  src: PropTypes.string
 };
 
 const openIcon = {
@@ -7267,27 +6712,27 @@ const RecommendationPanel = ({
   onToggle,
   title,
   children = null
-}) => children && jsxRuntime$1.jsx("div", {
-  css: /*#__PURE__*/react.css({
+}) => children && jsx$1("div", {
+  css: /*#__PURE__*/css({
     height: foldedHeight,
     marginTop: '-1rem'
   }, process.env.NODE_ENV === "production" ? "" : ";label:RecommendationPanel;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlJlY29tbWVuZGF0aW9uUGFuZWwuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBaUVTIiwiZmlsZSI6IlJlY29tbWVuZGF0aW9uUGFuZWwuanMiLCJzb3VyY2VzQ29udGVudCI6WyIvKiBlc2xpbnQtZGlzYWJsZSBqc3gtYTExeS9uby1zdGF0aWMtZWxlbWVudC1pbnRlcmFjdGlvbnMgKi9cbi8vIGVzbGludC1kaXNhYmxlLW5leHQtbGluZSBuby11bnVzZWQtdmFyc1xuLyogQGpzeEltcG9ydFNvdXJjZSBAZW1vdGlvbi9yZWFjdCAqL1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJ1xuXG5pbXBvcnQgaWNvbiBmcm9tICdzdHlsZS9pY29uJ1xuXG5jb25zdCBvcGVuSWNvbiA9IHtcbiAgd2lkdGg6ICcxcmVtJyxcbiAgaGVpZ2h0OiAnMXJlbScsXG4gIG1hcmdpbjogJzAgMC41cmVtJyxcbiAgZm9udFdlaWdodDogJ2JvbGQnLFxuICBiYWNrZ3JvdW5kSW1hZ2U6IGB1cmwoJHtpY29uLmFycm93VG9wfSlgLFxuICB0cmFuc2l0aW9uOiAndHJhbnNmb3JtIDFzIGVhc2UnLFxufVxuXG5jb25zdCBjbG9zZUljb24gPSB7XG4gIC4uLm9wZW5JY29uLFxuICB0cmFuc2Zvcm06ICdyb3RhdGVYKDE4MGRlZyknLFxufVxuXG5jb25zdCB0aXRsZVN0eWxlID0ge1xuICBwb3NpdGlvbjogJ3JlbGF0aXZlJyxcbiAgcGFkZGluZzogJzAuNXJlbSAyLjVyZW0nLFxuICBkaXNwbGF5OiAnZmxleCcsXG4gIGFsaWduSXRlbXM6ICdjZW50ZXInLFxuICBjb2xvcjogJyNjY2MnLFxuICBmb250U2l6ZTogJzIwcHgnLFxuICBjdXJzb3I6ICdwb2ludGVyJyxcbn1cblxuY29uc3QgbWFza1N0eWxlID0ge1xuICBwb3NpdGlvbjogJ2Fic29sdXRlJyxcbiAgbGVmdDogMCxcbiAgYm90dG9tOiAwLFxuICB3aWR0aDogJzEwMCUnLFxuICBoZWlnaHQ6ICcxMDB2aCcsXG59XG5cbmNvbnN0IGNvbnRlbnRTdHlsZSA9IHtcbiAgb3ZlcmZsb3c6ICdhdXRvJyxcbn1cblxuY29uc3QgY29udGVudEhpZGRlblN0eWxlID0ge1xuICBvdmVyZmxvdzogJ2hpZGRlbicsXG4gIHBvaW50ZXJFdmVudHM6ICdub25lJyxcbiAgdG91Y2hBY3Rpb246ICdub25lJyxcbn1cblxuY29uc3QgZm9sZGVkSGVpZ2h0ID0gJzVyZW0nXG5cbmNvbnN0IHN0eWxlID0ge1xuICBjb250YWluZXI6IHtcbiAgICBwb3NpdGlvbjogJ2Fic29sdXRlJyxcbiAgICB3aWR0aDogJzEwMCUnLFxuICAgIHRyYW5zaXRpb246ICd0cmFuc2Zvcm0gMC41cyBlYXNlJyxcbiAgICB0cmFuc2Zvcm06ICd0cmFuc2xhdGVZKDApJyxcbiAgfSxcbiAgb3Blbjoge1xuICAgIHRyYW5zZm9ybTogYHRyYW5zbGF0ZVkoLTEwMCUpIHRyYW5zbGF0ZVkoJHtmb2xkZWRIZWlnaHR9KWAsXG4gIH0sXG59XG5cbmNvbnN0IFJlY29tbWVuZGF0aW9uUGFuZWwgPSAoe29wZW4sIG9uVG9nZ2xlLCB0aXRsZSwgY2hpbGRyZW4gPSBudWxsfSkgPT5cbiAgY2hpbGRyZW4gJiYgKFxuICAgIDxkaXYgY3NzPXt7aGVpZ2h0OiBmb2xkZWRIZWlnaHQsIG1hcmdpblRvcDogJy0xcmVtJ319PlxuICAgICAgPGRpdlxuICAgICAgICBjc3M9e1tzdHlsZS5jb250YWluZXIsIG9wZW4gJiYgc3R5bGUub3Blbl19XG4gICAgICAgIG9uQ2xpY2s9eygpID0+IHtcbiAgICAgICAgICBpZiAoIW9wZW4pIHtcbiAgICAgICAgICAgIG9uVG9nZ2xlKClcbiAgICAgICAgICB9XG4gICAgICAgIH19XG4gICAgICA+XG4gICAgICAgIDxkaXYgY3NzPXt0aXRsZVN0eWxlfSBvbkNsaWNrPXtvcGVuICYmIG9uVG9nZ2xlID8gb25Ub2dnbGUgOiB1bmRlZmluZWR9PlxuICAgICAgICAgIHtvcGVuICYmIDxkaXYgY3NzPXttYXNrU3R5bGV9IC8+fVxuICAgICAgICAgIHt0aXRsZX1cbiAgICAgICAgICA8ZGl2IGNzcz17W29wZW4gPyBjbG9zZUljb24gOiBvcGVuSWNvbl19IC8+XG4gICAgICAgIDwvZGl2PlxuICAgICAgICA8ZGl2IGNzcz17W2NvbnRlbnRTdHlsZSwgIW9wZW4gJiYgY29udGVudEhpZGRlblN0eWxlXX0+e2NoaWxkcmVufTwvZGl2PlxuICAgICAgPC9kaXY+XG4gICAgPC9kaXY+XG4gIClcblxuUmVjb21tZW5kYXRpb25QYW5lbC5wcm9wVHlwZXMgPSB7XG4gIG9wZW46IFByb3BUeXBlcy5ib29sLFxuICBvblRvZ2dsZTogUHJvcFR5cGVzLmZ1bmMsXG4gIHRpdGxlOiBQcm9wVHlwZXMubm9kZSxcbiAgY2hpbGRyZW46IFByb3BUeXBlcy5ub2RlLFxufVxuXG5leHBvcnQgZGVmYXVsdCBSZWNvbW1lbmRhdGlvblBhbmVsXG4iXX0= */"),
-  children: jsxRuntime$1.jsxs("div", {
+  children: jsxs("div", {
     css: [style$3.container, open && style$3.open, process.env.NODE_ENV === "production" ? "" : ";label:RecommendationPanel;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlJlY29tbWVuZGF0aW9uUGFuZWwuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBbUVRIiwiZmlsZSI6IlJlY29tbWVuZGF0aW9uUGFuZWwuanMiLCJzb3VyY2VzQ29udGVudCI6WyIvKiBlc2xpbnQtZGlzYWJsZSBqc3gtYTExeS9uby1zdGF0aWMtZWxlbWVudC1pbnRlcmFjdGlvbnMgKi9cbi8vIGVzbGludC1kaXNhYmxlLW5leHQtbGluZSBuby11bnVzZWQtdmFyc1xuLyogQGpzeEltcG9ydFNvdXJjZSBAZW1vdGlvbi9yZWFjdCAqL1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJ1xuXG5pbXBvcnQgaWNvbiBmcm9tICdzdHlsZS9pY29uJ1xuXG5jb25zdCBvcGVuSWNvbiA9IHtcbiAgd2lkdGg6ICcxcmVtJyxcbiAgaGVpZ2h0OiAnMXJlbScsXG4gIG1hcmdpbjogJzAgMC41cmVtJyxcbiAgZm9udFdlaWdodDogJ2JvbGQnLFxuICBiYWNrZ3JvdW5kSW1hZ2U6IGB1cmwoJHtpY29uLmFycm93VG9wfSlgLFxuICB0cmFuc2l0aW9uOiAndHJhbnNmb3JtIDFzIGVhc2UnLFxufVxuXG5jb25zdCBjbG9zZUljb24gPSB7XG4gIC4uLm9wZW5JY29uLFxuICB0cmFuc2Zvcm06ICdyb3RhdGVYKDE4MGRlZyknLFxufVxuXG5jb25zdCB0aXRsZVN0eWxlID0ge1xuICBwb3NpdGlvbjogJ3JlbGF0aXZlJyxcbiAgcGFkZGluZzogJzAuNXJlbSAyLjVyZW0nLFxuICBkaXNwbGF5OiAnZmxleCcsXG4gIGFsaWduSXRlbXM6ICdjZW50ZXInLFxuICBjb2xvcjogJyNjY2MnLFxuICBmb250U2l6ZTogJzIwcHgnLFxuICBjdXJzb3I6ICdwb2ludGVyJyxcbn1cblxuY29uc3QgbWFza1N0eWxlID0ge1xuICBwb3NpdGlvbjogJ2Fic29sdXRlJyxcbiAgbGVmdDogMCxcbiAgYm90dG9tOiAwLFxuICB3aWR0aDogJzEwMCUnLFxuICBoZWlnaHQ6ICcxMDB2aCcsXG59XG5cbmNvbnN0IGNvbnRlbnRTdHlsZSA9IHtcbiAgb3ZlcmZsb3c6ICdhdXRvJyxcbn1cblxuY29uc3QgY29udGVudEhpZGRlblN0eWxlID0ge1xuICBvdmVyZmxvdzogJ2hpZGRlbicsXG4gIHBvaW50ZXJFdmVudHM6ICdub25lJyxcbiAgdG91Y2hBY3Rpb246ICdub25lJyxcbn1cblxuY29uc3QgZm9sZGVkSGVpZ2h0ID0gJzVyZW0nXG5cbmNvbnN0IHN0eWxlID0ge1xuICBjb250YWluZXI6IHtcbiAgICBwb3NpdGlvbjogJ2Fic29sdXRlJyxcbiAgICB3aWR0aDogJzEwMCUnLFxuICAgIHRyYW5zaXRpb246ICd0cmFuc2Zvcm0gMC41cyBlYXNlJyxcbiAgICB0cmFuc2Zvcm06ICd0cmFuc2xhdGVZKDApJyxcbiAgfSxcbiAgb3Blbjoge1xuICAgIHRyYW5zZm9ybTogYHRyYW5zbGF0ZVkoLTEwMCUpIHRyYW5zbGF0ZVkoJHtmb2xkZWRIZWlnaHR9KWAsXG4gIH0sXG59XG5cbmNvbnN0IFJlY29tbWVuZGF0aW9uUGFuZWwgPSAoe29wZW4sIG9uVG9nZ2xlLCB0aXRsZSwgY2hpbGRyZW4gPSBudWxsfSkgPT5cbiAgY2hpbGRyZW4gJiYgKFxuICAgIDxkaXYgY3NzPXt7aGVpZ2h0OiBmb2xkZWRIZWlnaHQsIG1hcmdpblRvcDogJy0xcmVtJ319PlxuICAgICAgPGRpdlxuICAgICAgICBjc3M9e1tzdHlsZS5jb250YWluZXIsIG9wZW4gJiYgc3R5bGUub3Blbl19XG4gICAgICAgIG9uQ2xpY2s9eygpID0+IHtcbiAgICAgICAgICBpZiAoIW9wZW4pIHtcbiAgICAgICAgICAgIG9uVG9nZ2xlKClcbiAgICAgICAgICB9XG4gICAgICAgIH19XG4gICAgICA+XG4gICAgICAgIDxkaXYgY3NzPXt0aXRsZVN0eWxlfSBvbkNsaWNrPXtvcGVuICYmIG9uVG9nZ2xlID8gb25Ub2dnbGUgOiB1bmRlZmluZWR9PlxuICAgICAgICAgIHtvcGVuICYmIDxkaXYgY3NzPXttYXNrU3R5bGV9IC8+fVxuICAgICAgICAgIHt0aXRsZX1cbiAgICAgICAgICA8ZGl2IGNzcz17W29wZW4gPyBjbG9zZUljb24gOiBvcGVuSWNvbl19IC8+XG4gICAgICAgIDwvZGl2PlxuICAgICAgICA8ZGl2IGNzcz17W2NvbnRlbnRTdHlsZSwgIW9wZW4gJiYgY29udGVudEhpZGRlblN0eWxlXX0+e2NoaWxkcmVufTwvZGl2PlxuICAgICAgPC9kaXY+XG4gICAgPC9kaXY+XG4gIClcblxuUmVjb21tZW5kYXRpb25QYW5lbC5wcm9wVHlwZXMgPSB7XG4gIG9wZW46IFByb3BUeXBlcy5ib29sLFxuICBvblRvZ2dsZTogUHJvcFR5cGVzLmZ1bmMsXG4gIHRpdGxlOiBQcm9wVHlwZXMubm9kZSxcbiAgY2hpbGRyZW46IFByb3BUeXBlcy5ub2RlLFxufVxuXG5leHBvcnQgZGVmYXVsdCBSZWNvbW1lbmRhdGlvblBhbmVsXG4iXX0= */"],
     onClick: () => {
       if (!open) {
         onToggle();
       }
     },
-    children: [jsxRuntime$1.jsxs("div", {
+    children: [jsxs("div", {
       css: titleStyle,
       onClick: open && onToggle ? onToggle : undefined,
-      children: [open && jsxRuntime$1.jsx("div", {
+      children: [open && jsx$1("div", {
         css: maskStyle
-      }), title, jsxRuntime$1.jsx("div", {
+      }), title, jsx$1("div", {
         css: [open ? closeIcon : openIcon, process.env.NODE_ENV === "production" ? "" : ";label:RecommendationPanel;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlJlY29tbWVuZGF0aW9uUGFuZWwuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBNkVlIiwiZmlsZSI6IlJlY29tbWVuZGF0aW9uUGFuZWwuanMiLCJzb3VyY2VzQ29udGVudCI6WyIvKiBlc2xpbnQtZGlzYWJsZSBqc3gtYTExeS9uby1zdGF0aWMtZWxlbWVudC1pbnRlcmFjdGlvbnMgKi9cbi8vIGVzbGludC1kaXNhYmxlLW5leHQtbGluZSBuby11bnVzZWQtdmFyc1xuLyogQGpzeEltcG9ydFNvdXJjZSBAZW1vdGlvbi9yZWFjdCAqL1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJ1xuXG5pbXBvcnQgaWNvbiBmcm9tICdzdHlsZS9pY29uJ1xuXG5jb25zdCBvcGVuSWNvbiA9IHtcbiAgd2lkdGg6ICcxcmVtJyxcbiAgaGVpZ2h0OiAnMXJlbScsXG4gIG1hcmdpbjogJzAgMC41cmVtJyxcbiAgZm9udFdlaWdodDogJ2JvbGQnLFxuICBiYWNrZ3JvdW5kSW1hZ2U6IGB1cmwoJHtpY29uLmFycm93VG9wfSlgLFxuICB0cmFuc2l0aW9uOiAndHJhbnNmb3JtIDFzIGVhc2UnLFxufVxuXG5jb25zdCBjbG9zZUljb24gPSB7XG4gIC4uLm9wZW5JY29uLFxuICB0cmFuc2Zvcm06ICdyb3RhdGVYKDE4MGRlZyknLFxufVxuXG5jb25zdCB0aXRsZVN0eWxlID0ge1xuICBwb3NpdGlvbjogJ3JlbGF0aXZlJyxcbiAgcGFkZGluZzogJzAuNXJlbSAyLjVyZW0nLFxuICBkaXNwbGF5OiAnZmxleCcsXG4gIGFsaWduSXRlbXM6ICdjZW50ZXInLFxuICBjb2xvcjogJyNjY2MnLFxuICBmb250U2l6ZTogJzIwcHgnLFxuICBjdXJzb3I6ICdwb2ludGVyJyxcbn1cblxuY29uc3QgbWFza1N0eWxlID0ge1xuICBwb3NpdGlvbjogJ2Fic29sdXRlJyxcbiAgbGVmdDogMCxcbiAgYm90dG9tOiAwLFxuICB3aWR0aDogJzEwMCUnLFxuICBoZWlnaHQ6ICcxMDB2aCcsXG59XG5cbmNvbnN0IGNvbnRlbnRTdHlsZSA9IHtcbiAgb3ZlcmZsb3c6ICdhdXRvJyxcbn1cblxuY29uc3QgY29udGVudEhpZGRlblN0eWxlID0ge1xuICBvdmVyZmxvdzogJ2hpZGRlbicsXG4gIHBvaW50ZXJFdmVudHM6ICdub25lJyxcbiAgdG91Y2hBY3Rpb246ICdub25lJyxcbn1cblxuY29uc3QgZm9sZGVkSGVpZ2h0ID0gJzVyZW0nXG5cbmNvbnN0IHN0eWxlID0ge1xuICBjb250YWluZXI6IHtcbiAgICBwb3NpdGlvbjogJ2Fic29sdXRlJyxcbiAgICB3aWR0aDogJzEwMCUnLFxuICAgIHRyYW5zaXRpb246ICd0cmFuc2Zvcm0gMC41cyBlYXNlJyxcbiAgICB0cmFuc2Zvcm06ICd0cmFuc2xhdGVZKDApJyxcbiAgfSxcbiAgb3Blbjoge1xuICAgIHRyYW5zZm9ybTogYHRyYW5zbGF0ZVkoLTEwMCUpIHRyYW5zbGF0ZVkoJHtmb2xkZWRIZWlnaHR9KWAsXG4gIH0sXG59XG5cbmNvbnN0IFJlY29tbWVuZGF0aW9uUGFuZWwgPSAoe29wZW4sIG9uVG9nZ2xlLCB0aXRsZSwgY2hpbGRyZW4gPSBudWxsfSkgPT5cbiAgY2hpbGRyZW4gJiYgKFxuICAgIDxkaXYgY3NzPXt7aGVpZ2h0OiBmb2xkZWRIZWlnaHQsIG1hcmdpblRvcDogJy0xcmVtJ319PlxuICAgICAgPGRpdlxuICAgICAgICBjc3M9e1tzdHlsZS5jb250YWluZXIsIG9wZW4gJiYgc3R5bGUub3Blbl19XG4gICAgICAgIG9uQ2xpY2s9eygpID0+IHtcbiAgICAgICAgICBpZiAoIW9wZW4pIHtcbiAgICAgICAgICAgIG9uVG9nZ2xlKClcbiAgICAgICAgICB9XG4gICAgICAgIH19XG4gICAgICA+XG4gICAgICAgIDxkaXYgY3NzPXt0aXRsZVN0eWxlfSBvbkNsaWNrPXtvcGVuICYmIG9uVG9nZ2xlID8gb25Ub2dnbGUgOiB1bmRlZmluZWR9PlxuICAgICAgICAgIHtvcGVuICYmIDxkaXYgY3NzPXttYXNrU3R5bGV9IC8+fVxuICAgICAgICAgIHt0aXRsZX1cbiAgICAgICAgICA8ZGl2IGNzcz17W29wZW4gPyBjbG9zZUljb24gOiBvcGVuSWNvbl19IC8+XG4gICAgICAgIDwvZGl2PlxuICAgICAgICA8ZGl2IGNzcz17W2NvbnRlbnRTdHlsZSwgIW9wZW4gJiYgY29udGVudEhpZGRlblN0eWxlXX0+e2NoaWxkcmVufTwvZGl2PlxuICAgICAgPC9kaXY+XG4gICAgPC9kaXY+XG4gIClcblxuUmVjb21tZW5kYXRpb25QYW5lbC5wcm9wVHlwZXMgPSB7XG4gIG9wZW46IFByb3BUeXBlcy5ib29sLFxuICBvblRvZ2dsZTogUHJvcFR5cGVzLmZ1bmMsXG4gIHRpdGxlOiBQcm9wVHlwZXMubm9kZSxcbiAgY2hpbGRyZW46IFByb3BUeXBlcy5ub2RlLFxufVxuXG5leHBvcnQgZGVmYXVsdCBSZWNvbW1lbmRhdGlvblBhbmVsXG4iXX0= */"]
       })]
-    }), jsxRuntime$1.jsx("div", {
+    }), jsx$1("div", {
       css: [contentStyle, !open && contentHiddenStyle, process.env.NODE_ENV === "production" ? "" : ";label:RecommendationPanel;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlJlY29tbWVuZGF0aW9uUGFuZWwuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBK0VhIiwiZmlsZSI6IlJlY29tbWVuZGF0aW9uUGFuZWwuanMiLCJzb3VyY2VzQ29udGVudCI6WyIvKiBlc2xpbnQtZGlzYWJsZSBqc3gtYTExeS9uby1zdGF0aWMtZWxlbWVudC1pbnRlcmFjdGlvbnMgKi9cbi8vIGVzbGludC1kaXNhYmxlLW5leHQtbGluZSBuby11bnVzZWQtdmFyc1xuLyogQGpzeEltcG9ydFNvdXJjZSBAZW1vdGlvbi9yZWFjdCAqL1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJ1xuXG5pbXBvcnQgaWNvbiBmcm9tICdzdHlsZS9pY29uJ1xuXG5jb25zdCBvcGVuSWNvbiA9IHtcbiAgd2lkdGg6ICcxcmVtJyxcbiAgaGVpZ2h0OiAnMXJlbScsXG4gIG1hcmdpbjogJzAgMC41cmVtJyxcbiAgZm9udFdlaWdodDogJ2JvbGQnLFxuICBiYWNrZ3JvdW5kSW1hZ2U6IGB1cmwoJHtpY29uLmFycm93VG9wfSlgLFxuICB0cmFuc2l0aW9uOiAndHJhbnNmb3JtIDFzIGVhc2UnLFxufVxuXG5jb25zdCBjbG9zZUljb24gPSB7XG4gIC4uLm9wZW5JY29uLFxuICB0cmFuc2Zvcm06ICdyb3RhdGVYKDE4MGRlZyknLFxufVxuXG5jb25zdCB0aXRsZVN0eWxlID0ge1xuICBwb3NpdGlvbjogJ3JlbGF0aXZlJyxcbiAgcGFkZGluZzogJzAuNXJlbSAyLjVyZW0nLFxuICBkaXNwbGF5OiAnZmxleCcsXG4gIGFsaWduSXRlbXM6ICdjZW50ZXInLFxuICBjb2xvcjogJyNjY2MnLFxuICBmb250U2l6ZTogJzIwcHgnLFxuICBjdXJzb3I6ICdwb2ludGVyJyxcbn1cblxuY29uc3QgbWFza1N0eWxlID0ge1xuICBwb3NpdGlvbjogJ2Fic29sdXRlJyxcbiAgbGVmdDogMCxcbiAgYm90dG9tOiAwLFxuICB3aWR0aDogJzEwMCUnLFxuICBoZWlnaHQ6ICcxMDB2aCcsXG59XG5cbmNvbnN0IGNvbnRlbnRTdHlsZSA9IHtcbiAgb3ZlcmZsb3c6ICdhdXRvJyxcbn1cblxuY29uc3QgY29udGVudEhpZGRlblN0eWxlID0ge1xuICBvdmVyZmxvdzogJ2hpZGRlbicsXG4gIHBvaW50ZXJFdmVudHM6ICdub25lJyxcbiAgdG91Y2hBY3Rpb246ICdub25lJyxcbn1cblxuY29uc3QgZm9sZGVkSGVpZ2h0ID0gJzVyZW0nXG5cbmNvbnN0IHN0eWxlID0ge1xuICBjb250YWluZXI6IHtcbiAgICBwb3NpdGlvbjogJ2Fic29sdXRlJyxcbiAgICB3aWR0aDogJzEwMCUnLFxuICAgIHRyYW5zaXRpb246ICd0cmFuc2Zvcm0gMC41cyBlYXNlJyxcbiAgICB0cmFuc2Zvcm06ICd0cmFuc2xhdGVZKDApJyxcbiAgfSxcbiAgb3Blbjoge1xuICAgIHRyYW5zZm9ybTogYHRyYW5zbGF0ZVkoLTEwMCUpIHRyYW5zbGF0ZVkoJHtmb2xkZWRIZWlnaHR9KWAsXG4gIH0sXG59XG5cbmNvbnN0IFJlY29tbWVuZGF0aW9uUGFuZWwgPSAoe29wZW4sIG9uVG9nZ2xlLCB0aXRsZSwgY2hpbGRyZW4gPSBudWxsfSkgPT5cbiAgY2hpbGRyZW4gJiYgKFxuICAgIDxkaXYgY3NzPXt7aGVpZ2h0OiBmb2xkZWRIZWlnaHQsIG1hcmdpblRvcDogJy0xcmVtJ319PlxuICAgICAgPGRpdlxuICAgICAgICBjc3M9e1tzdHlsZS5jb250YWluZXIsIG9wZW4gJiYgc3R5bGUub3Blbl19XG4gICAgICAgIG9uQ2xpY2s9eygpID0+IHtcbiAgICAgICAgICBpZiAoIW9wZW4pIHtcbiAgICAgICAgICAgIG9uVG9nZ2xlKClcbiAgICAgICAgICB9XG4gICAgICAgIH19XG4gICAgICA+XG4gICAgICAgIDxkaXYgY3NzPXt0aXRsZVN0eWxlfSBvbkNsaWNrPXtvcGVuICYmIG9uVG9nZ2xlID8gb25Ub2dnbGUgOiB1bmRlZmluZWR9PlxuICAgICAgICAgIHtvcGVuICYmIDxkaXYgY3NzPXttYXNrU3R5bGV9IC8+fVxuICAgICAgICAgIHt0aXRsZX1cbiAgICAgICAgICA8ZGl2IGNzcz17W29wZW4gPyBjbG9zZUljb24gOiBvcGVuSWNvbl19IC8+XG4gICAgICAgIDwvZGl2PlxuICAgICAgICA8ZGl2IGNzcz17W2NvbnRlbnRTdHlsZSwgIW9wZW4gJiYgY29udGVudEhpZGRlblN0eWxlXX0+e2NoaWxkcmVufTwvZGl2PlxuICAgICAgPC9kaXY+XG4gICAgPC9kaXY+XG4gIClcblxuUmVjb21tZW5kYXRpb25QYW5lbC5wcm9wVHlwZXMgPSB7XG4gIG9wZW46IFByb3BUeXBlcy5ib29sLFxuICBvblRvZ2dsZTogUHJvcFR5cGVzLmZ1bmMsXG4gIHRpdGxlOiBQcm9wVHlwZXMubm9kZSxcbiAgY2hpbGRyZW46IFByb3BUeXBlcy5ub2RlLFxufVxuXG5leHBvcnQgZGVmYXVsdCBSZWNvbW1lbmRhdGlvblBhbmVsXG4iXX0= */"],
       children: children
     })]
@@ -7457,19 +6902,19 @@ var _ref$1 = process.env.NODE_ENV === "production" ? {
 
 const CastOverlay = ({
   onBack
-}) => jsxRuntime$1.jsx(Backdrop, {
+}) => jsx$1(Backdrop, {
   open: true,
-  children: jsxRuntime$1.jsxs("div", {
+  children: jsxs("div", {
     css: style$2,
-    children: [jsxRuntime$1.jsx(Button, {
+    children: [jsx$1(Button, {
       startIcon: "back",
       onClick: onBack
-    }), jsxRuntime$1.jsx(Icon, {
+    }), jsx$1(Icon, {
       type: "castConnected",
       style: iconStyle
-    }), jsxRuntime$1.jsx("div", {
+    }), jsx$1("div", {
       css: _ref$1,
-      children: jsxRuntime$1.jsx(FormattedMessage, {
+      children: jsx$1(FormattedMessage, {
         id: "KKS.CASTING"
       })
     })]
@@ -7481,7 +6926,7 @@ CastOverlay.propTypes = {
 };
 
 /* eslint-disable no-promise-executor-return */
-const castContext = /*#__PURE__*/React.createContext();
+const castContext = /*#__PURE__*/createContext();
 const initState = {
   castState: null,
   playerState: null,
@@ -7517,8 +6962,8 @@ const CastProvider = ({
   onError,
   children
 }) => {
-  const actions = React.useRef(defaultCastContext.actions);
-  const [state, setState] = React.useState({ ...initState,
+  const actions = useRef(defaultCastContext.actions);
+  const [state, setState] = useState({ ...initState,
     appId,
     actions: actions.current
   });
@@ -7527,7 +6972,7 @@ const CastProvider = ({
     ...value
   }));
 
-  React.useEffect(() => {
+  useEffect(() => {
     ensureSenderFramework().then(context => {
       const handleCastStateChange = ({
         castState
@@ -7620,7 +7065,7 @@ const CastProvider = ({
       });
 
       const subscribeVolumeChange = handleChange => {
-        const listeners = [on$1(controller, cast.framework.RemotePlayerEventType.VOLUME_LEVEL_CHANGED, () => handleChange(getVolume(getMediaSession()))), on$1(controller, cast.framework.RemotePlayerEventType.IS_MUTED_CHANGED, () => handleChange(getVolume(getMediaSession())))];
+        const listeners = [on(controller, cast.framework.RemotePlayerEventType.VOLUME_LEVEL_CHANGED, () => handleChange(getVolume(getMediaSession()))), on(controller, cast.framework.RemotePlayerEventType.IS_MUTED_CHANGED, () => handleChange(getVolume(getMediaSession())))];
         return () => listeners.forEach(removeListener => removeListener());
       };
 
@@ -7666,7 +7111,7 @@ const CastProvider = ({
       actions.current = result;
     }).catch(error => typeof onError === 'function' && onError(error));
   }, []);
-  return /*#__PURE__*/jsxRuntime.jsx(castContext.Provider, {
+  return /*#__PURE__*/jsx(castContext.Provider, {
     value: state,
     children: children
   });
@@ -7680,9 +7125,9 @@ CastProvider.propTypes = {
   onError: PropTypes.func
 };
 
-const useCastContext = () => React.useContext(castContext) || defaultCastContext;
+const useCastContext = () => useContext(castContext) || defaultCastContext;
 
-const CastConsumer = castContext.Consumer;
+castContext.Consumer;
 
 const getChannelTime = ({
   start,
@@ -7875,24 +7320,24 @@ const PremiumPlusPlayer = ({
 }) => {
   var _lastSession$current3, _contentData$section, _contentData$section2, _contentData$section5, _contentData$section6, _uiState$streamEvents;
 
-  const videoRef = React.useRef();
-  const lastSession = React.useRef({});
-  const logTarget = React.useRef();
-  const preferAppTime = React.useRef(currentTime >= 0);
-  const [playbackState, setPlaybackState] = React.useState('initial');
-  const [playbackInfo, setPlaybackInfo] = React.useState({
+  const videoRef = useRef();
+  const lastSession = useRef({});
+  const logTarget = useRef();
+  const preferAppTime = useRef(currentTime >= 0);
+  const [playbackState, setPlaybackState] = useState('initial');
+  const [playbackInfo, setPlaybackInfo] = useState({
     source: {}
   });
-  const [contentData, setContentData] = React.useState({});
-  const [settingState, setSettingState] = React.useState({
+  const [contentData, setContentData] = useState({});
+  const [settingState, setSettingState] = useState({
     sections: [],
     preferred: {}
   });
-  const [targetPlaybackState, setTargetPlaybackState] = React.useState(appPlaybackState);
-  const [uiState, dispatch] = React.useReducer(reduceUi, initState$1);
-  const linearTimeRewritePlugin = React.useMemo(() => LinearTimeRewrite(), []); // Provide the content from the cache as soon as possible when the content has changed
+  const [targetPlaybackState, setTargetPlaybackState] = useState(appPlaybackState);
+  const [uiState, dispatch] = useReducer(reduceUi, initState$1);
+  const linearTimeRewritePlugin = useMemo(() => LinearTimeRewrite(), []); // Provide the content from the cache as soon as possible when the content has changed
 
-  React.useEffect(() => {
+  useEffect(() => {
     const dataInCache = preloadMap.get(`${contentType}/${contentId}`);
 
     if (dataInCache !== null && dataInCache !== void 0 && dataInCache.content) {
@@ -8017,19 +7462,19 @@ const PremiumPlusPlayer = ({
   };
 
   const activeDevice = !/casting|error/.test(playbackState);
-  React.useEffect(() => {
+  useEffect(() => {
     if (appPlaybackState) {
       setTargetPlaybackState(appPlaybackState);
     }
   }, [appPlaybackState]);
-  React.useEffect(() => {
+  useEffect(() => {
     if (preload$1 === 'auto' && activeDevice && contentType && contentId) {
       load();
     }
 
     return () => endSession();
   }, [activeDevice, contentType, contentId]);
-  React.useEffect(() => preload(createApi({
+  useEffect(() => preload(createApi({
     host,
     accessToken,
     deviceId,
@@ -8039,18 +7484,18 @@ const PremiumPlusPlayer = ({
     id: contentId,
     type: contentType
   }, preloadMap), [accessToken, contentId, contentType, deviceId, headers, host, params, preloadList]);
-  React.useImperativeHandle(playerRef, () => ({
+  useImperativeHandle(playerRef, () => ({
     load,
     getVideo: () => videoRef.current
   }));
-  React.useEffect(() => linkAdState({
+  useEffect(() => linkAdState({
     contentType,
     plugins,
     dispatch,
     // To align with iOS & Android, play the video after the ad is skipped even if its paused originally.
     onAdSkip: () => setTargetPlaybackState('playing')
   }), [contentType]);
-  React.useEffect(() => {
+  useEffect(() => {
     if (sourceType) {
       setSettingState(current => ({ ...current,
         values: { ...current.values,
@@ -8062,7 +7507,7 @@ const PremiumPlusPlayer = ({
       }));
     }
   }, [sourceType]);
-  const source = React.useMemo(() => {
+  const source = useMemo(() => {
     var _lastSession$current2;
 
     return getStreamInfo((_lastSession$current2 = lastSession.current) === null || _lastSession$current2 === void 0 ? void 0 : _lastSession$current2.sources, {
@@ -8079,7 +7524,7 @@ const PremiumPlusPlayer = ({
   const {
     appId
   } = useCastContext();
-  const castData = React.useMemo(() => ({
+  const castData = useMemo(() => ({
     itemType: contentType,
     host,
     accessToken,
@@ -8087,7 +7532,7 @@ const PremiumPlusPlayer = ({
     customHeaders: headers,
     customQuery: params
   }), [contentType, host, accessToken, deviceId, headers, params]);
-  React.useEffect(() => {
+  useEffect(() => {
     const setup = setupCast({
       appId
     }).then(() => subscribeCastState(next => {
@@ -8102,7 +7547,7 @@ const PremiumPlusPlayer = ({
     return () => setup.then(removeListener => removeListener());
   }, [appId]);
   const castConnected = playbackState === 'casting';
-  React.useEffect(() => {
+  useEffect(() => {
     if (castConnected && contentId) {
       loadMedia({
         contentId,
@@ -8111,10 +7556,10 @@ const PremiumPlusPlayer = ({
     } // should keep connection after unmount
 
   }, [castConnected, contentId, castData]);
-  const targetPlugins = React.useMemo(() => plugins.concat(linearTimeRewritePlugin), [linearTimeRewritePlugin, plugins]);
+  const targetPlugins = useMemo(() => plugins.concat(linearTimeRewritePlugin), [linearTimeRewritePlugin, plugins]);
   const seekbarHide = !seekConfig || contentType === 'lives' && // eslint-disable-next-line no-unsafe-optional-chaining
   !(((_contentData$section = contentData.section) === null || _contentData$section === void 0 ? void 0 : _contentData$section.end) - ((_contentData$section2 = contentData.section) === null || _contentData$section2 === void 0 ? void 0 : _contentData$section2.start) > 0);
-  React.useEffect(() => {
+  useEffect(() => {
     var _contentData$section3, _contentData$section4;
 
     linearTimeRewritePlugin.setConfig({
@@ -8125,7 +7570,7 @@ const PremiumPlusPlayer = ({
     });
     return () => linearTimeRewritePlugin.reset();
   }, [(_contentData$section5 = contentData.section) === null || _contentData$section5 === void 0 ? void 0 : _contentData$section5.end, (_contentData$section6 = contentData.section) === null || _contentData$section6 === void 0 ? void 0 : _contentData$section6.start, contentType, linearTimeRewritePlugin, seekConfig]);
-  return playbackState === 'casting' ? /*#__PURE__*/jsxRuntime.jsx(CastOverlay, {}) : /*#__PURE__*/jsxRuntime.jsxs(PremiumPlayer, {
+  return playbackState === 'casting' ? /*#__PURE__*/jsx(CastOverlay, {}) : /*#__PURE__*/jsxs$1(PremiumPlayer, {
     source: playbackState !== 'error' && source,
     currentTime: playbackInfo.currentTime,
     controls: uiState.activePanel === 'autoplay-next' ? 'title-only' : uiState.activePanel === 'recommendation' ? 'no-panel' : controls,
@@ -8193,12 +7638,12 @@ const PremiumPlusPlayer = ({
     style: recommendation && {
       '--bottom-spacing': '5rem'
     },
-    children: [children, /*#__PURE__*/jsxRuntime.jsx(FunctionBarExtension, {
-      children: /*#__PURE__*/jsxRuntime.jsx(CastButton, {
+    children: [children, /*#__PURE__*/jsx(FunctionBarExtension, {
+      children: /*#__PURE__*/jsx(CastButton, {
         contentId: contentId,
         data: castData
       })
-    }), autoplayNext && contentData.next && /playing|ended/.test(playbackState) && /*#__PURE__*/jsxRuntime.jsx(AutoplayPrompt, {
+    }), autoplayNext && contentData.next && /playing|ended/.test(playbackState) && /*#__PURE__*/jsx(AutoplayPrompt, {
       next: contentData.next,
       chapters: contentData.chapters,
       videoRef: videoRef,
@@ -8207,12 +7652,12 @@ const PremiumPlusPlayer = ({
       onChangeNext: () => onChange === null || onChange === void 0 ? void 0 : onChange(contentData.next),
       onOpen: state => dispatch(uiActions.offerAutoplay(state)),
       onDismiss: () => dispatch(uiActions.dismissAutoplay())
-    }), recommendation && isDesktop() && /*#__PURE__*/jsxRuntime.jsx(RecommendationPanel, {
+    }), recommendation && isDesktop() && /*#__PURE__*/jsx(RecommendationPanel, {
       title: recommendation.title,
       open: uiState.activePanel === 'recommendation',
       onToggle: () => dispatch(uiActions.toggleRecommendationPanel()),
       children: recommendation.content
-    }), contentData.end && /*#__PURE__*/jsxRuntime.jsx(LiveEnd, {}), preload$1 === 'none' && coverImageUrl && !source && /*#__PURE__*/jsxRuntime.jsx(CoverImage, {
+    }), contentData.end && /*#__PURE__*/jsx(LiveEnd, {}), preload$1 === 'none' && coverImageUrl && !source && /*#__PURE__*/jsx(CoverImage, {
       src: coverImageUrl
     })]
   });
@@ -8262,1053 +7707,6 @@ PremiumPlusPlayer.propTypes = {
   playbackState: PropTypes.string
 };
 
-/* eslint-disable react/prop-types */
-
-const dispatchError = (element, error) => element.dispatchEvent(Object.assign(new CustomEvent('error'), {
-  error
-})); // eslint-disable-next-line react/display-name
-
-
-const Player = /*#__PURE__*/React.forwardRef(({
-  licenseKey,
-  config: {
-    basePlayer,
-    ...config$1
-  } = {
-    basePlayer: 'bitmovin',
-    ...config.BitmovinConfig
-  },
-  host,
-  accessToken,
-  deviceId,
-  content,
-  customHeader: headers = {},
-  customQuery: params = {},
-  lang: locale = LanguageCode$1.EN,
-  langCustomCode: messages = {},
-  preload = 'auto',
-  autoPlay,
-  autoPlayNext,
-  autoplay = autoPlay,
-  autoplayNext = autoPlayNext,
-  startTime,
-  quality,
-  mediaSource,
-  thumbnailSeeking,
-  supportEnvironmentList: environmentAllowList,
-  limitOnePlaybackAtSameTime: denyMultiTab,
-  recommendation,
-  toolPanels = [],
-  coverImageUrl,
-  plugins = [],
-  sentry = {},
-  preloadList = [],
-  seekConfig = 'auto',
-  onBack,
-  onChangeVideo,
-  onClickSettingButton,
-  onLogging,
-  onMediaSourceChanged,
-  children
-}, ref) => {
-  const basePlayerConfig = basePlayer === 'shaka' ? {
-    shaka: config$1
-  } : basePlayer === 'bitmovin' ? {
-    bitmovin: {
-      key: licenseKey,
-      ...config$1
-    }
-  } : {};
-  React.useEffect(() => {
-    if (sentry.key || "474e98b498954d1085c47e76af622ab3") {
-      addSentry({ ...sentry,
-        key: sentry.key || "474e98b498954d1085c47e76af622ab3"
-      });
-    }
-  }, []);
-  React.useEffect(() => {
-    const envError = validateEnvironment(environmentAllowList);
-
-    if (envError) {
-      dispatchError(ref.current.getVideo(), {
-        name: envError.name,
-        data: envError
-      });
-    }
-
-    if (denyMultiTab) {
-      const revokeLock = ensureTabLock();
-
-      if (!revokeLock) {
-        dispatchError(ref.current.getVideo(), {
-          name: 'PlaycraftApiError',
-          code: 1002
-        });
-      }
-
-      return revokeLock;
-    }
-  }, []);
-  return jsxRuntime$1.jsxs(PremiumPlusPlayer, { ...basePlayerConfig,
-    currentTime: startTime,
-    preload: preload,
-    autoplay: autoplay,
-    quality: quality.qualitySelectionHack ? {
-      rewriteManifest: selectHlsQualities
-    } : {},
-    sourceType: mediaSource,
-    plugins: plugins,
-    playerRef: ref,
-    intl: {
-      locale,
-      messages
-    },
-    host: host,
-    accessToken: accessToken,
-    deviceId: deviceId,
-    headers: headers,
-    params: params,
-    contentType: content.contentType,
-    contentId: content.contentId,
-    autoplayNext: autoplayNext,
-    thumbnailSeeking: thumbnailSeeking,
-    coverImageUrl: coverImageUrl,
-    recommendation: recommendation,
-    preloadList: preloadList,
-    seekConfig: seekConfig,
-    onBack: onBack,
-    onChange: content => onChangeVideo({
-      videoId: content.id
-    }),
-    onOpenSettings: onClickSettingButton,
-    onLogging: onLogging,
-    onSourceTypeChanged: onMediaSourceChanged,
-    children: [children, toolPanels.map(({
-      content,
-      button,
-      open,
-      style,
-      hasBackdrop = true,
-      pinned = false,
-      foldedHeight = 0,
-      onClose
-    }, index) => jsxRuntime$1.jsx(BottomPanel, {
-      open: open,
-      style: style,
-      backdrop: hasBackdrop,
-      pinned: pinned,
-      minimizedHeight: foldedHeight,
-      button: button,
-      onClose: onClose,
-      children: content
-    }, index))]
-  });
-});
-Player.propTypes = {
-  licenseKey: PropTypes.string.isRequired,
-  host: PropTypes.string,
-  accessToken: PropTypes.string,
-  deviceId: PropTypes.string,
-  content: Types.VideoInfo,
-  lang: Types.LanguageCode,
-  langCustomCode: PropTypes.object,
-  customHeader: PropTypes.object,
-  customQuery: PropTypes.object,
-  thumbnailSeeking: PropTypes.bool,
-  limitOnePlaybackAtSameTime: PropTypes.bool,
-  preload: PropTypes.oneOf(['auto', 'none']),
-  autoplay: PropTypes.bool,
-  autoplayNext: PropTypes.bool,
-  startTime: PropTypes.number,
-  quality: PropTypes.object,
-  mediaSource: PropTypes.string,
-  supportEnvironmentList: PropTypes.arrayOf(Types.SupportEnvironmentItem),
-  config: PropTypes.object,
-  toolPanels: PropTypes.array,
-  recommendation: PropTypes.oneOfType([PropTypes.object, PropTypes.bool]),
-  coverImageUrl: PropTypes.string,
-  widevine: PropTypes.string,
-  plugins: PropTypes.array,
-  sentry: PropTypes.object,
-  onError: PropTypes.func,
-  onSourceLoaded: PropTypes.func,
-  onReady: PropTypes.func,
-  onPlay: PropTypes.func,
-  onPlaying: PropTypes.func,
-  onSeek: PropTypes.func,
-  onSeeked: PropTypes.func,
-  onPaused: PropTypes.func,
-  onTimeChanged: PropTypes.func,
-  onVolumeChanged: PropTypes.func,
-  onMuted: PropTypes.func,
-  onUnmuted: PropTypes.func,
-  onStallStarted: PropTypes.func,
-  onStallEnded: PropTypes.func,
-  onReplay: PropTypes.func,
-  onVideoQualityChanged: PropTypes.func,
-  onMediaSourceChanged: PropTypes.func,
-  onEnded: PropTypes.func,
-  onEnterFullscreen: PropTypes.func,
-  onExitFullscreen: PropTypes.func,
-  onViewModeChange: PropTypes.func,
-  onChangeVideo: PropTypes.func,
-  onChangeToNextVideo: PropTypes.func,
-  onChangeToPreviousVideo: PropTypes.func,
-  onClickSettingButton: PropTypes.func,
-  onBack: PropTypes.func,
-  onSectionChange: PropTypes.func,
-  onSourceUnloaded: PropTypes.func,
-  onLogging: PropTypes.func
-};
-
-/** @param {string} m3u8Manifest */
-const getManifestUrl = ({
-  url,
-  data
-}) => {
-  const lines = data.split('\n');
-  const i = lines.findIndex(line => line.startsWith('#EXT-X-STREAM-INF'));
-  return i >= 0 ? new URL(lines[i + 1], url) : '';
-};
-/** @param {string} url */
-
-
-const fetchManifests = async url => {
-  if (!url.toString().split('?')[0].endsWith('.m3u8')) {
-    return fetch(url);
-  }
-
-  const data = await fetch(url).then(result => result.text());
-  const innerUrl = getManifestUrl({
-    url,
-    data
-  });
-  return innerUrl && fetchManifests(innerUrl);
-};
-
-/* eslint-disable class-methods-use-this */
-
-/* eslint-disable no-underscore-dangle */
-const _IsNumber = value => typeof value === 'number' && value >= 0;
-
-const AD_TIME_EVENT_TYPE = ['impression', 'start', 'firstQuartile', 'midpoint', 'thirdQuartile', 'complete'];
-
-const doNothing = () => {};
-
-const getSkipTimeOffset = ad => {
-  var _ad$skipOffset, _ad$skipOffset$match, _ad$skipOffset2;
-
-  if (!ad.skipOffset) {
-    return;
-  }
-
-  const percentageOffset = (((_ad$skipOffset = ad.skipOffset) === null || _ad$skipOffset === void 0 ? void 0 : (_ad$skipOffset$match = _ad$skipOffset.match(/\d+/)) === null || _ad$skipOffset$match === void 0 ? void 0 : _ad$skipOffset$match[0]) || 0) / 100; // 00:01:07 -> 67
-
-  const timeOffset = (((_ad$skipOffset2 = ad.skipOffset) === null || _ad$skipOffset2 === void 0 ? void 0 : _ad$skipOffset2.match(/(\d+):(\d+):(\d+)/)) || []).slice(1, 4).reduce((last, time) => last * 60 + +time, 0);
-  return timeOffset + ad.durationInSeconds * percentageOffset;
-};
-
-const inRange = ({
-  startTimeInSeconds,
-  durationInSeconds
-}, time) => startTimeInSeconds <= time && time <= startTimeInSeconds + durationInSeconds;
-
-const getCurrentAd = (adBreak, streamTime) => ((adBreak === null || adBreak === void 0 ? void 0 : adBreak.ads) || []).find(ad => inRange(ad, streamTime)) || {};
-
-const adEventData = (instance, ad) => {
-  const streamTime = instance._common.currentPosition;
-  const currentAd = getCurrentAd(ad, streamTime);
-  return {
-    getAd: () => ({
-      getSkipTimeOffset: () => getSkipTimeOffset(currentAd)
-    }),
-    getStreamData: () => {
-      var _currentAd$trackingEv, _currentAd$trackingEv2;
-
-      const adItems = [].concat(...instance.waitingForPlayAds.map(avail => avail.ads));
-      const adPosition = 1 + adItems.findIndex(item => inRange(item, streamTime));
-      const adProgressData = {
-        adPosition,
-        totalAds: adItems.length,
-        currentTime: streamTime - currentAd.startTimeInSeconds,
-        duration: currentAd.durationInSeconds,
-        clickThroughUrl: (_currentAd$trackingEv = currentAd.trackingEvents) === null || _currentAd$trackingEv === void 0 ? void 0 : (_currentAd$trackingEv2 = _currentAd$trackingEv.find(event => event.eventType === 'clickThrough')) === null || _currentAd$trackingEv2 === void 0 ? void 0 : _currentAd$trackingEv2.beaconUrls[0]
-      };
-      return {
-        adProgressData
-      };
-    }
-  };
-};
-
-class Impression {
-  constructor({
-    seek,
-    onAdBreakStarted = doNothing,
-    onAdProgress = doNothing,
-    onAdBreakEnded = doNothing,
-    onSkippableStateChanged = doNothing
-  } = {}) {
-    this._common = {
-      adBreaks: [],
-      currentPosition: -1,
-      seek,
-      onAdBreakStarted,
-      onAdProgress,
-      onSkippableStateChanged,
-      onAdBreakEnded
-    };
-    this.currentAd = null;
-    this.waitingForPlayAds = [];
-    this.waitingForPlayAdIndex = null;
-    this.resumeUserSeekTime = null;
-    this.resumeAdStartTime = null;
-    this.isResumed = null;
-    this.checkAdEventProcess = null;
-  }
-  /**
-   * @description
-   * @param {object[]} value
-   */
-
-
-  set adBreaks(value) {
-    this._common.adBreaks = value;
-    if (_IsNumber(value.length)) this.checkAdCueTone();
-  }
-  /**
-   * @description when position is updated, check if ad is started or ended
-   * @param {number} value current position in seconds
-   */
-
-
-  set currentPosition(value) {
-    this._common.currentPosition = value;
-    if (_IsNumber(this._common.adBreaks.length)) this.checkAdCueTone();
-  } // TODO: send ad status (current ad index, count, total duration)
-
-
-  getAdIndex(target) {
-    if (!target) return null;
-    return this._common.adBreaks.findIndex(ad => ad.availId === target.availId);
-  } // 取得播放時間是在哪個廣告區間
-
-
-  getActiveAdIndex(time) {
-    var _adBreaks$index;
-
-    const {
-      adBreaks = []
-    } = this._common;
-    const index = adBreaks.findIndex(ad => {
-      const {
-        startTime,
-        endTime
-      } = this.getAdTimingInfo(ad);
-      return time >= startTime && time <= endTime;
-    });
-    const position = (((_adBreaks$index = adBreaks[index]) === null || _adBreaks$index === void 0 ? void 0 : _adBreaks$index.ads) || []).findIndex(ad => inRange(ad, time));
-    return {
-      index,
-      position
-    };
-  } // 檢查播放時間是否在所提供的區間
-
-
-  isWithinTimeRange(target, startTime, endTime) {
-    return target >= startTime && target <= endTime;
-  } // 取得該廣告的起始/結束時間
-
-
-  getAdTimingInfo(adInfo = {}) {
-    const adStartTime = adInfo.startTimeInSeconds || 0;
-    const adDuration = adInfo.durationInSeconds || 0;
-    return {
-      startTime: adStartTime,
-      endTime: adStartTime + adDuration
-    };
-  } // 取得跳過的廣告
-
-
-  getSkippedAds(time) {
-    return this._common.adBreaks.filter(ad => this._common.currentPosition <= ad.startTimeInSeconds && ad.startTimeInSeconds <= time && !ad.isFired);
-  }
-
-  setAdIsFiredByIndex() {}
-
-  checkAdCueTone() {
-    const {
-      adBreaks,
-      currentPosition,
-      seek
-    } = this._common;
-    const {
-      index: activeAdIndex,
-      position
-    } = this.getActiveAdIndex(currentPosition);
-
-    if (this.currentAd) {
-      if (!this.checkAdEventProcess) {
-        this.checkAdEventProcess = this.checkAdEvent();
-      }
-
-      this.checkAdEventProcess({
-        index: activeAdIndex,
-        position
-      });
-    }
-
-    if (this.waitingForPlayAds.length > 0) {
-      const {
-        startTime: currentAdStartTime,
-        endTime: currentAdEndTime
-      } = this.getAdTimingInfo(this.currentAd);
-      const isAdStillPlaying = this.isWithinTimeRange(currentPosition, currentAdStartTime, currentAdEndTime);
-
-      if (!isAdStillPlaying) {
-        // Ad finished
-        const nextAd = this.waitingForPlayAds[`${this.waitingForPlayAdIndex + 1}`];
-        if (currentPosition < this.currentAd.startTimeInSeconds + this.currentAd.durationInSeconds) return;
-
-        if (nextAd) {
-          // have non-played & skipped Ad
-          const adIndex = this.getAdIndex(this.currentAd);
-          const {
-            startTime: nextAdStartTime
-          } = this.getAdTimingInfo(nextAd);
-          this.setAdIsFiredByIndex(adIndex);
-          this.updateWaitingForPlayIndex(this.waitingForPlayAdIndex + 1);
-          this.updateCurrentAd(nextAd);
-          seek === null || seek === void 0 ? void 0 : seek(nextAdStartTime);
-        } else {
-          // don't have non-played Ad
-          const adIndex = this.getAdIndex(this.currentAd);
-          this.setAdIsFiredByIndex(adIndex);
-          this.updateWaitingForPlayAds([]);
-          this.updateWaitingForPlayIndex(null);
-          this.updateCurrentAd(null);
-          _IsNumber(this.resumeUserSeekTime) && (seek === null || seek === void 0 ? void 0 : seek(this.resumeUserSeekTime));
-          this.resumeUserSeekTime = null;
-        }
-      }
-    } else if (activeAdIndex !== -1) {
-      if (!adBreaks[activeAdIndex].isFired) {
-        this.updateWaitingForPlayIndex(0);
-        this.updateWaitingForPlayAds(adBreaks.slice(activeAdIndex, activeAdIndex + 1));
-        this.updateCurrentAd(adBreaks[activeAdIndex]);
-      } else {
-        // in Ad duration but Ad was played
-        this.updateCurrentAd(adBreaks[`${activeAdIndex}`] || {});
-      }
-    } else {
-      // not in Ad duration
-      this.updateCurrentAd(null);
-    }
-  }
-
-  checkAdEvent() {
-    const state = {
-      lastPosition: undefined,
-      isSkippableEventFired: false
-    };
-    return ({
-      index,
-      position
-    }) => {
-      var _currentAd$trackingEv3, _currentAd$trackingEv4;
-
-      const streamTime = this._common.currentPosition;
-      const currentBreak = this._common.adBreaks[index];
-      const currentAd = currentBreak === null || currentBreak === void 0 ? void 0 : currentBreak.ads[position];
-
-      if (!currentAd) {
-        return;
-      }
-
-      if (position !== state.lastPosition) {
-        var _this$_common$onAdPro, _this$_common;
-
-        (_this$_common$onAdPro = (_this$_common = this._common).onAdProgress) === null || _this$_common$onAdPro === void 0 ? void 0 : _this$_common$onAdPro.call(_this$_common, adEventData(this, currentBreak));
-        Object.assign(state, {
-          lastPosition: position,
-          isSkippableEventFired: false,
-          trackingTypes: AD_TIME_EVENT_TYPE.slice()
-        });
-      }
-
-      if (!state.isSkippableEventFired && streamTime >= currentAd.startTimeInSeconds + getSkipTimeOffset(currentAd)) {
-        state.isSkippableEventFired = true;
-
-        this._common.onSkippableStateChanged({
-          getAd: () => ({
-            isSkippable: () => true
-          })
-        });
-      }
-
-      if (!_IsNumber(streamTime) || ((_currentAd$trackingEv3 = currentAd.trackingEvents) === null || _currentAd$trackingEv3 === void 0 ? void 0 : _currentAd$trackingEv3.length) <= 0) return;
-      (_currentAd$trackingEv4 = currentAd.trackingEvents) === null || _currentAd$trackingEv4 === void 0 ? void 0 : _currentAd$trackingEv4.forEach(e => {
-        const {
-          eventType = '',
-          beaconUrls = [],
-          startTimeInSeconds = 0,
-          isFired
-        } = e;
-        const adEventIndex = state.trackingTypes.findIndex(type => type === eventType);
-
-        if (!isFired && beaconUrls.length > 0 && streamTime >= startTimeInSeconds && adEventIndex !== -1) {
-          beaconUrls.forEach(url => {
-            fetch(url);
-          });
-          state.trackingTypes.splice(adEventIndex, 1);
-        }
-      });
-    };
-  }
-  /**
-   * @description To snapback if seeking over some ads
-   * @param {number} to
-   */
-
-
-  onSeek(to) {
-    const {
-      adBreaks
-    } = this._common;
-    const skippedAds = this.getSkippedAds(to);
-    const seekTargetAdIndex = this.getActiveAdIndex(to);
-    if (!adBreaks || adBreaks.length <= 0) return;
-
-    if (this.currentAd) ; else if (skippedAds.length > 0) {
-      this.updateWaitingForPlayAds(skippedAds);
-      this.updateWaitingForPlayIndex(0);
-      this.resumeUserSeekTime = seekTargetAdIndex === -1 ? to : null;
-    } else if (seekTargetAdIndex !== -1 && !_IsNumber(this.resumeAdStartTime) && !this.isResumed) {
-      const {
-        startTime
-      } = this.getAdTimingInfo(adBreaks[seekTargetAdIndex]);
-      this.resumeAdStartTime = startTime;
-    }
-  }
-  /** @description to seek to next ad after snapback */
-
-
-  onSeeked() {
-    const {
-      adBreaks,
-      seek
-    } = this._common;
-    if (!adBreaks || adBreaks.length <= 0) return;
-
-    if (this.waitingForPlayAds.length > 0 && !this.currentAd) {
-      const nextAd = this.waitingForPlayAds[`${this.waitingForPlayAdIndex}`] || {};
-      const {
-        startTime: nextAdStartTime
-      } = this.getAdTimingInfo(nextAd);
-      seek === null || seek === void 0 ? void 0 : seek(nextAdStartTime);
-      this.updateCurrentAd(nextAd);
-    } else if (this.currentAd) ; else if (_IsNumber(this.resumeAdStartTime)) {
-      _IsNumber(this.resumeAdStartTime) && (seek === null || seek === void 0 ? void 0 : seek(this.resumeAdStartTime));
-      this.resumeAdStartTime = null;
-      this.isResumed = true;
-    } else {
-      this.isResumed = false;
-    }
-  }
-
-  updateCurrentAd(ad) {
-    if (!this.currentAd && ad) {
-      var _this$_common$onAdBre, _this$_common2;
-
-      (_this$_common$onAdBre = (_this$_common2 = this._common).onAdBreakStarted) === null || _this$_common$onAdBre === void 0 ? void 0 : _this$_common$onAdBre.call(_this$_common2, adEventData(this, ad));
-    } else if (this.currentAd && !ad) {
-      var _this$_common$onAdBre2, _this$_common3;
-
-      (_this$_common$onAdBre2 = (_this$_common3 = this._common).onAdBreakEnded) === null || _this$_common$onAdBre2 === void 0 ? void 0 : _this$_common$onAdBre2.call(_this$_common3, {
-        getStreamData: () => this.getStreamData()
-      });
-    }
-
-    this.currentAd = ad;
-
-    if (!ad) {
-      this.checkAdEventProcess = null;
-    }
-  }
-
-  updateWaitingForPlayAds(ads) {
-    this.waitingForPlayAds = ads.slice();
-  }
-
-  updateWaitingForPlayIndex(index) {
-    this.waitingForPlayAdIndex = index;
-  }
-  /** @description mark all ads as played */
-
-
-  setAllAdsFired() {
-    this._common.adBreaks = this._common.adBreaks.map(ad => ({ ...ad,
-      isFired: true
-    }));
-    this.updateWaitingForPlayAds([]);
-    this.updateWaitingForPlayIndex(null);
-    this.updateCurrentAd(null);
-  }
-  /** @description clear data */
-
-
-  reset() {
-    this._common = {
-      adBreaks: [],
-      currentPosition: -1,
-      seek: null
-    };
-    this.currentAd = null;
-    this.waitingForPlayAds = [];
-    this.waitingForPlayAdIndex = null;
-    this.resumeUserSeekTime = null;
-    this.resumeAdStartTime = null;
-    this.isResumed = null;
-    this.checkAdEventProcess = null;
-  }
-  /** @description clear ad status */
-
-
-  resetSession() {
-    this._common = { ...this._common,
-      currentPosition: 0
-    };
-    this.resumeUserSeekTime = null;
-    this.resumeAdStartTime = null;
-    this.isResumed = null;
-    this.updateWaitingForPlayAds([]);
-    this.updateWaitingForPlayIndex(null);
-    this.updateCurrentAd(null);
-  }
-
-}
-
-const getLastAd = (avails, streamTime) => avails.reduce((current, item) => current.startTimeInSeconds <= item.startTimeInSeconds && item.startTimeInSeconds <= streamTime ? item : current, {
-  startTimeInSeconds: 0,
-  durationInSeconds: 0
-});
-
-const getStreamTime = (avails, contentTime) => avails.reduce((time, item) => time + (time > item.startTimeInSeconds ? item.durationInSeconds : 0), contentTime);
-
-const getContentTime = (avails, streamTime) => streamTime - avails.filter(item => item.startTimeInSeconds <= streamTime).map(item => Math.min(streamTime - item.startTimeInSeconds, item.durationInSeconds)).reduce((a, b) => a + b, 0);
-
-const seekingHandler = handleSeeking => {
-  const ref = {};
-  return video => {
-    if (!(Math.abs(video.currentTime - ref.originTime) > 0.5) || video.webkitPresentationMode !== 'fullscreen') {
-      ref.originTime = video.currentTime;
-      return;
-    }
-
-    handleSeeking({
-      originTime: ref.originTime,
-      seekTime: video.currentTime
-    });
-    ref.originTime = video.currentTime;
-  };
-};
-
-const snapback = ({
-  streamManager,
-  originTime,
-  seekTime,
-  seek
-}) => {
-  const cuePoint = streamManager === null || streamManager === void 0 ? void 0 : streamManager.previousCuePointForStreamTime(seekTime); // Only check the integer part because the decimal part may come from floating precision error.
-  // TODO: Try to extract this with the workaround OTP_2813 in MediaTailor > createStreamManager > handleTimeUpdate
-
-  if (Math.floor(cuePoint === null || cuePoint === void 0 ? void 0 : cuePoint.start) >= Math.floor(originTime)) {
-    once$1(streamManager, 'adBreakEnded', async () => {
-      // wait for ad playing flag to clear before resuming, TODO seek earlier
-      await new Promise(resolve => {
-        setTimeout(resolve, 20);
-      });
-      seek(seekTime);
-    });
-    seek(cuePoint.start);
-  } else {
-    seek(seekTime);
-  }
-};
-
-const addFetchPolyfill = () => {
-  window.fetch = async (url, {
-    method
-  } = {}) => {
-    const result = await axios__default["default"](url, {
-      method
-    });
-    return Promise.resolve({
-      json: () => result.data
-    });
-  };
-};
-
-const fetchStreamInfo = async (url, adsParams) => fetch(url, {
-  method: 'POST',
-  body: JSON.stringify({
-    adsParams
-  })
-}).then(result => result.json());
-
-const on = (eventTarget, eventName, handler) => {
-  eventTarget.addEventListener(eventName, handler);
-  return () => eventTarget.removeEventListener(eventName, handler);
-};
-
-const once = (eventTarget, eventName, handler) => {
-  const listener = (...args) => {
-    eventTarget.removeEventListener(eventName, listener);
-    return handler(...args);
-  };
-
-  eventTarget.addEventListener(eventName, listener);
-};
-
-const seekVideo = (videoElement, streamTime) => {
-  // eslint-disable-next-line no-param-reassign
-  videoElement.currentTime = streamTime;
-};
-
-const initialState = {
-  currentTime: 0,
-  adBreaks: [],
-  mpdStartTime: 0,
-  isUserSkipAd: false,
-  skipAdEndTime: 0
-};
-
-const getAdEndTime = (streamData, videoElement) => {
-  const {
-    currentTime,
-    duration
-  } = streamData.adProgressData;
-  return videoElement.currentTime + duration - currentTime;
-};
-
-const pipeEvent = (emitter, type) => event => emitter.emit(type, {
-  type,
-  getAd: () => event.getAd(),
-  getStreamData: () => event.getStreamData()
-});
-
-const getMpdStartTime = manifest => {
-  const mpdDocument = new DOMParser().parseFromString(manifest, 'text/xml');
-  const availabilityStartTime = mpdDocument.firstChild.getAttribute('availabilityStartTime');
-  return new Date(availabilityStartTime).getTime() / 1000;
-}; // Align to Google DAI StreamManager
-
-
-const createStreamManager = (videoElement, {
-  player,
-  emitter
-}) => {
-  let state = initialState;
-  const streamData = {};
-  const impression = new Impression({
-    seek: streamTime => seekVideo(videoElement, streamTime),
-    onAdBreakStarted: pipeEvent(emitter, 'adBreakStarted'),
-    onAdProgress: event => {
-      state.adEndTime = getAdEndTime(event.getStreamData(), videoElement);
-      pipeEvent(emitter, 'adProgress')(event);
-    },
-    onSkippableStateChanged: pipeEvent(emitter, 'skippableStateChanged'),
-    onAdBreakEnded: pipeEvent(emitter, 'adBreakEnded')
-  });
-
-  const previousCuePointForStreamTime = streamTime => {
-    const ad = getLastAd(state.adBreaks, streamTime - 0.1 - state.mpdStartTime);
-
-    if (ad.durationInSeconds > 0) {
-      const start = ad.startTimeInSeconds;
-      const end = start + ad.durationInSeconds;
-      return {
-        start,
-        end,
-        played: state.played[ad.availId]
-      };
-    }
-
-    return undefined;
-  };
-
-  emitter.on('adBreakEnded', () => {
-    state.adEndTime = -1;
-    const ad = getLastAd(state.adBreaks, videoElement.currentTime);
-    state.played[ad.availId] = true;
-  });
-
-  const refreshTrackingData = async () => {
-    if (!streamData.trackingUrl) {
-      return;
-    }
-
-    const trackingData = (await fetch(streamData.trackingUrl).then(result => result.json())) || {
-      avails: []
-    };
-    state.adBreaks = trackingData.avails || [];
-
-    if (trackingData.avails.length > 0) {
-      impression.adBreaks = state.adBreaks;
-      emitter.emit('cuepointsChanged', {
-        cuepoints: state.adBreaks.map(item => ({
-          start: getContentTime(state.adBreaks, item.startTimeInSeconds)
-        }))
-      });
-    }
-  };
-
-  const handleTimeUpdate = streamTime => {
-    // TODO get tracking events with actual buffer length
-    if (!Number.isFinite(streamTime)) {
-      return;
-    }
-
-    if (player.isLive() && streamTime > state.currentTime + 5) {
-      state.currentTime = streamTime;
-      refreshTrackingData();
-    } // workaround_OTP_2813
-
-
-    if (state.isUserSkipAd) {
-      // TODO: Try to migrate this with the workaround in the snapback
-      // 0.1 is magic number for float-point
-      if (state.skipAdEndTime + 0.1 >= streamTime) {
-        return;
-      }
-
-      state.isUserSkipAd = false;
-      state.skipAdEndTime = -1;
-    }
-
-    impression.currentPosition = streamTime - state.mpdStartTime;
-  };
-
-  const streamManager = {
-    requestStream: async (options = {}) => {
-      const reportingUrl = options.client_side_reporting_url;
-      const info = await fetchStreamInfo(reportingUrl, options.adParams).catch(error => ({
-        error
-      }));
-
-      if (!info || info.error) {
-        return;
-      }
-
-      streamData.trackingUrl = new URL(info.trackingUrl, reportingUrl).toString();
-      streamData.url = new URL(info.manifestUrl, reportingUrl).toString(); // tracking events are available only after manifests are requested
-
-      await fetchManifests(streamData.url);
-      await refreshTrackingData();
-      emitter.emit('loaded', {
-        getStreamData: () => streamData
-      });
-      state.played = {};
-    },
-    addEventListener: (eventName, handler) => emitter.on(eventName, handler),
-    removeEventListener: (eventName, handler) => emitter.off(eventName, handler),
-    streamTimeForContentTime: contentTime => getStreamTime(state.adBreaks, contentTime),
-    contentTimeForStreamTime: streamTime => getContentTime(state.adBreaks, streamTime),
-    previousCuePointForStreamTime,
-    skipAd: () => {
-      if (state.adEndTime > 0) {
-        // workaround_OTP_2813
-        const seekTime = state.adEndTime;
-        handleTimeUpdate(state.adEndTime);
-        state.isUserSkipAd = true;
-        state.skipAdEndTime = seekTime;
-        player === null || player === void 0 ? void 0 : player.seek(seekTime, 'internal'); // TODO: Should provide methods getAd and getStreamData to align with Google Dai
-
-        emitter.emit('skip');
-      }
-    },
-    setMpdStartTime: time => {
-      state.mpdStartTime = time;
-    },
-    getVastAvails: () => state.adBreaks,
-    reset: () => {
-      state.registered.forEach(removeListener => removeListener());
-      impression.reset();
-      state = initialState;
-      streamData.trackingUrl = '';
-    }
-  };
-  const handleSeeking = seekingHandler(({
-    originTime,
-    seekTime
-  }) => {
-    if (state.adEndTime > 0) {
-      seekVideo(videoElement, originTime);
-      return;
-    }
-
-    const diff = seekTime - originTime;
-
-    if (Math.abs(diff + 15) <= 0.25) {
-      seekVideo(videoElement, getStreamTime(state.adBreaks, getContentTime(state.adBreaks, originTime) + diff));
-      return;
-    }
-
-    snapback({
-      streamManager,
-      originTime,
-      seekTime,
-      seek: streamTime => {
-        if (Math.abs(videoElement.currentTime - streamTime) > 0.5) {
-          seekVideo(videoElement, streamTime);
-        }
-      }
-    });
-  });
-  state.registered = [on(videoElement, 'timeupdate', () => {
-    handleSeeking(videoElement);
-
-    if (!videoElement.paused) {
-      handleTimeUpdate(videoElement.currentTime);
-    }
-  }), on(videoElement, 'ended', () => handleTimeUpdate(Infinity))];
-  return streamManager;
-};
-
-const init = (options, {
-  skipWatched
-}) => {
-  var _player$on;
-
-  const {
-    player,
-    video,
-    streamManager
-  } = options;
-  const ref = {
-    player,
-    video,
-    streamManager
-  };
-  streamManager.addEventListener('adProgress', event => {
-    ref.adEndTime = getAdEndTime(event.getStreamData(), ref.video);
-  });
-  streamManager.addEventListener('adBreakEnded', () => {
-    ref.adEndTime = -1;
-  });
-  player === null || player === void 0 ? void 0 : (_player$on = player.on) === null || _player$on === void 0 ? void 0 : _player$on.call(player, 'sourceloaded', () => {
-    ref.isLive = player.isLive();
-
-    if (player.manifest.dash && player.isLive()) {
-      // ad start / end time is based on availabilityStartTime in MPD manifest
-      streamManager.setMpdStartTime(getMpdStartTime(player.getManifest()));
-    }
-  });
-
-  if (skipWatched) {
-    video.addEventListener('timeupdate', () => {
-      const streamTime = video.currentTime;
-      const cuePoint = streamManager.previousCuePointForStreamTime(streamTime + 0.5);
-
-      if ((cuePoint === null || cuePoint === void 0 ? void 0 : cuePoint.end) > streamTime && cuePoint.played) {
-        player === null || player === void 0 ? void 0 : player.seek(cuePoint.end, 'internal');
-      }
-    });
-  }
-
-  return ref;
-};
-
-const MediaTailorPlugin = ({
-  adParams,
-  skipWatched
-} = {}) => {
-  const emitter = mitt__default["default"]();
-  let ref = {};
-  let options = {
-    adParams
-  };
-  return {
-    isActive: () => !!ref.streamManager,
-    load: async (manifestItem, {
-      player,
-      video,
-      source = {}
-    } = {}) => {
-      var _ref$streamManager, _manifestItem$ssai, _source$options;
-
-      if (typeof fetch !== 'function') {
-        addFetchPolyfill();
-      }
-
-      (_ref$streamManager = ref.streamManager) === null || _ref$streamManager === void 0 ? void 0 : _ref$streamManager.reset();
-      const mediaTailorOptions = (_manifestItem$ssai = manifestItem.ssai) === null || _manifestItem$ssai === void 0 ? void 0 : _manifestItem$ssai.media_tailor;
-
-      if (!mediaTailorOptions) {
-        return;
-      }
-
-      mediaTailorOptions.adParams = options.adParams;
-      const streamManager = createStreamManager(video, {
-        player,
-        emitter
-      });
-      ref = init({
-        player,
-        video,
-        streamManager
-      }, {
-        skipWatched
-      });
-      streamManager.requestStream(mediaTailorOptions);
-      const {
-        url
-      } = await new Promise(resolve => {
-        once(streamManager, 'loaded', event => resolve(event.getStreamData()));
-      });
-
-      if (!url) {
-        console.warn('Ad stream is not available, use fallback stream instead');
-        return manifestItem;
-      }
-
-      return { ...manifestItem,
-        ssaiProvider: 'AWS',
-        url,
-        vastAvails: streamManager.getVastAvails(),
-        startTime: streamManager.streamTimeForContentTime((_source$options = source.options) === null || _source$options === void 0 ? void 0 : _source$options.startTime)
-      };
-    },
-    handleSeek: (contentTime, seek) => {
-      snapback({
-        streamManager: ref.streamManager,
-        originTime: ref.video.currentTime,
-        seekTime: ref.streamManager.streamTimeForContentTime(contentTime),
-        seek
-      });
-    },
-    skipAd: () => ref.streamManager.skipAd(),
-    getPlaybackStatus: () => ref.streamManager && { ...(!ref.isLive && {
-        currentTime: ref.streamManager.contentTimeForStreamTime(ref.video.currentTime),
-        duration: ref.streamManager.contentTimeForStreamTime(ref.video.duration)
-      }),
-      ...(ref.adEndTime > 0 && {
-        adRemainingTime: ref.adEndTime - ref.video.currentTime
-      })
-    },
-    on: (name, listener) => emitter.on(name, listener),
-    reset: () => {
-      var _ref$streamManager2;
-
-      (_ref$streamManager2 = ref.streamManager) === null || _ref$streamManager2 === void 0 ? void 0 : _ref$streamManager2.reset();
-      ref.streamManager = undefined;
-    },
-    setOptions: updatedOptions => {
-      options = updatedOptions;
-    }
-  };
-};
-
 const button = {
   border: 'none',
   outline: 'none',
@@ -9352,7 +7750,7 @@ const FunctionBar = ({
   style,
   fade,
   children
-}) => jsxRuntime$1.jsx("div", {
+}) => jsx$1("div", {
   className: "kks-player__function-bar",
   css: [barStyle, fade && fadeStyle, style, {
     button
@@ -9389,11 +7787,11 @@ const Tooltip = ({
   children,
   container
 }) => {
-  const tooltipRef = React.useRef();
-  const boxes = React.useRef();
-  const defaultContainer = React.useRef();
-  const [open, setOpen] = React.useState(false);
-  const [position, setPosition] = React.useState(() => ({
+  const tooltipRef = useRef();
+  const boxes = useRef();
+  const defaultContainer = useRef();
+  const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState(() => ({
     left: '100%'
   }));
   const childProps = {
@@ -9411,14 +7809,14 @@ const Tooltip = ({
       setOpen(false);
     }
   };
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       const targetPosition = getPopoverPosition(tooltipRef.current.getBoundingClientRect(), ...boxes.current);
       targetPosition.left !== position.left && setPosition(targetPosition);
     }
   }, [open, position.left]);
-  return !isDesktop() && !window.matchMedia(havePointerQuery).matches ? children : jsxRuntime$1.jsxs(jsxRuntime$1.Fragment, {
-    children: [/*#__PURE__*/React.cloneElement(children, childProps), open && /*#__PURE__*/reactDom.createPortal(jsxRuntime$1.jsx("div", {
+  return !isDesktop() && !window.matchMedia(havePointerQuery).matches ? children : jsxs(Fragment, {
+    children: [/*#__PURE__*/cloneElement(children, childProps), open && /*#__PURE__*/createPortal(jsx$1("div", {
       style: { ...style$1,
         ...position,
         top: `calc(${position.top}px - ${bottom})`
@@ -9461,20 +7859,20 @@ const FormattedTime = ({
   const second = time % 60;
   const minute = (time - second) / 60 % 60;
   const hour = (time - second - minute * 60) / 60 / 60;
-  return jsxRuntime$1.jsxs("span", {
+  return jsxs("span", {
     className: "kks-player__formatted-time",
     css: [_css, style, process.env.NODE_ENV === "production" ? "" : ";label:FormattedTime;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkZvcm1hdHRlZFRpbWUuanN4Il0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQXdCaUQiLCJmaWxlIjoiRm9ybWF0dGVkVGltZS5qc3giLCJzb3VyY2VzQ29udGVudCI6WyIvKiBAanN4SW1wb3J0U291cmNlIEBlbW90aW9uL3JlYWN0ICovXG5pbXBvcnQge0ZyYWdtZW50fSBmcm9tICdyZWFjdCdcbmltcG9ydCBQcm9wVHlwZXMgZnJvbSAncHJvcC10eXBlcydcblxuY29uc3QgX2NzcyA9IHtcbiAgdXNlclNlbGVjdDogJ25vbmUnLFxuICBjb2xvcjogJ3doaXRlJyxcbiAgZm9udFNpemU6IDIwLFxuICB3aGl0ZVNwYWNlOiAnbm93cmFwJyxcbiAgZGlzcGxheTogJ2lubGluZS1mbGV4JyxcbiAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gIHBhcnQ6IHtcbiAgICB3aWR0aDogMjYsXG4gICAgZGlzcGxheTogJ2lubGluZS1ibG9jaycsXG4gICAgdGV4dEFsaWduOiAnY2VudGVyJyxcbiAgfSxcbn1cblxuY29uc3QgRm9ybWF0dGVkVGltZSA9ICh7dGltZSwgc2hvd0hvdXIsIHN0eWxlfSkgPT4ge1xuICB0aW1lID0gTWF0aC5mbG9vcih0aW1lKVxuICBjb25zdCBzZWNvbmQgPSB0aW1lICUgNjBcbiAgY29uc3QgbWludXRlID0gKCh0aW1lIC0gc2Vjb25kKSAvIDYwKSAlIDYwXG4gIGNvbnN0IGhvdXIgPSAodGltZSAtIHNlY29uZCAtIG1pbnV0ZSAqIDYwKSAvIDYwIC8gNjBcbiAgcmV0dXJuIChcbiAgICA8c3BhbiBjbGFzc05hbWU9XCJra3MtcGxheWVyX19mb3JtYXR0ZWQtdGltZVwiIGNzcz17W19jc3MsIHN0eWxlXX0+XG4gICAgICB7KHNob3dIb3VyIHx8IGhvdXIgIT09IDApICYmIChcbiAgICAgICAgPEZyYWdtZW50PlxuICAgICAgICAgIDxzcGFuXG4gICAgICAgICAgICBjbGFzc05hbWU9XCJra3MtcGxheWVyX19mb3JtYXR0ZWQtdGltZV9fcGFydFwiXG4gICAgICAgICAgICBjc3M9e1tfY3NzLnBhcnQsIHN0eWxlLnBhcnRdfVxuICAgICAgICAgID5cbiAgICAgICAgICAgIHtTdHJpbmcoaG91cikucGFkU3RhcnQoMiwgJzAnKX1cbiAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgOlxuICAgICAgICA8L0ZyYWdtZW50PlxuICAgICAgKX1cbiAgICAgIDxzcGFuXG4gICAgICAgIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lX19wYXJ0XCJcbiAgICAgICAgY3NzPXtbX2Nzcy5wYXJ0LCBzdHlsZS5wYXJ0XX1cbiAgICAgID5cbiAgICAgICAge1N0cmluZyhtaW51dGUpLnBhZFN0YXJ0KDIsICcwJyl9XG4gICAgICA8L3NwYW4+XG4gICAgICA6XG4gICAgICA8c3BhblxuICAgICAgICBjbGFzc05hbWU9XCJra3MtcGxheWVyX19mb3JtYXR0ZWQtdGltZV9fcGFydFwiXG4gICAgICAgIGNzcz17W19jc3MucGFydCwgc3R5bGUucGFydF19XG4gICAgICA+XG4gICAgICAgIHtTdHJpbmcoc2Vjb25kKS5wYWRTdGFydCgyLCAnMCcpfVxuICAgICAgPC9zcGFuPlxuICAgIDwvc3Bhbj5cbiAgKVxufVxuRm9ybWF0dGVkVGltZS5wcm9wVHlwZXMgPSB7XG4gIHRpbWU6IFByb3BUeXBlcy5udW1iZXIsXG4gIHNob3dIb3VyOiBQcm9wVHlwZXMuYm9vbCxcbiAgc3R5bGU6IFByb3BUeXBlcy5zaGFwZSh7XG4gICAgcGFydDogUHJvcFR5cGVzLm9iamVjdCxcbiAgfSksXG59XG5Gb3JtYXR0ZWRUaW1lLmRlZmF1bHRQcm9wcyA9IHtcbiAgc3R5bGU6IHt9LFxufVxuXG5leHBvcnQgZGVmYXVsdCBGb3JtYXR0ZWRUaW1lXG4iXX0= */"],
-    children: [(showHour || hour !== 0) && jsxRuntime$1.jsxs(React.Fragment, {
-      children: [jsxRuntime$1.jsx("span", {
+    children: [(showHour || hour !== 0) && jsxs(Fragment$2, {
+      children: [jsx$1("span", {
         className: "kks-player__formatted-time__part",
         css: [_css.part, style.part, process.env.NODE_ENV === "production" ? "" : ";label:FormattedTime;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkZvcm1hdHRlZFRpbWUuanN4Il0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQTZCWSIsImZpbGUiOiJGb3JtYXR0ZWRUaW1lLmpzeCIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCB7RnJhZ21lbnR9IGZyb20gJ3JlYWN0J1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJ1xuXG5jb25zdCBfY3NzID0ge1xuICB1c2VyU2VsZWN0OiAnbm9uZScsXG4gIGNvbG9yOiAnd2hpdGUnLFxuICBmb250U2l6ZTogMjAsXG4gIHdoaXRlU3BhY2U6ICdub3dyYXAnLFxuICBkaXNwbGF5OiAnaW5saW5lLWZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgcGFydDoge1xuICAgIHdpZHRoOiAyNixcbiAgICBkaXNwbGF5OiAnaW5saW5lLWJsb2NrJyxcbiAgICB0ZXh0QWxpZ246ICdjZW50ZXInLFxuICB9LFxufVxuXG5jb25zdCBGb3JtYXR0ZWRUaW1lID0gKHt0aW1lLCBzaG93SG91ciwgc3R5bGV9KSA9PiB7XG4gIHRpbWUgPSBNYXRoLmZsb29yKHRpbWUpXG4gIGNvbnN0IHNlY29uZCA9IHRpbWUgJSA2MFxuICBjb25zdCBtaW51dGUgPSAoKHRpbWUgLSBzZWNvbmQpIC8gNjApICUgNjBcbiAgY29uc3QgaG91ciA9ICh0aW1lIC0gc2Vjb25kIC0gbWludXRlICogNjApIC8gNjAgLyA2MFxuICByZXR1cm4gKFxuICAgIDxzcGFuIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lXCIgY3NzPXtbX2Nzcywgc3R5bGVdfT5cbiAgICAgIHsoc2hvd0hvdXIgfHwgaG91ciAhPT0gMCkgJiYgKFxuICAgICAgICA8RnJhZ21lbnQ+XG4gICAgICAgICAgPHNwYW5cbiAgICAgICAgICAgIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lX19wYXJ0XCJcbiAgICAgICAgICAgIGNzcz17W19jc3MucGFydCwgc3R5bGUucGFydF19XG4gICAgICAgICAgPlxuICAgICAgICAgICAge1N0cmluZyhob3VyKS5wYWRTdGFydCgyLCAnMCcpfVxuICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICA6XG4gICAgICAgIDwvRnJhZ21lbnQ+XG4gICAgICApfVxuICAgICAgPHNwYW5cbiAgICAgICAgY2xhc3NOYW1lPVwia2tzLXBsYXllcl9fZm9ybWF0dGVkLXRpbWVfX3BhcnRcIlxuICAgICAgICBjc3M9e1tfY3NzLnBhcnQsIHN0eWxlLnBhcnRdfVxuICAgICAgPlxuICAgICAgICB7U3RyaW5nKG1pbnV0ZSkucGFkU3RhcnQoMiwgJzAnKX1cbiAgICAgIDwvc3Bhbj5cbiAgICAgIDpcbiAgICAgIDxzcGFuXG4gICAgICAgIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lX19wYXJ0XCJcbiAgICAgICAgY3NzPXtbX2Nzcy5wYXJ0LCBzdHlsZS5wYXJ0XX1cbiAgICAgID5cbiAgICAgICAge1N0cmluZyhzZWNvbmQpLnBhZFN0YXJ0KDIsICcwJyl9XG4gICAgICA8L3NwYW4+XG4gICAgPC9zcGFuPlxuICApXG59XG5Gb3JtYXR0ZWRUaW1lLnByb3BUeXBlcyA9IHtcbiAgdGltZTogUHJvcFR5cGVzLm51bWJlcixcbiAgc2hvd0hvdXI6IFByb3BUeXBlcy5ib29sLFxuICBzdHlsZTogUHJvcFR5cGVzLnNoYXBlKHtcbiAgICBwYXJ0OiBQcm9wVHlwZXMub2JqZWN0LFxuICB9KSxcbn1cbkZvcm1hdHRlZFRpbWUuZGVmYXVsdFByb3BzID0ge1xuICBzdHlsZToge30sXG59XG5cbmV4cG9ydCBkZWZhdWx0IEZvcm1hdHRlZFRpbWVcbiJdfQ== */"],
         children: String(hour).padStart(2, '0')
       }), ":"]
-    }), jsxRuntime$1.jsx("span", {
+    }), jsx$1("span", {
       className: "kks-player__formatted-time__part",
       css: [_css.part, style.part, process.env.NODE_ENV === "production" ? "" : ";label:FormattedTime;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkZvcm1hdHRlZFRpbWUuanN4Il0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQXNDUSIsImZpbGUiOiJGb3JtYXR0ZWRUaW1lLmpzeCIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCB7RnJhZ21lbnR9IGZyb20gJ3JlYWN0J1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJ1xuXG5jb25zdCBfY3NzID0ge1xuICB1c2VyU2VsZWN0OiAnbm9uZScsXG4gIGNvbG9yOiAnd2hpdGUnLFxuICBmb250U2l6ZTogMjAsXG4gIHdoaXRlU3BhY2U6ICdub3dyYXAnLFxuICBkaXNwbGF5OiAnaW5saW5lLWZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgcGFydDoge1xuICAgIHdpZHRoOiAyNixcbiAgICBkaXNwbGF5OiAnaW5saW5lLWJsb2NrJyxcbiAgICB0ZXh0QWxpZ246ICdjZW50ZXInLFxuICB9LFxufVxuXG5jb25zdCBGb3JtYXR0ZWRUaW1lID0gKHt0aW1lLCBzaG93SG91ciwgc3R5bGV9KSA9PiB7XG4gIHRpbWUgPSBNYXRoLmZsb29yKHRpbWUpXG4gIGNvbnN0IHNlY29uZCA9IHRpbWUgJSA2MFxuICBjb25zdCBtaW51dGUgPSAoKHRpbWUgLSBzZWNvbmQpIC8gNjApICUgNjBcbiAgY29uc3QgaG91ciA9ICh0aW1lIC0gc2Vjb25kIC0gbWludXRlICogNjApIC8gNjAgLyA2MFxuICByZXR1cm4gKFxuICAgIDxzcGFuIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lXCIgY3NzPXtbX2Nzcywgc3R5bGVdfT5cbiAgICAgIHsoc2hvd0hvdXIgfHwgaG91ciAhPT0gMCkgJiYgKFxuICAgICAgICA8RnJhZ21lbnQ+XG4gICAgICAgICAgPHNwYW5cbiAgICAgICAgICAgIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lX19wYXJ0XCJcbiAgICAgICAgICAgIGNzcz17W19jc3MucGFydCwgc3R5bGUucGFydF19XG4gICAgICAgICAgPlxuICAgICAgICAgICAge1N0cmluZyhob3VyKS5wYWRTdGFydCgyLCAnMCcpfVxuICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICA6XG4gICAgICAgIDwvRnJhZ21lbnQ+XG4gICAgICApfVxuICAgICAgPHNwYW5cbiAgICAgICAgY2xhc3NOYW1lPVwia2tzLXBsYXllcl9fZm9ybWF0dGVkLXRpbWVfX3BhcnRcIlxuICAgICAgICBjc3M9e1tfY3NzLnBhcnQsIHN0eWxlLnBhcnRdfVxuICAgICAgPlxuICAgICAgICB7U3RyaW5nKG1pbnV0ZSkucGFkU3RhcnQoMiwgJzAnKX1cbiAgICAgIDwvc3Bhbj5cbiAgICAgIDpcbiAgICAgIDxzcGFuXG4gICAgICAgIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lX19wYXJ0XCJcbiAgICAgICAgY3NzPXtbX2Nzcy5wYXJ0LCBzdHlsZS5wYXJ0XX1cbiAgICAgID5cbiAgICAgICAge1N0cmluZyhzZWNvbmQpLnBhZFN0YXJ0KDIsICcwJyl9XG4gICAgICA8L3NwYW4+XG4gICAgPC9zcGFuPlxuICApXG59XG5Gb3JtYXR0ZWRUaW1lLnByb3BUeXBlcyA9IHtcbiAgdGltZTogUHJvcFR5cGVzLm51bWJlcixcbiAgc2hvd0hvdXI6IFByb3BUeXBlcy5ib29sLFxuICBzdHlsZTogUHJvcFR5cGVzLnNoYXBlKHtcbiAgICBwYXJ0OiBQcm9wVHlwZXMub2JqZWN0LFxuICB9KSxcbn1cbkZvcm1hdHRlZFRpbWUuZGVmYXVsdFByb3BzID0ge1xuICBzdHlsZToge30sXG59XG5cbmV4cG9ydCBkZWZhdWx0IEZvcm1hdHRlZFRpbWVcbiJdfQ== */"],
       children: String(minute).padStart(2, '0')
-    }), ":", jsxRuntime$1.jsx("span", {
+    }), ":", jsx$1("span", {
       className: "kks-player__formatted-time__part",
       css: [_css.part, style.part, process.env.NODE_ENV === "production" ? "" : ";label:FormattedTime;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkZvcm1hdHRlZFRpbWUuanN4Il0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQTZDUSIsImZpbGUiOiJGb3JtYXR0ZWRUaW1lLmpzeCIsInNvdXJjZXNDb250ZW50IjpbIi8qIEBqc3hJbXBvcnRTb3VyY2UgQGVtb3Rpb24vcmVhY3QgKi9cbmltcG9ydCB7RnJhZ21lbnR9IGZyb20gJ3JlYWN0J1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJ1xuXG5jb25zdCBfY3NzID0ge1xuICB1c2VyU2VsZWN0OiAnbm9uZScsXG4gIGNvbG9yOiAnd2hpdGUnLFxuICBmb250U2l6ZTogMjAsXG4gIHdoaXRlU3BhY2U6ICdub3dyYXAnLFxuICBkaXNwbGF5OiAnaW5saW5lLWZsZXgnLFxuICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgcGFydDoge1xuICAgIHdpZHRoOiAyNixcbiAgICBkaXNwbGF5OiAnaW5saW5lLWJsb2NrJyxcbiAgICB0ZXh0QWxpZ246ICdjZW50ZXInLFxuICB9LFxufVxuXG5jb25zdCBGb3JtYXR0ZWRUaW1lID0gKHt0aW1lLCBzaG93SG91ciwgc3R5bGV9KSA9PiB7XG4gIHRpbWUgPSBNYXRoLmZsb29yKHRpbWUpXG4gIGNvbnN0IHNlY29uZCA9IHRpbWUgJSA2MFxuICBjb25zdCBtaW51dGUgPSAoKHRpbWUgLSBzZWNvbmQpIC8gNjApICUgNjBcbiAgY29uc3QgaG91ciA9ICh0aW1lIC0gc2Vjb25kIC0gbWludXRlICogNjApIC8gNjAgLyA2MFxuICByZXR1cm4gKFxuICAgIDxzcGFuIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lXCIgY3NzPXtbX2Nzcywgc3R5bGVdfT5cbiAgICAgIHsoc2hvd0hvdXIgfHwgaG91ciAhPT0gMCkgJiYgKFxuICAgICAgICA8RnJhZ21lbnQ+XG4gICAgICAgICAgPHNwYW5cbiAgICAgICAgICAgIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lX19wYXJ0XCJcbiAgICAgICAgICAgIGNzcz17W19jc3MucGFydCwgc3R5bGUucGFydF19XG4gICAgICAgICAgPlxuICAgICAgICAgICAge1N0cmluZyhob3VyKS5wYWRTdGFydCgyLCAnMCcpfVxuICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICA6XG4gICAgICAgIDwvRnJhZ21lbnQ+XG4gICAgICApfVxuICAgICAgPHNwYW5cbiAgICAgICAgY2xhc3NOYW1lPVwia2tzLXBsYXllcl9fZm9ybWF0dGVkLXRpbWVfX3BhcnRcIlxuICAgICAgICBjc3M9e1tfY3NzLnBhcnQsIHN0eWxlLnBhcnRdfVxuICAgICAgPlxuICAgICAgICB7U3RyaW5nKG1pbnV0ZSkucGFkU3RhcnQoMiwgJzAnKX1cbiAgICAgIDwvc3Bhbj5cbiAgICAgIDpcbiAgICAgIDxzcGFuXG4gICAgICAgIGNsYXNzTmFtZT1cImtrcy1wbGF5ZXJfX2Zvcm1hdHRlZC10aW1lX19wYXJ0XCJcbiAgICAgICAgY3NzPXtbX2Nzcy5wYXJ0LCBzdHlsZS5wYXJ0XX1cbiAgICAgID5cbiAgICAgICAge1N0cmluZyhzZWNvbmQpLnBhZFN0YXJ0KDIsICcwJyl9XG4gICAgICA8L3NwYW4+XG4gICAgPC9zcGFuPlxuICApXG59XG5Gb3JtYXR0ZWRUaW1lLnByb3BUeXBlcyA9IHtcbiAgdGltZTogUHJvcFR5cGVzLm51bWJlcixcbiAgc2hvd0hvdXI6IFByb3BUeXBlcy5ib29sLFxuICBzdHlsZTogUHJvcFR5cGVzLnNoYXBlKHtcbiAgICBwYXJ0OiBQcm9wVHlwZXMub2JqZWN0LFxuICB9KSxcbn1cbkZvcm1hdHRlZFRpbWUuZGVmYXVsdFByb3BzID0ge1xuICBzdHlsZToge30sXG59XG5cbmV4cG9ydCBkZWZhdWx0IEZvcm1hdHRlZFRpbWVcbiJdfQ== */"],
       children: String(second).padStart(2, '0')
@@ -9545,15 +7943,15 @@ const Seekbar = () => {
     currentTime,
     progressTime = currentTime,
     duration
-  } = state.streamType === 'LIVE' ? getLivesInfo(_get__default["default"](state, 'customData') || {}) : state;
-  return jsxRuntime$1.jsxs("div", {
+  } = state.streamType === 'LIVE' ? getLivesInfo(_get(state, 'customData') || {}) : state;
+  return jsxs("div", {
     className: "kks-player__seek-bar",
     css: _ref,
-    children: [jsxRuntime$1.jsx(FormattedTime, {
+    children: [jsx$1(FormattedTime, {
       time: progressTime
-    }), state.streamType === 'LIVE' ? jsxRuntime$1.jsx("div", {
+    }), state.streamType === 'LIVE' ? jsx$1("div", {
       css: sliderStyle
-    }) : jsxRuntime$1.jsx(SimpleSlider, {
+    }) : jsx$1(SimpleSlider, {
       css: _ref2,
       value: progressTime,
       max: duration,
@@ -9563,7 +7961,7 @@ const Seekbar = () => {
         origin: SeekOrigin.START,
         seconds: value
       })
-    }), jsxRuntime$1.jsx(FormattedTime, {
+    }), jsx$1(FormattedTime, {
       time: Math.max(duration, progressTime)
     })]
   });
@@ -9576,7 +7974,7 @@ const IconButton = ({
   startIcon,
   tooltip,
   ...others
-}) => jsxRuntime$1.jsx(Button, {
+}) => jsx$1(Button, {
   startIcon: startIcon,
   title: tooltip,
   ...others
@@ -9599,7 +7997,7 @@ const PlayButton = () => {
   } = useCastContext();
   const action = playerState !== 'PLAYING' ? 'play' : 'pause';
   const tooltip = playerState !== 'PLAYING' ? 'KKS.PLAYER.PLAY' : 'KKS.PLAYER.PAUSE';
-  return /*#__PURE__*/jsxRuntime.jsx(IconButton, {
+  return /*#__PURE__*/jsx(IconButton, {
     startIcon: action,
     tooltip: tooltip,
     onClick: action === 'play' ? play : pause
@@ -9612,7 +8010,7 @@ const RewindButton = () => {
       seek
     }
   } = useCastContext();
-  return /*#__PURE__*/jsxRuntime.jsx(IconButton, {
+  return /*#__PURE__*/jsx(IconButton, {
     startIcon: "rewind10",
     tooltip: "KKS.PLAYER.REWIND",
     onClick: () => seek({
@@ -9628,7 +8026,7 @@ const ForwardButton = () => {
       seek
     }
   } = useCastContext();
-  return /*#__PURE__*/jsxRuntime.jsx(IconButton, {
+  return /*#__PURE__*/jsx(IconButton, {
     startIcon: "forward10",
     tooltip: "KKS.PLAYER.FORWARD",
     onClick: () => seek({
@@ -9645,7 +8043,7 @@ const PreviousEpisodeButton = () => {
       changePreviousEpisode
     }
   } = useCastContext();
-  return hasPrevious() && /*#__PURE__*/jsxRuntime.jsx(IconButton, {
+  return hasPrevious() && /*#__PURE__*/jsx(IconButton, {
     startIcon: "previousEpisode",
     tooltip: "KKS.PLAYER.PREVIOUS",
     onClick: changePreviousEpisode
@@ -9659,7 +8057,7 @@ const NextEpisodeButton = () => {
       changeNextEpisode
     }
   } = useCastContext();
-  return hasNext() && /*#__PURE__*/jsxRuntime.jsx(IconButton, {
+  return hasNext() && /*#__PURE__*/jsx(IconButton, {
     startIcon: "nextEpisode",
     tooltip: "KKS.PLAYER.NEXT",
     onClick: changeNextEpisode
@@ -9726,7 +8124,7 @@ const castButtonTooltip = {
 const MiniControl = () => {
   const {
     translate
-  } = React.useContext(I18n.Context);
+  } = useContext(I18n.Context);
   const {
     castState,
     deviceName,
@@ -9755,50 +8153,50 @@ const MiniControl = () => {
   };
   const connectedMessage = translate('KKS.CAST.CONNTECTED', messageProperties);
   const castingMessage = translate('KKS.CAST.STATUS', messageProperties);
-  return castState === 'CONNECTED' && jsxRuntime$1.jsx("div", {
+  return castState === 'CONNECTED' && jsx$1("div", {
     css: [showIfConnected, style, process.env.NODE_ENV === "production" ? "" : ";label:MiniControl;", process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIk1pbmlDb250cm9sLmpzeCJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiQUE0R1ciLCJmaWxlIjoiTWluaUNvbnRyb2wuanN4Iiwic291cmNlc0NvbnRlbnQiOlsiLyogZXNsaW50LWRpc2FibGUgcmVhY3QvanN4LW5vLXRhcmdldC1ibGFuayAqL1xuLyogQGpzeEltcG9ydFNvdXJjZSBAZW1vdGlvbi9yZWFjdCAqL1xuaW1wb3J0IHt1c2VDb250ZXh0fSBmcm9tICdyZWFjdCdcblxuaW1wb3J0IENhc3RCdXR0b24gZnJvbSAncHJlbWl1bS9DYXN0QnV0dG9uJ1xuaW1wb3J0IHtDYXN0U3RhdGV9IGZyb20gJ0VudW0nXG5pbXBvcnQge3VzZUNhc3RDb250ZXh0fSBmcm9tICdjYXN0L2NvbnRleHQnXG5pbXBvcnQgRnVuY3Rpb25CYXIgZnJvbSAnY29tcG9uZW50L1BhbmVsL0Z1bmN0aW9uQmFyJ1xuaW1wb3J0IFRvb2x0aXAgZnJvbSAnY29tcG9uZW50L1Rvb2x0aXAnXG5pbXBvcnQgVm9sdW1lQ29udHJvbCBmcm9tICdjb21wb25lbnQvVm9sdW1lQ29udHJvbCdcbmltcG9ydCB7U2tpcEJ1dHRvbn0gZnJvbSAncGxheWVyVWkvYnV0dG9ucydcbmltcG9ydCBJMThuIGZyb20gJ2NvbnRleHQvSTE4bidcbmltcG9ydCBTZWVrYmFyIGZyb20gJy4vU2Vla2JhcidcbmltcG9ydCBQbGF5QnV0dG9uIGZyb20gJy4vUGxheUJ1dHRvbidcbmltcG9ydCBSZXdpbmRCdXR0b24gZnJvbSAnLi9SZXdpbmRCdXR0b24nXG5pbXBvcnQgRm9yd2FyZEJ1dHRvbiBmcm9tICcuL0ZvcndhcmRCdXR0b24nXG5pbXBvcnQgUHJldmlvdXNFcGlzb2RlQnV0dG9uIGZyb20gJy4vUHJlRXBpc29kZUJ1dHRvbidcbmltcG9ydCBOZXh0VmlkZW9CdXR0b24gZnJvbSAnLi9OZXh0VmlkZW9CdXR0b24nXG5cbmNvbnN0IHN0eWxlID0ge1xuICBwb3NpdGlvbjogJ2ZpeGVkJyxcbiAgYm90dG9tOiAnMCcsXG4gIHpJbmRleDogJzMnLFxuICB3aWR0aDogJzEwMCUnLFxuICBoZWlnaHQ6ICc3MnB4JyxcbiAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gIGJhY2tncm91bmRDb2xvcjogJ3JnYmEoMzQsIDM0LCAzNCwgMC43NSknLFxuICBjb2xvcjogJyNmZmYnLFxuICAnPiAqJzoge1xuICAgIGZsZXg6ICcxJyxcbiAgfSxcbn1cblxuY29uc3QgY29udHJvbFN0eWxlID0ge1xuICBwYWRkaW5nOiAnMCAxOHB4IDZweCcsXG4gICc+IConOiB7XG4gICAgbWFyZ2luOiAnMCA4cHgnLFxuICB9LFxuICAnPiBkaXY6Zmlyc3QtY2hpbGQnOiB7XG4gICAgLy8gc2Vla2JhclxuICAgIG1hcmdpbjogJzAgMCA2cHgnLFxuICB9LFxufVxuXG5jb25zdCBtZXNzYWdlU3R5bGUgPSB7XG4gIGZsZXg6ICcxJyxcbiAgbWluV2lkdGg6ICcwJyxcbiAgdGV4dEFsaWduOiAnY2VudGVyJyxcbiAgd2hpdGVTcGFjZTogJ25vd3JhcCcsXG4gIG92ZXJmbG93OiAnaGlkZGVuJyxcbiAgdGV4dE92ZXJmbG93OiAnZWxsaXBzaXMnLFxufVxuXG5jb25zdCBhZFN0YXR1c1N0eWxlID0ge1xuICBmbGV4OiAnMScsXG4gIGRpc3BsYXk6ICdmbGV4JyxcbiAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gIGp1c3RpZnlDb250ZW50OiAnZmxleC1lbmQnLFxuICBhOiB7XG4gICAgZGlzcGxheTogJ2Jsb2NrJyxcbiAgICB0ZXh0RGVjb3JhdGlvbjogJ3VuZGVybGluZScsXG4gICAgJyY6dmlzaXRlZCc6IHtcbiAgICAgIGNvbG9yOiAnaW5oZXJpdCcsXG4gICAgfSxcbiAgfSxcbiAgYnV0dG9uOiB7XG4gICAgbWFyZ2luOiAnMCAxLjVyZW0nLFxuICAgIHBhZGRpbmc6ICcwLjJyZW0gMC41cmVtJyxcbiAgICB3aWR0aDogJ2F1dG8nLFxuICAgIGJvcmRlcjogJzJweCBzb2xpZCByZ2JhKDI1NSwgMjU1LCAyNTUsIDAuNyknLFxuICAgIGZvbnRTaXplOiAnMTIwJScsXG4gIH0sXG59XG5cbmNvbnN0IGNhc3RCdXR0b25Ub29sdGlwID0ge1xuICBbQ2FzdFN0YXRlLkNPTk5FQ1RFRF06ICdLS1MuUExBWUVSLkNBU1QuRElTQ09OTkVDVCcsXG4gIFtDYXN0U3RhdGUuTk9UX0NPTk5FQ1RFRF06ICdLS1MuUExBWUVSLkNBU1QnLFxufVxuXG5jb25zdCBNaW5pQ29udHJvbCA9ICgpID0+IHtcbiAgY29uc3Qge3RyYW5zbGF0ZX0gPSB1c2VDb250ZXh0KEkxOG4uQ29udGV4dClcbiAgY29uc3Qge1xuICAgIGNhc3RTdGF0ZSxcbiAgICBkZXZpY2VOYW1lLFxuICAgIG1lZGlhVGl0bGUsXG4gICAgcGxheWVyU3RhdGUsXG4gICAgc3RyZWFtVHlwZSxcbiAgICBpc1BsYXlpbmdCcmVhayxcbiAgICBjdXJyZW50QnJlYWtUaW1lLFxuICAgIHdoZW5Ta2lwcGFibGUsXG4gICAgY2xpY2tUaHJvdWdoVXJsLFxuICAgIGFjdGlvbnM6IHtza2lwQWQsIHN1YnNjcmliZVZvbHVtZUNoYW5nZSwgc2V0Vm9sdW1lLCB0b2dnbGVNdXRlfSxcbiAgfSA9IHVzZUNhc3RDb250ZXh0KClcbiAgY29uc3Qgc2Vjb25kc1RvU2tpcCA9IE1hdGguY2VpbCh3aGVuU2tpcHBhYmxlIC0gY3VycmVudEJyZWFrVGltZSlcbiAgY29uc3QgaXNJZGxlID1cbiAgICBjYXN0U3RhdGUgPT09ICdDT05ORUNURUQnICYmICghcGxheWVyU3RhdGUgfHwgcGxheWVyU3RhdGUgPT09ICdJRExFJylcbiAgY29uc3Qgc2hvd0lmQ29ubmVjdGVkID0ge1xuICAgIGRpc3BsYXk6IGNhc3RTdGF0ZSA9PT0gJ0NPTk5FQ1RFRCcgPyAnZmxleCcgOiAnbm9uZScsXG4gIH1cbiAgY29uc3QgbWVzc2FnZVByb3BlcnRpZXMgPSB7XG4gICAgVklERU86IG1lZGlhVGl0bGUsXG4gICAgQ0hST01FQ0FTVDogZGV2aWNlTmFtZSxcbiAgfVxuICBjb25zdCBjb25uZWN0ZWRNZXNzYWdlID0gdHJhbnNsYXRlKCdLS1MuQ0FTVC5DT05OVEVDVEVEJywgbWVzc2FnZVByb3BlcnRpZXMpXG4gIGNvbnN0IGNhc3RpbmdNZXNzYWdlID0gdHJhbnNsYXRlKCdLS1MuQ0FTVC5TVEFUVVMnLCBtZXNzYWdlUHJvcGVydGllcylcblxuICByZXR1cm4gKFxuICAgIGNhc3RTdGF0ZSA9PT0gJ0NPTk5FQ1RFRCcgJiYgKFxuICAgICAgPGRpdiBjc3M9e1tzaG93SWZDb25uZWN0ZWQsIHN0eWxlXX0+XG4gICAgICAgIHtpc0lkbGUgPyAoXG4gICAgICAgICAgPFRvb2x0aXAgb3ZlcmZsb3dPbmx5IHRpdGxlPXtjb25uZWN0ZWRNZXNzYWdlfT5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwia2tzLXBsYXllcl9fbWluaWN0cmxfX2Nhc3QtbmFtZVwiIGNzcz17bWVzc2FnZVN0eWxlfT5cbiAgICAgICAgICAgICAge2Nvbm5lY3RlZE1lc3NhZ2V9XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8L1Rvb2x0aXA+XG4gICAgICAgICkgOiAoXG4gICAgICAgICAgPEZ1bmN0aW9uQmFyIHN0eWxlPXtjb250cm9sU3R5bGV9PlxuICAgICAgICAgICAgeyFpc1BsYXlpbmdCcmVhayAmJiA8U2Vla2JhciAvPn1cbiAgICAgICAgICAgIDxQcmV2aW91c0VwaXNvZGVCdXR0b24gLz5cbiAgICAgICAgICAgIDxQbGF5QnV0dG9uIC8+XG4gICAgICAgICAgICA8TmV4dFZpZGVvQnV0dG9uIC8+XG4gICAgICAgICAgICB7aXNQbGF5aW5nQnJlYWsgPyAoXG4gICAgICAgICAgICAgIDxkaXYgY3NzPXthZFN0YXR1c1N0eWxlfT5cbiAgICAgICAgICAgICAgICA8YSBocmVmPXtjbGlja1Rocm91Z2hVcmx9IHJlbD1cIm5vb3BlbmVyXCIgdGFyZ2V0PVwiX2JsYW5rXCI+XG4gICAgICAgICAgICAgICAgICA8STE4bi5NZXNzYWdlIGNvZGU9XCJLS1MuU1NBSS5MRUFSTi5NT1JFXCIgd3JhcD17ZmFsc2V9IC8+XG4gICAgICAgICAgICAgICAgPC9hPlxuICAgICAgICAgICAgICAgIHt3aGVuU2tpcHBhYmxlID4gMCAmJiAoXG4gICAgICAgICAgICAgICAgICA8U2tpcEJ1dHRvbiByZW1haW5pbmdUaW1lPXtzZWNvbmRzVG9Ta2lwfSBvbkNsaWNrPXtza2lwQWR9IC8+XG4gICAgICAgICAgICAgICAgKX1cbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICApIDogKFxuICAgICAgICAgICAgICA8PlxuICAgICAgICAgICAgICAgIHtzdHJlYW1UeXBlICE9PSAnTElWRScgJiYgPFJld2luZEJ1dHRvbiAvPn1cbiAgICAgICAgICAgICAgICB7c3RyZWFtVHlwZSAhPT0gJ0xJVkUnICYmIDxGb3J3YXJkQnV0dG9uIC8+fVxuICAgICAgICAgICAgICAgIDxUb29sdGlwIG92ZXJmbG93T25seSB0aXRsZT17Y2FzdGluZ01lc3NhZ2V9PlxuICAgICAgICAgICAgICAgICAgPGRpdiBjc3M9e21lc3NhZ2VTdHlsZX0+e2Nhc3RpbmdNZXNzYWdlfTwvZGl2PlxuICAgICAgICAgICAgICAgIDwvVG9vbHRpcD5cbiAgICAgICAgICAgICAgPC8+XG4gICAgICAgICAgICApfVxuICAgICAgICAgICAgPFZvbHVtZUNvbnRyb2xcbiAgICAgICAgICAgICAgc2xpZGVyXG4gICAgICAgICAgICAgIHN1YnNjcmliZT17c3Vic2NyaWJlVm9sdW1lQ2hhbmdlfVxuICAgICAgICAgICAgICBvbkNoYW5nZT17c2V0Vm9sdW1lfVxuICAgICAgICAgICAgICB0b2dnbGVNdXRlPXt0b2dnbGVNdXRlfVxuICAgICAgICAgICAgLz5cbiAgICAgICAgICAgIDxUb29sdGlwXG4gICAgICAgICAgICAgIHRpdGxlPXt0cmFuc2xhdGUoY2FzdEJ1dHRvblRvb2x0aXBbY2FzdFN0YXRlXSl9XG4gICAgICAgICAgICAgIGJvdHRvbT1cIjI0cHhcIlxuICAgICAgICAgICAgPlxuICAgICAgICAgICAgICA8Q2FzdEJ1dHRvbiAvPlxuICAgICAgICAgICAgPC9Ub29sdGlwPlxuICAgICAgICAgIDwvRnVuY3Rpb25CYXI+XG4gICAgICAgICl9XG4gICAgICA8L2Rpdj5cbiAgICApXG4gIClcbn1cblxuZXhwb3J0IGRlZmF1bHQgTWluaUNvbnRyb2xcbiJdfQ== */"],
-    children: isIdle ? jsxRuntime$1.jsx(Tooltip, {
+    children: isIdle ? jsx$1(Tooltip, {
       overflowOnly: true,
       title: connectedMessage,
-      children: jsxRuntime$1.jsx("div", {
+      children: jsx$1("div", {
         className: "kks-player__minictrl__cast-name",
         css: messageStyle,
         children: connectedMessage
       })
-    }) : jsxRuntime$1.jsxs(FunctionBar, {
+    }) : jsxs(FunctionBar, {
       style: controlStyle,
-      children: [!isPlayingBreak && jsxRuntime$1.jsx(Seekbar, {}), jsxRuntime$1.jsx(PreviousEpisodeButton, {}), jsxRuntime$1.jsx(PlayButton, {}), jsxRuntime$1.jsx(NextEpisodeButton, {}), isPlayingBreak ? jsxRuntime$1.jsxs("div", {
+      children: [!isPlayingBreak && jsx$1(Seekbar, {}), jsx$1(PreviousEpisodeButton, {}), jsx$1(PlayButton, {}), jsx$1(NextEpisodeButton, {}), isPlayingBreak ? jsxs("div", {
         css: adStatusStyle,
-        children: [jsxRuntime$1.jsx("a", {
+        children: [jsx$1("a", {
           href: clickThroughUrl,
           rel: "noopener",
           target: "_blank",
-          children: jsxRuntime$1.jsx(I18n.Message, {
+          children: jsx$1(I18n.Message, {
             code: "KKS.SSAI.LEARN.MORE",
             wrap: false
           })
-        }), whenSkippable > 0 && jsxRuntime$1.jsx(SkipButton, {
+        }), whenSkippable > 0 && jsx$1(SkipButton, {
           remainingTime: secondsToSkip,
           onClick: skipAd
         })]
-      }) : jsxRuntime$1.jsxs(jsxRuntime$1.Fragment, {
-        children: [streamType !== 'LIVE' && jsxRuntime$1.jsx(RewindButton, {}), streamType !== 'LIVE' && jsxRuntime$1.jsx(ForwardButton, {}), jsxRuntime$1.jsx(Tooltip, {
+      }) : jsxs(Fragment, {
+        children: [streamType !== 'LIVE' && jsx$1(RewindButton, {}), streamType !== 'LIVE' && jsx$1(ForwardButton, {}), jsx$1(Tooltip, {
           overflowOnly: true,
           title: castingMessage,
-          children: jsxRuntime$1.jsx("div", {
+          children: jsx$1("div", {
             css: messageStyle,
             children: castingMessage
           })
         })]
-      }), jsxRuntime$1.jsx(VolumeControl, {
+      }), jsx$1(VolumeControl, {
         slider: true,
         subscribe: subscribeVolumeChange,
         onChange: setVolume,
         toggleMute: toggleMute
-      }), jsxRuntime$1.jsx(Tooltip, {
+      }), jsx$1(Tooltip, {
         title: translate(castButtonTooltip[castState]),
         bottom: "24px",
-        children: jsxRuntime$1.jsx(CastButton, {})
+        children: jsx$1(CastButton, {})
       })]
     })
   });
@@ -9809,13 +8207,13 @@ const CastSender = ({
   langCustomCode,
   children,
   ...other
-}) => /*#__PURE__*/jsxRuntime.jsx(CastProvider, {
+}) => /*#__PURE__*/jsx(CastProvider, {
   lang: lang,
   ...other,
-  children: /*#__PURE__*/jsxRuntime.jsxs(IntlProvider, {
+  children: /*#__PURE__*/jsxs$1(IntlProvider, {
     locale: lang,
     messages: langCustomCode,
-    children: [children, /*#__PURE__*/jsxRuntime.jsx(MiniControl, {})]
+    children: [children, /*#__PURE__*/jsx(MiniControl, {})]
   })
 });
 
@@ -9833,17 +8231,151 @@ CastSender.propTypes = {
   children: PropTypes.node
 };
 
-const {
-  SupportEnvironment
-} = config;
+/* eslint-disable react/prop-types */
+const sizes = {
+  'small-embed': 200,
+  embed: 400,
+  'tablet-portrait': 600,
+  'tablet-landscape': 900,
+  desktop: 1200
+};
 
-exports.CastButton = CastButton;
-exports.CastConsumer = CastConsumer;
-exports.CastSender = CastSender;
-exports.MediaTailorPlugin = MediaTailorPlugin;
-exports.Player = Player;
-exports.SupportEnvironment = SupportEnvironment;
-exports.getBVKDrmConfig = getBVKDrmConfig;
-exports.getEnterpriseDrmConfig = getEnterpriseDrmConfig;
-exports.getVersion = getVersion;
-//# sourceMappingURL=playcraft.js.map
+const BasicUi = ({
+  style,
+  video,
+  autohide,
+  children,
+  getLayoutProps,
+  seekbar = {},
+  playbackState,
+  currentTime,
+  duration,
+  bufferTime,
+  seekEnabled,
+  onPlaybackStateChange,
+  onCurrentTimeChange
+}) => {
+  const uiType = isDesktop() ? 'desktop' : 'mobile';
+  const containerRef = useRef();
+  const {
+    width,
+    currentBreakpoint: size,
+    observe
+  } = useDimensions({
+    polyfill: ResizeObserver,
+    breakpoints: sizes
+  }); // short waiting should not reflect to UI
+
+  const waiting = useLazyWaiting(playbackState === 'waiting');
+  const activePlayback = playbackState === 'playing' || playbackState === 'waiting';
+  const {
+    mode,
+    onClick,
+    onMouseMove
+  } = useAutoHide({
+    pinned: !autohide || waiting || !activePlayback,
+    tapToHide: uiType === 'mobile'
+  });
+  const layoutProps = (getLayoutProps === null || getLayoutProps === void 0 ? void 0 : getLayoutProps({
+    type: uiType,
+    mode,
+    width,
+    size
+  })) || {};
+  return /*#__PURE__*/jsxs$1(DefaultLayout, {
+    style: style,
+    type: uiType,
+    display: mode,
+    size: size,
+    video: video,
+    containerRef: element => {
+      observe(element);
+      containerRef.current = element;
+    },
+    seekbar: isFinite(duration) && /*#__PURE__*/jsx(Seekbar$1, {
+      currentTime: currentTime,
+      bufferTime: bufferTime,
+      duration: duration,
+      marks: seekbar.marks,
+      addons: seekbar.addons,
+      ...(seekEnabled && {
+        play: () => onPlaybackStateChange('playing'),
+        pause: () => onPlaybackStateChange('paused'),
+        seek: onCurrentTimeChange
+      }),
+      disabled: !seekEnabled
+    }),
+    ...layoutProps,
+    controlButtons: {
+      playButton: /*#__PURE__*/jsx(PlayButton$1, {
+        playbackState: playbackState,
+        ended: playbackState === 'ended',
+        onClick: () => onPlaybackStateChange(playbackState !== 'playing' ? 'playing' : 'paused')
+      }),
+      // TOOD add support for preload
+      ...layoutProps.controlButtons
+    },
+    backItems: waiting ? /*#__PURE__*/jsx(LoadingSpinner, {}) : layoutProps.backItems,
+    onClick: onClick,
+    onMouseMove: onMouseMove,
+    children: [children, /*#__PURE__*/jsx(Backdrop, {
+      open: !playbackState || playbackState === 'loading',
+      children: /*#__PURE__*/jsx(LoadingSpinner, {})
+    })]
+  });
+};
+
+/* @jsxImportSource @emotion/react */
+
+const VideoPlayer = ({
+  style,
+  autohide,
+  seekbar,
+  getLayoutProps,
+  children,
+  autoplay,
+  ...videoProps
+}) => {
+  const [videoState, setVideoState] = useState({});
+  const [targetState, setTargetState] = useState({
+    playbackState: autoplay ? 'playing' : 'paused'
+  });
+  useEffect(() => {
+    const unsubscribe = subscribeMediaState(videoProps.videoRef.current, setVideoState, videoProps.plugins);
+    return () => unsubscribe();
+  }, []);
+  const uiProps = {
+    style,
+    autohide,
+    getLayoutProps,
+    seekbar,
+    onPlaybackStateChange: playbackState => setTargetState(state => ({ ...state,
+      playbackState
+    })),
+    onCurrentTimeChange: currentTime => setTargetState(state => ({ ...state,
+      currentTime
+    }))
+  };
+  return jsx$1(IntlProvider, {
+    children: jsx$1(BasicUi, {
+      video: jsx$1(Video, { ...videoProps,
+        ...targetState
+      }),
+      ...videoState,
+      ...uiProps,
+      children: children
+    })
+  });
+};
+
+VideoPlayer.propTypes = {
+  style: PropTypes.object,
+  plugins: PropTypes.array,
+  autohide: PropTypes.bool,
+  seekbar: PropTypes.object,
+  children: PropTypes.node,
+  getLayoutProps: PropTypes.func,
+  autoplay: PropTypes.bool
+};
+
+export { CastSender, CoverImage, FunctionBarExtension, LiveEnd, PremiumPlayer, PremiumPlayerForwardingRef, PremiumPlusPlayer, Video, VideoPlayer };
