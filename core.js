@@ -859,9 +859,9 @@ const getSource = (sourceOptions, {
         src: option
       }),
       drm: getDrmOptions(fallbackDrm)
-    }), {
+    })), {
       preferManifestType
-    }));
+    });
   }
 
   const matched = sourceOptions.find(source => !preferManifestType || matchType(source, preferManifestType));

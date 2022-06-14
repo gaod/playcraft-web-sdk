@@ -1069,7 +1069,7 @@ function convertToSeconds(timeString) {
 function getVersion() {
   try {
     // eslint-disable-next-line no-undef
-    return "1.11.0";
+    return "1.11.1";
   } catch (e) {
     return undefined;
   }
@@ -1348,9 +1348,9 @@ const getSource = (sourceOptions, {
         src: option
       }),
       drm: getDrmOptions$1(fallbackDrm)
-    }), {
+    })), {
       preferManifestType
-    }));
+    });
   }
 
   const matched = sourceOptions.find(source => !preferManifestType || matchType(source, preferManifestType));
@@ -2300,14 +2300,26 @@ const seekToLive = (media, player) => {
   }
 };
 
+const toggleMute = media => {
+  media.muted = !media.muted;
+
+  if (!media.muted) {
+    media.volume = Math.max(media.volume, 0.05);
+  }
+};
+
 const setVolume = (media, {
   player
 }, level) => {
-  var _player$setVolume;
+  const capped = Math.max(0, Math.min(level, 1));
+  media.muted = capped <= 0; // to keep volume for unmute
 
-  player === null || player === void 0 ? void 0 : (_player$setVolume = player.setVolume) === null || _player$setVolume === void 0 ? void 0 : _player$setVolume.call(player, level * 100);
-  media.volume = level;
-  media.muted = level <= 0;
+  if (capped > 0) {
+    var _player$setVolume;
+
+    player === null || player === void 0 ? void 0 : (_player$setVolume = player.setVolume) === null || _player$setVolume === void 0 ? void 0 : _player$setVolume.call(player, capped * 100);
+    media.volume = capped;
+  }
 };
 
 const syncPlaybackState = (media, {
@@ -3610,12 +3622,12 @@ const onViewModeChange = (video, onChange) => {
 };
 
 const toggleFullscreen = container => {
-  const vendorElementName = getName(document, vendors.element);
+  const vendorRequestFn = container[getName(container, vendors.request)];
 
-  if (vendorElementName) {
-    const action = document[vendorElementName] ? 'exit' : 'request';
+  if (vendorRequestFn) {
+    const action = document[getName(document, vendors.element)] ? 'exit' : 'request';
     const target = action === 'request' ? container : document;
-    return target[getName(target, vendors[action])]();
+    return target === null || target === void 0 ? void 0 : target[getName(target, vendors[action])]();
   }
 
   const target = container.querySelector('video');
@@ -5964,6 +5976,9 @@ const syncVolume = (video, setInitVolume) => {
   try {
     var _JSON$parse;
 
+    // Safari start muted, unmute it to normalize
+    // eslint-disable-next-line no-param-reassign
+    video.muted = false;
     setInitVolume((_JSON$parse = JSON.parse(localStorage.getItem(volumeStorageKey))) !== null && _JSON$parse !== void 0 ? _JSON$parse : 1); // eslint-disable-next-line no-empty
   } catch (e) {}
 
@@ -5973,13 +5988,13 @@ const syncVolume = (video, setInitVolume) => {
 };
 
 const linkMediaVolume = getOptions => {
+  let lastVolume = 1;
+
   const subscribe = handler => {
     const {
-      video: media,
-      setUnmuteVolume
+      video: media
     } = getOptions();
-    setUnmuteVolume(media.volume);
-    on$1(media, 'volumechange', () => handler({
+    return on$1(media, 'volumechange', () => handler({
       volume: media.volume,
       muted: media.muted
     }));
@@ -5990,33 +6005,36 @@ const linkMediaVolume = getOptions => {
   } = {}) => {
     const {
       video: media,
-      getPlayer,
-      setUnmuteVolume
+      getPlayer
     } = getOptions();
+
+    if (commit) {
+      if (volume > 0) {
+        lastVolume = volume;
+      } else {
+        // for unmute volume
+        setVolume(media, {
+          player: getPlayer()
+        }, lastVolume);
+      }
+    }
+
     setVolume(media, {
       player: getPlayer()
     }, volume);
-
-    if (commit && volume > 0) {
-      setUnmuteVolume(volume);
-    }
   };
 
-  const toggleMute = () => {
+  const toggleMute$1 = () => {
     const {
-      video: media,
-      getPlayer,
-      getUnmuteVolume
+      video: media
     } = getOptions();
-    setVolume(media, {
-      player: getPlayer()
-    }, media.muted ? Math.max(0.05, getUnmuteVolume()) : 0);
+    toggleMute(media);
   };
 
   return {
     subscribe,
     onChange,
-    toggleMute
+    toggleMute: toggleMute$1
   };
 };
 
@@ -6263,7 +6281,6 @@ const PremiumPlayer = ({
   onChangeSettings,
   onPlayerLoaded,
   sendLog,
-  innerRef,
   ...videoProps
 }) => {
   var _videoRef$current2;
@@ -6419,7 +6436,6 @@ const PremiumPlayer = ({
 
     if (lastState.current === 'loading') {
       syncVolume(videoRef.current, initialVolume => {
-        // only desktop UI have volume
         if (uiType === 'desktop') {
           setVolume(videoRef.current, {
             player: playerRef.current
@@ -6660,10 +6676,6 @@ const PremiumPlayer = ({
     }),
     ...targetUIElements
   };
-  useImperativeHandle(innerRef, () => ({
-    setVolume: onChange,
-    toggleMute
-  }));
   return /*#__PURE__*/jsx(IntlProvider, { ...intl,
     children: /*#__PURE__*/jsxs$1(DefaultLayout, {
       style: style,
@@ -7674,20 +7686,36 @@ const LinearTimeRewrite = () => {
   let state = {};
   const ref = {};
 
-  const getOffset = () => {
-    var _ref$player, _ref$player$getPresen;
+  const getLatency = () => {
+    var _ref$video, _ref$player, _ref$player$getPresen;
 
-    return (_ref$player = ref.player) !== null && _ref$player !== void 0 && (_ref$player$getPresen = _ref$player.getPresentationStartTimeAsDate) !== null && _ref$player$getPresen !== void 0 && _ref$player$getPresen.call(_ref$player) ? config.start - ref.player.getPresentationStartTimeAsDate() / 1000 : 0;
+    /**
+     * video.currentTime may be 0 when the content is just loaded
+     * Skip if it's 0 because we only interested in the lived edge
+     */
+    if (!((_ref$video = ref.video) !== null && _ref$video !== void 0 && _ref$video.currentTime) || !((_ref$player = ref.player) !== null && _ref$player !== void 0 && (_ref$player$getPresen = _ref$player.getPresentationStartTimeAsDate) !== null && _ref$player$getPresen !== void 0 && _ref$player$getPresen.call(_ref$player))) return undefined;
+
+    if (!state.latency) {
+      state.latency = (Date.now() - (ref.video.currentTime * 1000 + ref.player.getPresentationStartTimeAsDate().getTime())) / 1000;
+    }
+
+    return state.latency;
   };
 
-  const programTimeForPresentationTime = astTime => astTime - getOffset();
+  const getOffset = () => {
+    var _ref$player2, _ref$player2$getPrese;
 
-  const presentationTimeForProgramTime = programTime => programTime + getOffset();
+    return (_ref$player2 = ref.player) !== null && _ref$player2 !== void 0 && (_ref$player2$getPrese = _ref$player2.getPresentationStartTimeAsDate) !== null && _ref$player2$getPrese !== void 0 && _ref$player2$getPrese.call(_ref$player2) ? config.start - getLatency() - ref.player.getPresentationStartTimeAsDate() / 1000 : 0;
+  };
+
+  const programTimeForPresentationTime = astTime => Math.max(0, astTime - getOffset());
+
+  const presentationTimeForProgramTime = programTime => Math.max(0, programTime + getOffset());
 
   const getSeekRangeEnd = () => {
-    var _ref$player2;
+    var _ref$player3;
 
-    return (_ref$player2 = ref.player) !== null && _ref$player2 !== void 0 && _ref$player2.isLive() ? Math.floor((Date.now() - state.baseTimeInMs) / 1000) + state.seekRangeEnd : Date.now() / 1000 - config.start;
+    return (_ref$player3 = ref.player) !== null && _ref$player3 !== void 0 && _ref$player3.isLive() ? Math.floor((Date.now() - state.baseTimeInMs) / 1000) + state.seekRangeEnd : Date.now() / 1000 - config.start;
   };
 
   return {
@@ -7705,7 +7733,7 @@ const LinearTimeRewrite = () => {
       });
     },
     getPlaybackStatus: () => {
-      var _ref$video2;
+      var _ref$video3;
 
       if (config.disable) return {};
 
@@ -7719,24 +7747,24 @@ const LinearTimeRewrite = () => {
       }
 
       if (!state.seekRangeEnd) {
-        var _ref$player3;
+        var _ref$player4;
 
-        state.seekRangeEnd = programTimeForPresentationTime((_ref$player3 = ref.player) === null || _ref$player3 === void 0 ? void 0 : _ref$player3.seekRange().end);
+        state.seekRangeEnd = programTimeForPresentationTime((_ref$player4 = ref.player) === null || _ref$player4 === void 0 ? void 0 : _ref$player4.seekRange().end);
         state.baseTimeInMs = Date.now();
       }
 
       if (Object.values(SEEKABLE_END).includes(config.seekable.end)) {
-        var _ref$video;
+        var _ref$video2;
 
         return {
           duration: getChannelTime(config).duration,
-          currentTime: programTimeForPresentationTime((_ref$video = ref.video) === null || _ref$video === void 0 ? void 0 : _ref$video.currentTime)
+          currentTime: programTimeForPresentationTime((_ref$video2 = ref.video) === null || _ref$video2 === void 0 ? void 0 : _ref$video2.currentTime)
         };
       }
 
       return {
         duration: getSeekRangeEnd(),
-        currentTime: programTimeForPresentationTime((_ref$video2 = ref.video) === null || _ref$video2 === void 0 ? void 0 : _ref$video2.currentTime)
+        currentTime: programTimeForPresentationTime((_ref$video3 = ref.video) === null || _ref$video3 === void 0 ? void 0 : _ref$video3.currentTime)
       };
     },
     getSeekbarProps: () => {
@@ -7903,7 +7931,7 @@ const PremiumPlusPlayer = ({
 
     logTarget.current = mapLogEvents({
       playerName: ['shaka', 'bitmovin'].find(name => name in rest),
-      version: "1.11.0",
+      version: "1.11.1",
       video: videoRef.current
     });
 
