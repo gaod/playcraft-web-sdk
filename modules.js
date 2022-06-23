@@ -219,6 +219,7 @@ const startPlaybackSession = async (playbackApi, options = {}) => {
     onChangeContent,
     onSourceChange,
     onInvalidToken,
+    onSessionStart,
     heartbeatTime = HEARTBEAT_INTERVAL_MS,
     updateTime = UPDATE_INTERVAL_MS
   } = options;
@@ -276,6 +277,7 @@ const startPlaybackSession = async (playbackApi, options = {}) => {
     type,
     id
   });
+  onSessionStart === null || onSessionStart === void 0 ? void 0 : onSessionStart(sessionInfo);
   const requestParams = {
     type,
     id,
@@ -5673,7 +5675,7 @@ class ContentProtection {
    */
 
 
-  static convertElements_(defaultInit, elements, keySystemsByURI, keyIds) {
+  static convertElements_(defaultInit, elements, keySystemsByURI) {
     const licenseUrlParsers = ContentProtection.licenseUrlParsers_;
     /** @type {!Array.<shaka.extern.DrmInfo>} */
 
@@ -5683,15 +5685,9 @@ class ContentProtection {
       const keySystem = keySystemsByURI[element.schemeUri];
 
       if (keySystem) {
-        goog.asserts.assert(!element.init || element.init.length, 'Init data must be null or non-empty.');
-        const proInitData = ContentProtection.getInitDataFromPro_(element);
-        let clearKeyInitData = null;
+        goog.asserts.assert(!element.init || element.init.length, 'Init data must be null or non-empty.'); // TODO check Playready, clearkey
 
-        if (element.schemeUri === ContentProtection.ClearKeySchemeUri_) {
-          clearKeyInitData = ContentProtection.getInitDataClearKey_(element, keyIds);
-        }
-
-        const initData = element.init || defaultInit || proInitData || clearKeyInitData;
+        const initData = element.init || defaultInit;
         const info = ManifestParserUtils.createDrmInfo(keySystem, initData);
         const licenseParser = licenseUrlParsers.get(keySystem);
 
@@ -8029,7 +8025,7 @@ const getBufferedAhead = (mediaSource, video) => {
 const UPDATE_SPEEDUP_INTERVAL = 100;
 
 const latencyManager = (player, video) => {
-  window.segmentTimestampOffset = 0.8;
+  window.segmentTimestampOffset = 2.5;
   DashParser.register(player.shaka);
   let updateIntervalId;
   const currentOptions = {
@@ -8071,10 +8067,10 @@ const latencyManager = (player, video) => {
         gapDetectionThreshold: 0.001,
         inaccurateManifestTolerance: 1,
         retryParameters: {
-          baseDelay: 100,
-          backoffFactor: 0,
+          baseDelay: 50,
+          backoffFactor: 1.2,
           fuzzFactor: 0,
-          maxAttempts: 77
+          maxAttempts: 13
         }
       }
     });
@@ -8096,10 +8092,26 @@ const latencyManager = (player, video) => {
       (_currentOptions$onUpd2 = currentOptions.onUpdate) === null || _currentOptions$onUpd2 === void 0 ? void 0 : _currentOptions$onUpd2.call(currentOptions, info);
       lastPlaybackTime = video.currentTime;
       const bufferCap = +currentOptions.speedupThreshold * (info.playbackRate > 1 ? 1 : 1.2);
+
+      if (video.currentTime < lastPlaybackTime - 7) {
+        console.info(`seek from ${video.currentTime} to ${lastPlaybackTime}`);
+        video.playbackRate = 1;
+        video.currentTime = lastPlaybackTime;
+        return;
+      }
+
+      lastPlaybackTime = video.currentTime;
+      const bufferedAhead = getBufferedAhead(player.mediaSource, video);
+
+      if (bufferedAhead > 5) {
+        console.info(`Buffer abundant, seek from ${video.currentTime} to ${video.currentTime + bufferedAhead - 2.5}`);
+        video.currentTime = video.currentTime + bufferedAhead - 2.5;
+        return;
+      }
+
       const rate = bufferAverage.getEstimate() > bufferCap && currentOptions.speedup ? +currentOptions.speedup : 0;
 
       if ((video === null || video === void 0 ? void 0 : video.currentTime) > 0) {
-        /* eslint-disable-next-line no-param-reassign */
         video.playbackRate = 1 + rate / 100;
       }
     }, UPDATE_SPEEDUP_INTERVAL);

@@ -5687,7 +5687,7 @@ class ContentProtection {
    */
 
 
-  static convertElements_(defaultInit, elements, keySystemsByURI, keyIds) {
+  static convertElements_(defaultInit, elements, keySystemsByURI) {
     const licenseUrlParsers = ContentProtection.licenseUrlParsers_;
     /** @type {!Array.<shaka.extern.DrmInfo>} */
 
@@ -5697,15 +5697,9 @@ class ContentProtection {
       const keySystem = keySystemsByURI[element.schemeUri];
 
       if (keySystem) {
-        goog.asserts.assert(!element.init || element.init.length, 'Init data must be null or non-empty.');
-        const proInitData = ContentProtection.getInitDataFromPro_(element);
-        let clearKeyInitData = null;
+        goog.asserts.assert(!element.init || element.init.length, 'Init data must be null or non-empty.'); // TODO check Playready, clearkey
 
-        if (element.schemeUri === ContentProtection.ClearKeySchemeUri_) {
-          clearKeyInitData = ContentProtection.getInitDataClearKey_(element, keyIds);
-        }
-
-        const initData = element.init || defaultInit || proInitData || clearKeyInitData;
+        const initData = element.init || defaultInit;
         const info = ManifestParserUtils.createDrmInfo(keySystem, initData);
         const licenseParser = licenseUrlParsers.get(keySystem);
 

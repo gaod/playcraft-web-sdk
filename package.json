@@ -1,6 +1,6 @@
 {
   "name": "playcraft",
-  "version": "1.11.1",
+  "version": "1.12.0",
   "module": "dist/playcraft.module.js",
   "main": "dist/playcraft.js",
   "types": "dist/index.d.ts",
@@ -316,7 +316,8 @@
       "<rootDir>/sample/node_modules/"
     ],
     "coveragePathIgnorePatterns": [
-      "<rootDir>/test/mocks"
+      "<rootDir>/test/mocks",
+      "src/plugins/shaka"
     ],
     "testEnvironment": "node",
     "coverageReporters": [

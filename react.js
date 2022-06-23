@@ -1812,10 +1812,19 @@ const load = async (media, {
   plugins = [],
   drm
 }, source) => {
+  const preferManifestType = needNativeHls() ? 'hls' : 'dash';
   const preferred = getSource(source, {
-    preferManifestType: needNativeHls() ? 'hls' : 'dash',
+    preferManifestType,
     fallbackDrm: drm
-  });
+  }); // There's no use case that changing DRM options without changing manifest URL, just skip
+
+  if (player.lastSrc === (preferred === null || preferred === void 0 ? void 0 : preferred.src)) {
+    console.info('src is unchanged, skip load', preferred.src);
+    return;
+  }
+
+  player.lastSrc = preferred === null || preferred === void 0 ? void 0 : preferred.src;
+  media.dispatchEvent(new Event('loadstart'));
   const merged = await plugins.reduce(async (loadChain, plugin) => {
     var _plugin$load;
 
@@ -1824,7 +1833,8 @@ const load = async (media, {
       video: media,
       player,
       source: currentSource,
-      startTime
+      startTime,
+      streamFormat: preferManifestType
     }));
     return overrides ? { ...currentSource,
       ...(overrides.url && {
@@ -1849,14 +1859,7 @@ const load = async (media, {
   player.configure({
     drm: drmOptions
   });
-  player.configureExtensions(extensions); // There's no use case that changing DRM options without changing manifest URL, just skip
-
-  if (player.lastSrc === merged.src) {
-    console.info('src is unchanged, skip load', merged.src);
-    return;
-  }
-
-  player.lastSrc = merged.src;
+  player.configureExtensions(extensions);
   return player.unload().then(() => player.load(merged.src, merged.startTime, merged.type)).then(() => media.dispatchEvent(new Event('canplay'))).catch(error => {
     media.dispatchEvent(Object.assign(new CustomEvent('error'), {
       error
@@ -4009,6 +4012,31 @@ const loadShaka = async (videoElement, config = {}) => {
   shaka.polyfill.installAll();
   player = new shaka.Player(videoElement);
   player.configure(config);
+  player.addEventListener('error', event => {
+    var _window$Sentry;
+
+    console.log(event);
+    const {
+      detail = {}
+    } = event;
+    const error = new Error(`Player: ${detail.code}/${detail.name}`);
+
+    if (!detail || /The video element has thrown a media error|Video element triggered an Error/.test(detail.message)) {
+      return;
+    }
+
+    videoElement.dispatchEvent(Object.assign(new CustomEvent('error'), {
+      error: detail,
+      message: `Player Error: ${detail.code}/${detail.message.split(' ', 3)[2]}`
+    }));
+
+    if (detail.code === 1001) {
+      console.info('Stream unavailable, unload source');
+      player.unload();
+    }
+
+    (_window$Sentry = window.Sentry) === null || _window$Sentry === void 0 ? void 0 : _window$Sentry.captureException(error);
+  });
   const extensionOptions = {
     licenseRequestHeaders: null
   };
@@ -4202,9 +4230,9 @@ const loadBitmovin = async ({
     [type === 'application/x-mpegurl' ? 'hls' : 'dash']: src,
     drm: getDrmConfig({
       url: ['com.apple.fps.1_0', 'com.widevine.alpha', 'com.microsoft.playready'].map(keySystemName => {
-        var _extensionOptions$drm;
+        var _extensionOptions$drm, _extensionOptions$drm2;
 
-        return (_extensionOptions$drm = extensionOptions.drm) === null || _extensionOptions$drm === void 0 ? void 0 : _extensionOptions$drm.servers[keySystemName];
+        return (_extensionOptions$drm = extensionOptions.drm) === null || _extensionOptions$drm === void 0 ? void 0 : (_extensionOptions$drm2 = _extensionOptions$drm.servers) === null || _extensionOptions$drm2 === void 0 ? void 0 : _extensionOptions$drm2[keySystemName];
       }).find(Boolean),
       headers: extensionOptions.licenseRequestHeaders
     }),
@@ -4401,7 +4429,6 @@ const Video = ({
   }, []);
   useEffect(() => {
     if (source && (source.length > 0 || source.src || source.hls || source.dash) && player) {
-      setPlaybackState('loading');
       load(videoElement.current, {
         player,
         drm,
@@ -5031,9 +5058,6 @@ const PremiumPlayer = ({
   };
 
   const [playbackState, setPlaybackState] = useState('init');
-  useEffect(() => {
-    setPlaybackState('loading');
-  }, [source]);
   useEffect(() => {
     if (typeof appCurrentTime === 'number') setTargetTime(appCurrentTime || 0);
     if (typeof appCurrentTime === 'object') setTargetTime((appCurrentTime === null || appCurrentTime === void 0 ? void 0 : appCurrentTime.value) || 0);
@@ -5714,6 +5738,7 @@ const startPlaybackSession = async (playbackApi, options = {}) => {
     onChangeContent,
     onSourceChange,
     onInvalidToken,
+    onSessionStart,
     heartbeatTime = HEARTBEAT_INTERVAL_MS,
     updateTime = UPDATE_INTERVAL_MS
   } = options;
@@ -5771,6 +5796,7 @@ const startPlaybackSession = async (playbackApi, options = {}) => {
     type,
     id
   });
+  onSessionStart === null || onSessionStart === void 0 ? void 0 : onSessionStart(sessionInfo);
   const requestParams = {
     type,
     id,
@@ -7193,6 +7219,21 @@ const LinearTimeRewrite = () => {
     return (_ref$player3 = ref.player) !== null && _ref$player3 !== void 0 && _ref$player3.isLive() ? Math.floor((Date.now() - state.baseTimeInMs) / 1000) + state.seekRangeEnd : Date.now() / 1000 - config.start;
   };
 
+  const isOnLiveEdge = () => {
+    var _ref$player4, _ref$video2;
+
+    return (
+      /**
+       * There is always a gap between media time and seek range end on live edge.
+       * This will lead to a big gap on the seekbar UI for live edge/seek back mode especially when the duration is pretty small.
+       * Given a tolerance of 10 sec should remove the gap and make the UX better.
+       * Note that 10 sec is a magic number that we observed from the YouTube.
+       */
+      // eslint-disable-next-line no-unsafe-optional-chaining
+      ((_ref$player4 = ref.player) === null || _ref$player4 === void 0 ? void 0 : _ref$player4.seekRange().end) - ((_ref$video2 = ref.video) === null || _ref$video2 === void 0 ? void 0 : _ref$video2.currentTime) <= 10
+    );
+  };
+
   return {
     load: async (_, {
       player,
@@ -7208,7 +7249,7 @@ const LinearTimeRewrite = () => {
       });
     },
     getPlaybackStatus: () => {
-      var _ref$video3;
+      var _ref$video4;
 
       if (config.disable) return {};
 
@@ -7222,24 +7263,24 @@ const LinearTimeRewrite = () => {
       }
 
       if (!state.seekRangeEnd) {
-        var _ref$player4;
+        var _ref$player5;
 
-        state.seekRangeEnd = programTimeForPresentationTime((_ref$player4 = ref.player) === null || _ref$player4 === void 0 ? void 0 : _ref$player4.seekRange().end);
+        state.seekRangeEnd = programTimeForPresentationTime((_ref$player5 = ref.player) === null || _ref$player5 === void 0 ? void 0 : _ref$player5.seekRange().end);
         state.baseTimeInMs = Date.now();
       }
 
       if (Object.values(SEEKABLE_END).includes(config.seekable.end)) {
-        var _ref$video2;
+        var _ref$video3;
 
         return {
           duration: getChannelTime(config).duration,
-          currentTime: programTimeForPresentationTime((_ref$video2 = ref.video) === null || _ref$video2 === void 0 ? void 0 : _ref$video2.currentTime)
+          currentTime: programTimeForPresentationTime((_ref$video3 = ref.video) === null || _ref$video3 === void 0 ? void 0 : _ref$video3.currentTime)
         };
       }
 
       return {
         duration: getSeekRangeEnd(),
-        currentTime: programTimeForPresentationTime((_ref$video3 = ref.video) === null || _ref$video3 === void 0 ? void 0 : _ref$video3.currentTime)
+        currentTime: programTimeForPresentationTime((_ref$video4 = ref.video) === null || _ref$video4 === void 0 ? void 0 : _ref$video4.currentTime)
       };
     },
     getSeekbarProps: () => {
@@ -7248,16 +7289,20 @@ const LinearTimeRewrite = () => {
       const seekRangeEnd = getSeekRangeEnd();
 
       if (config.seekable.back > 0) {
+        var _ref$video5;
+
         return {
-          min: seekRangeEnd - config.seekable.back,
-          max: seekRangeEnd
+          min: Math.max(0, seekRangeEnd - config.seekable.back),
+          max: isOnLiveEdge() ? programTimeForPresentationTime((_ref$video5 = ref.video) === null || _ref$video5 === void 0 ? void 0 : _ref$video5.currentTime) : seekRangeEnd
         };
       }
 
       if (config.seekable.end === SEEKABLE_END.LIVE_EDGE) {
+        var _ref$video6;
+
         return {
           min: 0,
-          max: seekRangeEnd
+          max: isOnLiveEdge() ? programTimeForPresentationTime((_ref$video6 = ref.video) === null || _ref$video6 === void 0 ? void 0 : _ref$video6.currentTime) : seekRangeEnd
         };
       }
 
@@ -7339,6 +7384,7 @@ const PremiumPlusPlayer = ({
   onPlaybackStateChange,
   onChange,
   onSourceTypeChanged,
+  onPlaybackApiResponse,
   sendLog,
   playbackState: appPlaybackState,
   ...rest
@@ -7406,7 +7452,7 @@ const PremiumPlusPlayer = ({
 
     logTarget.current = mapLogEvents({
       playerName: ['shaka', 'bitmovin'].find(name => name in rest),
-      version: "1.11.1",
+      version: "1.12.0",
       video: videoRef.current
     });
 
@@ -7427,6 +7473,7 @@ const PremiumPlusPlayer = ({
       media: videoRef.current,
       getCurrentTime: () => getMediaTime(videoRef.current, plugins).currentTime,
       onChangeContent: data => {
+        onPlaybackApiResponse === null || onPlaybackApiResponse === void 0 ? void 0 : onPlaybackApiResponse('content', data);
         const currentContent = getContentInfo(data);
         setContentData(currentContent);
         const {
@@ -7457,6 +7504,9 @@ const PremiumPlusPlayer = ({
             sections: [sourceSettings]
           }));
         }
+      },
+      onSessionStart: resData => {
+        onPlaybackApiResponse === null || onPlaybackApiResponse === void 0 ? void 0 : onPlaybackApiResponse('start', resData);
       },
       cache: preloadMap
     }; // TODO ignore live end error from /start /info
@@ -7728,6 +7778,7 @@ PremiumPlusPlayer.propTypes = {
   onPlaybackStateChange: PropTypes.func,
   onChange: PropTypes.func,
   onSourceTypeChanged: PropTypes.func,
+  onPlaybackApiResponse: PropTypes.func,
   sendLog: PropTypes.func,
   playbackState: PropTypes.string
 };

@@ -343,6 +343,31 @@ const loadShaka = async (videoElement, config = {}) => {
   shaka.polyfill.installAll();
   player = new shaka.Player(videoElement);
   player.configure(config);
+  player.addEventListener('error', event => {
+    var _window$Sentry;
+
+    console.log(event);
+    const {
+      detail = {}
+    } = event;
+    const error = new Error(`Player: ${detail.code}/${detail.name}`);
+
+    if (!detail || /The video element has thrown a media error|Video element triggered an Error/.test(detail.message)) {
+      return;
+    }
+
+    videoElement.dispatchEvent(Object.assign(new CustomEvent('error'), {
+      error: detail,
+      message: `Player Error: ${detail.code}/${detail.message.split(' ', 3)[2]}`
+    }));
+
+    if (detail.code === 1001) {
+      console.info('Stream unavailable, unload source');
+      player.unload();
+    }
+
+    (_window$Sentry = window.Sentry) === null || _window$Sentry === void 0 ? void 0 : _window$Sentry.captureException(error);
+  });
   const extensionOptions = {
     licenseRequestHeaders: null
   };
@@ -615,9 +640,9 @@ const loadBitmovin = async ({
     [type === 'application/x-mpegurl' ? 'hls' : 'dash']: src,
     drm: getDrmConfig({
       url: ['com.apple.fps.1_0', 'com.widevine.alpha', 'com.microsoft.playready'].map(keySystemName => {
-        var _extensionOptions$drm;
+        var _extensionOptions$drm, _extensionOptions$drm2;
 
-        return (_extensionOptions$drm = extensionOptions.drm) === null || _extensionOptions$drm === void 0 ? void 0 : _extensionOptions$drm.servers[keySystemName];
+        return (_extensionOptions$drm = extensionOptions.drm) === null || _extensionOptions$drm === void 0 ? void 0 : (_extensionOptions$drm2 = _extensionOptions$drm.servers) === null || _extensionOptions$drm2 === void 0 ? void 0 : _extensionOptions$drm2[keySystemName];
       }).find(Boolean),
       headers: extensionOptions.licenseRequestHeaders
     }),
@@ -914,10 +939,19 @@ const load = async (media, {
   plugins = [],
   drm
 }, source) => {
+  const preferManifestType = needNativeHls() ? 'hls' : 'dash';
   const preferred = getSource(source, {
-    preferManifestType: needNativeHls() ? 'hls' : 'dash',
+    preferManifestType,
     fallbackDrm: drm
-  });
+  }); // There's no use case that changing DRM options without changing manifest URL, just skip
+
+  if (player.lastSrc === (preferred === null || preferred === void 0 ? void 0 : preferred.src)) {
+    console.info('src is unchanged, skip load', preferred.src);
+    return;
+  }
+
+  player.lastSrc = preferred === null || preferred === void 0 ? void 0 : preferred.src;
+  media.dispatchEvent(new Event('loadstart'));
   const merged = await plugins.reduce(async (loadChain, plugin) => {
     var _plugin$load;
 
@@ -926,7 +960,8 @@ const load = async (media, {
       video: media,
       player,
       source: currentSource,
-      startTime
+      startTime,
+      streamFormat: preferManifestType
     }));
     return overrides ? { ...currentSource,
       ...(overrides.url && {
@@ -951,14 +986,7 @@ const load = async (media, {
   player.configure({
     drm: drmOptions
   });
-  player.configureExtensions(extensions); // There's no use case that changing DRM options without changing manifest URL, just skip
-
-  if (player.lastSrc === merged.src) {
-    console.info('src is unchanged, skip load', merged.src);
-    return;
-  }
-
-  player.lastSrc = merged.src;
+  player.configureExtensions(extensions);
   return player.unload().then(() => player.load(merged.src, merged.startTime, merged.type)).then(() => media.dispatchEvent(new Event('canplay'))).catch(error => {
     media.dispatchEvent(Object.assign(new CustomEvent('error'), {
       error
