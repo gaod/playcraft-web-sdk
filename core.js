@@ -361,7 +361,7 @@ const loadShaka = async (videoElement, config = {}) => {
       message: `Player Error: ${detail.code}/${detail.message.split(' ', 3)[2]}`
     }));
 
-    if (detail.code === 1001) {
+    if (detail.code === 1001 || detail.severity === 2) {
       console.info('Stream unavailable, unload source');
       player.unload();
     }
@@ -485,7 +485,7 @@ const keySystems = {
 
 const getDrmOptions$1 = source => {
   const drm = source.drm && Object.entries(source.drm).reduce((result, [keySystemId, options]) => {
-    const uri = options.licenseUri || options;
+    const uri = typeof options === 'string' ? options : options.licenseUri;
 
     if (uri) {
       const keySystemName = keySystems[keySystemId] || keySystemId;

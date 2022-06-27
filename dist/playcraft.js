@@ -1102,7 +1102,7 @@ function convertToSeconds(timeString) {
 function getVersion() {
   try {
     // eslint-disable-next-line no-undef
-    return "1.12.0";
+    return "1.12.1";
   } catch (e) {
     return undefined;
   }
@@ -1984,7 +1984,7 @@ const keySystems = {
 
 const getDrmOptions = source => {
   const drm = source.drm && Object.entries(source.drm).reduce((result, [keySystemId, options]) => {
-    const uri = options.licenseUri || options;
+    const uri = typeof options === 'string' ? options : options.licenseUri;
 
     if (uri) {
       const keySystemName = keySystems[keySystemId] || keySystemId;
@@ -5385,7 +5385,7 @@ const loadShaka = async (videoElement, config = {}) => {
       message: `Player Error: ${detail.code}/${detail.message.split(' ', 3)[2]}`
     }));
 
-    if (detail.code === 1001) {
+    if (detail.code === 1001 || detail.severity === 2) {
       console.info('Stream unavailable, unload source');
       player.unload();
     }
@@ -7947,7 +7947,7 @@ const PremiumPlusPlayer = ({
   playbackState: appPlaybackState,
   ...rest
 }) => {
-  var _lastSession$current3, _contentData$section, _contentData$section2, _contentData$section5, _contentData$section6, _uiState$streamEvents;
+  var _contentData$section, _contentData$section2, _contentData$section5, _contentData$section6, _uiState$streamEvents;
 
   const videoRef = React.useRef();
   const lastSession = React.useRef({});
@@ -8010,7 +8010,7 @@ const PremiumPlusPlayer = ({
 
     logTarget.current = mapLogEvents({
       playerName: ['shaka', 'bitmovin'].find(name => name in rest),
-      version: "1.12.0",
+      version: "1.12.1",
       video: videoRef.current
     });
 
@@ -8141,18 +8141,18 @@ const PremiumPlusPlayer = ({
     }
   }, [sourceType]);
   const source = React.useMemo(() => {
-    var _lastSession$current2;
+    var _lastSession$current2, _lastSession$current3, _lastSession$current4, _lastSession$current5;
 
     return getStreamInfo((_lastSession$current2 = lastSession.current) === null || _lastSession$current2 === void 0 ? void 0 : _lastSession$current2.sources, {
       type: settingState.preferred['source-type'],
-      licenseUri: playbackInfo.drmPortalUrl,
-      certificateUri: `${playbackInfo.drmPortalUrl}/fairplay_cert`,
+      licenseUri: (_lastSession$current3 = lastSession.current) === null || _lastSession$current3 === void 0 ? void 0 : _lastSession$current3.drmPortalUrl,
+      certificateUri: `${(_lastSession$current4 = lastSession.current) === null || _lastSession$current4 === void 0 ? void 0 : _lastSession$current4.drmPortalUrl}/fairplay_cert`,
       licenseHeaders: getEnterpriseDrmHeaders({
-        token: playbackInfo.token
+        token: (_lastSession$current5 = lastSession.current) === null || _lastSession$current5 === void 0 ? void 0 : _lastSession$current5.token
       }),
       thumbnailEnabled: thumbnailSeeking
     });
-  }, [(_lastSession$current3 = lastSession.current) === null || _lastSession$current3 === void 0 ? void 0 : _lastSession$current3.sources, settingState.preferred['source-type'], thumbnailSeeking]); // TODO: extract ? cast things
+  }, [lastSession.current, settingState.preferred['source-type'], thumbnailSeeking]); // TODO: extract ? cast things
 
   const {
     appId
@@ -8224,16 +8224,16 @@ const PremiumPlusPlayer = ({
       setPlaybackState(state);
 
       if (state === 'error') {
-        var _lastSession$current$, _lastSession$current4;
+        var _lastSession$current$, _lastSession$current6;
 
-        (_lastSession$current$ = (_lastSession$current4 = lastSession.current).end) === null || _lastSession$current$ === void 0 ? void 0 : _lastSession$current$.call(_lastSession$current4);
+        (_lastSession$current$ = (_lastSession$current6 = lastSession.current).end) === null || _lastSession$current$ === void 0 ? void 0 : _lastSession$current$.call(_lastSession$current6);
         lastSession.current = {};
       }
 
       if (state === 'paused' && playbackState !== 'loading' || event.type === 'seeking') {
-        var _lastSession$current$2, _lastSession$current5;
+        var _lastSession$current$2, _lastSession$current7;
 
-        (_lastSession$current$2 = (_lastSession$current5 = lastSession.current).updateLastPlayed) === null || _lastSession$current$2 === void 0 ? void 0 : _lastSession$current$2.call(_lastSession$current5);
+        (_lastSession$current$2 = (_lastSession$current7 = lastSession.current).updateLastPlayed) === null || _lastSession$current$2 === void 0 ? void 0 : _lastSession$current$2.call(_lastSession$current7);
       }
 
       if (state === 'ended') {

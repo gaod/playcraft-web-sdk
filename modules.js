@@ -8025,7 +8025,8 @@ const getBufferedAhead = (mediaSource, video) => {
 const UPDATE_SPEEDUP_INTERVAL = 100;
 
 const latencyManager = (player, video) => {
-  window.segmentTimestampOffset = 2.5;
+  // Custom DashParser offset availabilityStartTime by this to start segment download earlier
+  window.segmentTimestampOffset = 0.5;
   DashParser.register(player.shaka);
   let updateIntervalId;
   const currentOptions = {
@@ -8130,6 +8131,7 @@ const latencyManager = (player, video) => {
     }
 
     Object.assign(currentOptions, config);
+    if ('segmentTimestampOffset' in config) window.segmentTimestampOffset = config.segmentTimestampOffset;
   };
 
   return {
