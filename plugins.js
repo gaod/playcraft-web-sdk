@@ -890,7 +890,9 @@ const ensureDaiApi = async () => {
   return window.google.ima.dai.api;
 };
 
-const ImaDaiPlugin = () => {
+const ImaDaiPlugin = ({
+  requestOptionOverrides = {}
+} = {}) => {
   const emitter = mitt();
   const ref = {};
 
@@ -983,7 +985,8 @@ const ImaDaiPlugin = () => {
         contentSourceId: vodOptions === null || vodOptions === void 0 ? void 0 : vodOptions.content_source_id,
         videoId: vodOptions === null || vodOptions === void 0 ? void 0 : vodOptions.video_id,
         assetKey: liveOptions === null || liveOptions === void 0 ? void 0 : liveOptions.asset_key,
-        format: streamFormat
+        format: streamFormat,
+        ...requestOptionOverrides
       };
       const streamRequest = Object.assign(liveOptions ? new daiApi.LiveStreamRequest() : new daiApi.VODStreamRequest(), requestOptions);
       const url = await new Promise(resolve => {

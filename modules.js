@@ -200,141 +200,6 @@ const getContentInfo = data => {
   };
 };
 
-const deepEqual = (current, updated) => JSON.stringify(current) === JSON.stringify(updated);
-
-const HEARTBEAT_INTERVAL_MS = 10000;
-const UPDATE_INTERVAL_MS = 10000;
-
-const isContentExpired = content => typeof (content === null || content === void 0 ? void 0 : content.end_time) === 'number' && content.end_time * 1000 <= Date.now();
-
-const startPlaybackSession = async (playbackApi, options = {}) => {
-  const emitter = mitt();
-  const {
-    type,
-    id,
-    getCurrentTime,
-    cache
-  } = options;
-  const {
-    onChangeContent,
-    onSourceChange,
-    onInvalidToken,
-    onSessionStart,
-    heartbeatTime = HEARTBEAT_INTERVAL_MS,
-    updateTime = UPDATE_INTERVAL_MS
-  } = options;
-  const state = {}; // get last playback time to start playback fast
-  // getContent is not critical, so don't block playback if it hangs or fails(ignored in API logic)
-
-  const loadContent = () => {
-    var _options$cache, _options$cache$get;
-
-    return Promise.race([// eslint-disable-next-line no-use-before-define
-    updateContent((_options$cache = options.cache) === null || _options$cache === void 0 ? void 0 : (_options$cache$get = _options$cache.get(`${type}/${id}`)) === null || _options$cache$get === void 0 ? void 0 : _options$cache$get.content), new Promise(resolve => {
-      setTimeout(resolve, UPDATE_INTERVAL_MS);
-    })]);
-  };
-
-  const getPlaybackInfo = async () => {
-    var _cache$get;
-
-    state.sources = ((cache === null || cache === void 0 ? void 0 : (_cache$get = cache.get(`${type}/${id}`)) === null || _cache$get === void 0 ? void 0 : _cache$get.playbackInfo) || (await playbackApi.getPlaybackInfo({
-      type,
-      id,
-      token: state.token
-    }))).sources;
-    onSourceChange === null || onSourceChange === void 0 ? void 0 : onSourceChange(state.sources);
-  };
-
-  async function updateContent(contentInCache) {
-    var _state$content;
-
-    const content = !contentInCache || isContentExpired(contentInCache) ? await playbackApi.getContent({
-      type,
-      id
-    }) : contentInCache;
-
-    if (!deepEqual(content, state.content)) {
-      state.content = content;
-      onChangeContent === null || onChangeContent === void 0 ? void 0 : onChangeContent({
-        type,
-        ...content,
-        sources: state.sources
-      });
-    }
-
-    if (content.end_time && content.end_time === ((_state$content = state.content) === null || _state$content === void 0 ? void 0 : _state$content.end_time)) {
-      clearTimeout(state.endTimeoutId);
-      state.endTimeoutId = setTimeout(() => {
-        loadContent();
-        getPlaybackInfo();
-      }, content.end_time * 1000 - Date.now());
-    }
-  }
-
-  const waitForContent = loadContent();
-  const sessionInfo = await playbackApi.startPlayback({
-    type,
-    id
-  });
-  onSessionStart === null || onSessionStart === void 0 ? void 0 : onSessionStart(sessionInfo);
-  const requestParams = {
-    type,
-    id,
-    token: sessionInfo.token
-  };
-  state.token = sessionInfo.token;
-  await getPlaybackInfo();
-  let updateIntervalId;
-
-  if (type === 'lives') {
-    updateIntervalId = setInterval(updateContent, updateTime);
-  }
-
-  let lastPlayedTime;
-
-  const updateLastPlayed = () => {
-    const currentTime = getCurrentTime === null || getCurrentTime === void 0 ? void 0 : getCurrentTime();
-
-    if (currentTime >= 0 && lastPlayedTime !== currentTime) {
-      lastPlayedTime = currentTime;
-      playbackApi.updateLastPlayed({ ...requestParams,
-        time: currentTime
-      });
-    }
-  };
-
-  if (type === 'videos') {
-    updateIntervalId = setInterval(updateLastPlayed, updateTime);
-  }
-
-  const heartbeatIntervalId = setInterval(() => playbackApi.heartbeat(requestParams).catch(error => {
-    var _error$response;
-
-    if (/4\d\d/.test((_error$response = error.response) === null || _error$response === void 0 ? void 0 : _error$response.status)) {
-      clearInterval(heartbeatIntervalId);
-      onInvalidToken === null || onInvalidToken === void 0 ? void 0 : onInvalidToken(error);
-    }
-  }), heartbeatTime);
-
-  const end = () => {
-    updateLastPlayed();
-    clearInterval(updateIntervalId);
-    clearInterval(heartbeatIntervalId);
-    clearTimeout(state.endTimeoutId);
-    emitter.emit('playbackEnded');
-    return playbackApi.endPlayback(requestParams);
-  };
-
-  await waitForContent;
-  return { ...state,
-    token: sessionInfo.token,
-    drmPortalUrl: sessionInfo.drm_portal_url,
-    updateLastPlayed,
-    end
-  };
-};
-
 const on = (target, name, handler) => {
   target.addEventListener(name, handler);
   return () => target.removeEventListener(name, handler);
@@ -348,216 +213,6 @@ const once = (target, name, handler) => {
 
   target.addEventListener(name, oneTime);
   return () => target.removeEventListener(name, oneTime);
-};
-
-/* eslint-disable no-bitwise */
-const uuidv4 = () => {
-  const crypto = window.crypto || window.msCrypto;
-  return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
-};
-
-const modes = {
-  videos: 'video',
-  lives: 'live'
-};
-const logEventNames = {
-  playbackBegan: 'video_playback_began',
-  playbackStarted: 'video_playback_started',
-  playbackStopped: 'video_playback_stopped',
-  playbackEnded: 'video_playback_ended',
-  bufferingStarted: 'video_buffering_started',
-  bufferingEnded: 'video_buffering_ended',
-  seeked: 'video_seeking_ended',
-  playbackError: 'video_playback_error_occurred',
-  playing: 'play',
-  paused: 'pause',
-  rewind: 'rewind',
-  forward: 'forward',
-  previousEpisode: 'previous_episode',
-  nextEpisode: 'next_episode',
-  openSettings: 'setting_page_entered',
-  closeSettings: 'setting_page_exited',
-  adPlaybackStarted: 'ad_playback_started',
-  adPlaybackStopped: 'ad_playback_stopped'
-};
-
-const mapLogEvents = ({
-  video,
-  session = video,
-  version,
-  playerName,
-  getPlaybackStatus = () => video
-}) => {
-  var _session$getContent;
-
-  const emitter = mitt();
-  const state = {
-    status: 'init',
-    seeking: false,
-    playerStartTime: Date.now(),
-    moduleStartTime: Date.now(),
-    content: ((_session$getContent = session.getContent) === null || _session$getContent === void 0 ? void 0 : _session$getContent.call(session)) || {}
-  };
-
-  const commonPropties = () => {
-    var _state$content$sectio;
-
-    return {
-      player_name: playerName,
-      playback_module_version: version,
-      playback_mode: modes[state.content.type],
-      playback_session_id: state.sessionId,
-      id: state.content.id,
-      name: state.content.title,
-      ...(state.content.type === 'videos' && {
-        current_position: state.currentTime,
-        video_total_duration: state.duration
-      }),
-      ...(state.content.type === 'lives' && {
-        section_id: (_state$content$sectio = state.content.section) === null || _state$content$sectio === void 0 ? void 0 : _state$content$sectio.id,
-        name_2: state.content.channelName
-      }),
-      SSAI: state.ssaiProvider || 'None'
-    };
-  };
-
-  const dispatchStart = () => {
-    if (state.status === 'started') {
-      return;
-    }
-
-    state.status = 'started';
-    state.lastStartTime = Date.now();
-    const eventName = state.isPlayingAd ? 'adPlaybackStarted' : 'playbackStarted';
-    emitter.emit(eventName, commonPropties());
-  };
-
-  const dispatchStop = () => {
-    if (state.status !== 'started') {
-      return;
-    }
-
-    state.status = 'stopped';
-    const played = (Date.now() - state.lastStartTime) / 1000;
-
-    if (state.isPlayingAd) {
-      state.adPlayedDuration += played;
-    } else {
-      state.playedDuration += played;
-    }
-
-    const eventName = state.isPlayingAd ? 'adPlaybackStopped' : 'playbackStopped';
-    emitter.emit(eventName, { ...commonPropties(),
-      ...(state.isPlayingAd && {
-        ad_played_duration: played
-      })
-    });
-  };
-
-  const registered = [on(video, 'error', event => {
-    var _event$error, _event$error2, _event$error2$data;
-
-    emitter.emit('playbackError', {
-      module_error_code: ((_event$error = event.error) === null || _event$error === void 0 ? void 0 : _event$error.code) || ((_event$error2 = event.error) === null || _event$error2 === void 0 ? void 0 : (_event$error2$data = _event$error2.data) === null || _event$error2$data === void 0 ? void 0 : _event$error2$data.code),
-      ...commonPropties()
-    });
-  }), once(video, 'playerStarted', () => {
-    state.playerStartTime = Date.now();
-  }), on(video, 'durationchange', () => {
-    // duration may change when playing an ad stitched stream, take only initial value
-    if (!state.duration) {
-      state.duration = getPlaybackStatus().duration;
-    }
-  }), once(video, 'canplay', () => {
-    state.status = 'began';
-    state.sessionId = uuidv4();
-    state.playedDuration = 0;
-    emitter.emit('playbackBegan', {
-      player_startup_time: (state.playerStartTime - state.moduleStartTime) / 1000,
-      video_startup_time: (Date.now() - state.moduleStartTime) / 1000,
-      ...commonPropties()
-    });
-  }), on(video, 'playing', dispatchStart), on(video, 'waiting', () => {
-    if (!state.bufferingStartTime) {
-      emitter.emit('bufferingStarted', commonPropties());
-      state.bufferingStartTime = Date.now();
-    }
-  }), on(video, 'timeupdate', () => {
-    state.currentTime = getPlaybackStatus().currentTime;
-
-    if (state.bufferingStartTime) {
-      emitter.emit('bufferingEnded', {
-        buffering_second: (Date.now() - state.bufferingStartTime) / 1000,
-        ...commonPropties()
-      });
-      state.bufferingStartTime = undefined;
-    }
-  }), on(video, 'pause', dispatchStop), on(video, 'seeking', () => {
-    state.seekingFrom = state.currentTime;
-  }), on(session, 'userSeeking', () => {
-    state.seeking = true;
-  }), on(video, 'seeked', () => {
-    if (state.seeking) {
-      emitter.emit('seeked', {
-        seeking_from: state.seekingFrom,
-        seeking_to: video.currentTime,
-        ...commonPropties()
-      });
-    }
-
-    state.seeking = false;
-  }), on(session, 'sectionChange', () => {
-    dispatchStop();
-    state.content = session.getContent();
-    dispatchStart();
-  }), once(video, 'emptied', () => {
-    if (state.status === 'started') {
-      dispatchStop();
-    }
-
-    state.status = 'init';
-    emitter.emit('playbackEnded', {
-      video_playback_ended_at_percentage: state.currentTime / state.duration,
-      video_total_played_duration: state.playedDuration,
-      ...(state.ssaiProvider && {
-        ad_total_played_duration: state.adPlayedDuration
-      }),
-      ...commonPropties()
-    });
-  }), once(video, 'loadedAdMetadata', event => {
-    state.ssaiProvider = event.data.provider;
-    state.adPlayedDuration = 0;
-  }), on(session, 'adBreakStarted', () => {
-    dispatchStop();
-    state.isPlayingAd = true;
-
-    if (!state.seeking) {
-      dispatchStart();
-    }
-  }), on(session, 'adBreakEnded', () => {
-    dispatchStop();
-    state.isPlayingAd = false;
-
-    if (!state.seeking) {
-      dispatchStart();
-    }
-  })];
-  return {
-    addEventListener: (name, handler) => emitter.on(name, handler),
-    all: handler => emitter.on('*', handler),
-    emit: (name, {
-      currentTime
-    }) => {
-      emitter.emit(name, {
-        current_position: currentTime,
-        ...commonPropties()
-      });
-    },
-    updateContent: content => {
-      state.content = content;
-    },
-    reset: () => registered.forEach(off => off())
-  };
 };
 
 const EnvironmentErrorName = {
@@ -876,6 +531,370 @@ const selectHlsQualities = async (source, restrictions = {}) => {
   return source;
 };
  // for unit test
+
+/* eslint-disable no-param-reassign */
+
+const SHAKA_LIVE_DURATION = 4294967296;
+
+const isFinite = duration => duration < SHAKA_LIVE_DURATION;
+
+const deepEqual = (current, updated) => JSON.stringify(current) === JSON.stringify(updated);
+
+const HEARTBEAT_INTERVAL_MS = 10000;
+const UPDATE_INTERVAL_MS = 10000;
+
+const isContentExpired = content => typeof (content === null || content === void 0 ? void 0 : content.end_time) === 'number' && content.end_time * 1000 <= Date.now();
+
+const startPlaybackSession = async (playbackApi, options = {}) => {
+  const emitter = mitt();
+  const {
+    type,
+    id,
+    getCurrentTime,
+    cache,
+    media
+  } = options;
+  const {
+    onChangeContent,
+    onSourceChange,
+    onInvalidToken,
+    onSessionStart,
+    requestNewSession,
+    heartbeatTime = HEARTBEAT_INTERVAL_MS,
+    updateTime = UPDATE_INTERVAL_MS
+  } = options;
+  const state = {}; // get last playback time to start playback fast
+  // getContent is not critical, so don't block playback if it hangs or fails(ignored in API logic)
+
+  const loadContent = () => {
+    var _options$cache, _options$cache$get;
+
+    return Promise.race([// eslint-disable-next-line no-use-before-define
+    updateContent((_options$cache = options.cache) === null || _options$cache === void 0 ? void 0 : (_options$cache$get = _options$cache.get(`${type}/${id}`)) === null || _options$cache$get === void 0 ? void 0 : _options$cache$get.content), new Promise(resolve => {
+      setTimeout(resolve, UPDATE_INTERVAL_MS);
+    })]);
+  };
+
+  const getPlaybackInfo = async () => {
+    var _cache$get;
+
+    state.sources = ((cache === null || cache === void 0 ? void 0 : (_cache$get = cache.get(`${type}/${id}`)) === null || _cache$get === void 0 ? void 0 : _cache$get.playbackInfo) || (await playbackApi.getPlaybackInfo({
+      type,
+      id,
+      token: state.token
+    }))).sources;
+    onSourceChange === null || onSourceChange === void 0 ? void 0 : onSourceChange(state.sources);
+  };
+
+  async function updateContent(contentInCache) {
+    var _state$content;
+
+    const content = !contentInCache || isContentExpired(contentInCache) ? await playbackApi.getContent({
+      type,
+      id
+    }) : contentInCache;
+
+    if (!deepEqual(content, state.content)) {
+      state.content = content;
+      onChangeContent === null || onChangeContent === void 0 ? void 0 : onChangeContent({
+        type,
+        ...content,
+        sources: state.sources
+      });
+    }
+
+    if (content.end_time && content.end_time === ((_state$content = state.content) === null || _state$content === void 0 ? void 0 : _state$content.end_time)) {
+      clearTimeout(state.endTimeoutId);
+      state.endTimeoutId = setTimeout(() => {
+        if (isFinite(media.duration)) {
+          requestNewSession();
+        }
+      }, content.end_time * 1000 - Date.now());
+    }
+  }
+
+  const waitForContent = loadContent();
+  const sessionInfo = await playbackApi.startPlayback({
+    type,
+    id
+  });
+  onSessionStart === null || onSessionStart === void 0 ? void 0 : onSessionStart(sessionInfo);
+  const requestParams = {
+    type,
+    id,
+    token: sessionInfo.token
+  };
+  state.token = sessionInfo.token;
+  await getPlaybackInfo();
+  let updateIntervalId;
+
+  if (type === 'lives') {
+    updateIntervalId = setInterval(updateContent, updateTime);
+  }
+
+  let lastPlayedTime;
+
+  const updateLastPlayed = () => {
+    const currentTime = getCurrentTime === null || getCurrentTime === void 0 ? void 0 : getCurrentTime();
+
+    if (currentTime >= 0 && lastPlayedTime !== currentTime) {
+      lastPlayedTime = currentTime;
+      playbackApi.updateLastPlayed({ ...requestParams,
+        time: currentTime
+      });
+    }
+  };
+
+  if (type === 'videos') {
+    updateIntervalId = setInterval(updateLastPlayed, updateTime);
+  }
+
+  const heartbeatIntervalId = setInterval(() => playbackApi.heartbeat(requestParams).catch(error => {
+    var _error$response;
+
+    if (/4\d\d/.test((_error$response = error.response) === null || _error$response === void 0 ? void 0 : _error$response.status)) {
+      clearInterval(heartbeatIntervalId);
+      onInvalidToken === null || onInvalidToken === void 0 ? void 0 : onInvalidToken(error);
+    }
+  }), heartbeatTime);
+
+  const end = () => {
+    updateLastPlayed();
+    clearInterval(updateIntervalId);
+    clearInterval(heartbeatIntervalId);
+    clearTimeout(state.endTimeoutId);
+    emitter.emit('playbackEnded');
+    return playbackApi.endPlayback(requestParams);
+  };
+
+  await waitForContent;
+  return { ...state,
+    token: sessionInfo.token,
+    drmPortalUrl: sessionInfo.drm_portal_url,
+    updateLastPlayed,
+    end
+  };
+};
+
+/* eslint-disable no-bitwise */
+const uuidv4 = () => {
+  const crypto = window.crypto || window.msCrypto;
+  return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+};
+
+const modes = {
+  videos: 'video',
+  lives: 'live'
+};
+const logEventNames = {
+  playbackBegan: 'video_playback_began',
+  playbackStarted: 'video_playback_started',
+  playbackStopped: 'video_playback_stopped',
+  playbackEnded: 'video_playback_ended',
+  bufferingStarted: 'video_buffering_started',
+  bufferingEnded: 'video_buffering_ended',
+  playbackSpeedChange: 'playback_speed_change',
+  seeked: 'video_seeking_ended',
+  playbackError: 'video_playback_error_occurred',
+  playing: 'play',
+  paused: 'pause',
+  rewind: 'rewind',
+  forward: 'forward',
+  speedSettingChange: 'speed_setting_change',
+  previousEpisode: 'previous_episode',
+  nextEpisode: 'next_episode',
+  openSettings: 'setting_page_entered',
+  closeSettings: 'setting_page_exited',
+  adPlaybackStarted: 'ad_playback_started',
+  adPlaybackStopped: 'ad_playback_stopped'
+};
+
+const mapLogEvents = ({
+  video,
+  session = video,
+  version,
+  playerName,
+  getPlaybackStatus = () => video
+}) => {
+  var _session$getContent;
+
+  const emitter = mitt();
+  const state = {
+    status: 'init',
+    seeking: false,
+    playerStartTime: Date.now(),
+    moduleStartTime: Date.now(),
+    content: ((_session$getContent = session.getContent) === null || _session$getContent === void 0 ? void 0 : _session$getContent.call(session)) || {}
+  };
+
+  const commonProperties = () => {
+    var _state$content$sectio;
+
+    return {
+      player_name: playerName,
+      playback_module_version: version,
+      playback_mode: modes[state.content.type],
+      playback_session_id: state.sessionId,
+      id: state.content.id,
+      name: state.content.title,
+      ...(state.content.type === 'videos' && {
+        current_position: state.currentTime,
+        video_total_duration: state.duration
+      }),
+      ...(state.content.type === 'lives' && {
+        section_id: (_state$content$sectio = state.content.section) === null || _state$content$sectio === void 0 ? void 0 : _state$content$sectio.id,
+        name_2: state.content.channelName
+      }),
+      SSAI: state.ssaiProvider || 'None'
+    };
+  };
+
+  const dispatchStart = () => {
+    if (state.status === 'started') {
+      return;
+    }
+
+    state.status = 'started';
+    state.lastStartTime = Date.now();
+    const eventName = state.isPlayingAd ? 'adPlaybackStarted' : 'playbackStarted';
+    emitter.emit(eventName, commonProperties());
+  };
+
+  const dispatchStop = () => {
+    if (state.status !== 'started') {
+      return;
+    }
+
+    state.status = 'stopped';
+    const played = (Date.now() - state.lastStartTime) / 1000;
+
+    if (state.isPlayingAd) {
+      state.adPlayedDuration += played;
+    } else {
+      state.playedDuration += played;
+    }
+
+    const eventName = state.isPlayingAd ? 'adPlaybackStopped' : 'playbackStopped';
+    emitter.emit(eventName, { ...commonProperties(),
+      ...(state.isPlayingAd && {
+        ad_played_duration: played
+      })
+    });
+  };
+
+  const registered = [on(video, 'error', event => {
+    var _event$error, _event$error2, _event$error2$data;
+
+    emitter.emit('playbackError', {
+      module_error_code: ((_event$error = event.error) === null || _event$error === void 0 ? void 0 : _event$error.code) || ((_event$error2 = event.error) === null || _event$error2 === void 0 ? void 0 : (_event$error2$data = _event$error2.data) === null || _event$error2$data === void 0 ? void 0 : _event$error2$data.code),
+      ...commonProperties()
+    });
+  }), once(video, 'playerStarted', () => {
+    state.playerStartTime = Date.now();
+  }), on(video, 'durationchange', () => {
+    // duration may change when playing an ad stitched stream, take only initial value
+    if (!state.duration) {
+      state.duration = getPlaybackStatus().duration;
+    }
+  }), once(video, 'canplay', () => {
+    state.status = 'began';
+    state.sessionId = uuidv4();
+    state.playedDuration = 0;
+    emitter.emit('playbackBegan', {
+      player_startup_time: (state.playerStartTime - state.moduleStartTime) / 1000,
+      video_startup_time: (Date.now() - state.moduleStartTime) / 1000,
+      ...commonProperties()
+    });
+  }), on(video, 'playing', dispatchStart), on(video, 'waiting', () => {
+    if (!state.bufferingStartTime) {
+      emitter.emit('bufferingStarted', commonProperties());
+      state.bufferingStartTime = Date.now();
+    }
+  }), on(video, 'timeupdate', () => {
+    state.currentTime = getPlaybackStatus().currentTime;
+
+    if (state.bufferingStartTime) {
+      emitter.emit('bufferingEnded', {
+        buffering_second: (Date.now() - state.bufferingStartTime) / 1000,
+        ...commonProperties()
+      });
+      state.bufferingStartTime = undefined;
+    }
+  }), on(video, 'pause', dispatchStop), on(video, 'seeking', () => {
+    state.seekingFrom = state.currentTime;
+  }), on(session, 'userSeeking', () => {
+    state.seeking = true;
+  }), on(video, 'seeked', () => {
+    if (state.seeking) {
+      emitter.emit('seeked', {
+        seeking_from: state.seekingFrom,
+        seeking_to: video.currentTime,
+        ...commonProperties()
+      });
+    }
+
+    state.seeking = false;
+  }), on(video, 'ratechange', () => {
+    emitter.emit('playbackSpeedChange', {
+      playbackSpeed: video.playbackRate,
+      ...commonProperties()
+    });
+  }), on(session, 'sectionChange', () => {
+    dispatchStop();
+    state.content = session.getContent();
+    dispatchStart();
+  }), once(video, 'emptied', () => {
+    if (state.status === 'started') {
+      dispatchStop();
+    }
+
+    state.status = 'init';
+    emitter.emit('playbackEnded', {
+      video_playback_ended_at_percentage: state.currentTime / state.duration,
+      video_total_played_duration: state.playedDuration,
+      ...(state.ssaiProvider && {
+        ad_total_played_duration: state.adPlayedDuration
+      }),
+      ...commonProperties()
+    });
+  }), once(video, 'loadedAdMetadata', event => {
+    state.ssaiProvider = event.data.provider;
+    state.adPlayedDuration = 0;
+  }), on(session, 'adBreakStarted', () => {
+    dispatchStop();
+    state.isPlayingAd = true;
+
+    if (!state.seeking) {
+      dispatchStart();
+    }
+  }), on(session, 'adBreakEnded', () => {
+    dispatchStop();
+    state.isPlayingAd = false;
+
+    if (!state.seeking) {
+      dispatchStart();
+    }
+  })];
+  return {
+    addEventListener: (name, handler) => emitter.on(name, handler),
+    all: handler => emitter.on('*', handler),
+    emit: (name, {
+      currentTime
+    }, properties) => {
+      if (name in logEventNames) {
+        emitter.emit(name, {
+          current_position: currentTime,
+          ...properties,
+          ...commonProperties()
+        });
+      }
+    },
+    updateContent: content => {
+      state.content = content;
+    },
+    reset: () => registered.forEach(off => off())
+  };
+};
 
 /* eslint-disable no-empty */
 const storageKey = 'playcraft-tab-lock';

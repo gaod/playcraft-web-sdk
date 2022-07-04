@@ -342,6 +342,13 @@ const loadShaka = async (videoElement, config = {}) => {
   window.shaka = shaka;
   shaka.polyfill.installAll();
   player = new shaka.Player(videoElement);
+  player.configure({
+    manifest: {
+      dash: {
+        ignoreSuggestedPresentationDelay: true
+      }
+    }
+  });
   player.configure(config);
   player.addEventListener('error', event => {
     var _window$Sentry;
@@ -367,6 +374,20 @@ const loadShaka = async (videoElement, config = {}) => {
     }
 
     (_window$Sentry = window.Sentry) === null || _window$Sentry === void 0 ? void 0 : _window$Sentry.captureException(error);
+  });
+  player.addEventListener('adaptation', event => {
+    const {
+      videoBandwidth,
+      width,
+      height
+    } = event.newTrack;
+    videoElement.dispatchEvent(new CustomEvent('downloadQualityChange', {
+      detail: {
+        bitrate: parseInt(videoBandwidth / 1000, 10),
+        height,
+        width
+      }
+    }));
   });
   const extensionOptions = {
     licenseRequestHeaders: null
@@ -733,6 +754,13 @@ const loadBitmovin = async ({
     }));
   });
   player.on(PlayerEvent.StallStarted, () => videoElement.dispatchEvent(new Event('waiting')));
+  player.on(PlayerEvent.VideoDownloadQualityChanged, event => videoElement.dispatchEvent(new CustomEvent('downloadQualityChange', {
+    detail: {
+      bitrate: parseInt(event.targetQuality.bitrate / 1000, 10),
+      height: event.targetQuality.height,
+      width: event.targetQuality.width
+    }
+  })));
   return player;
 };
 
@@ -950,7 +978,8 @@ const load = async (media, {
     return;
   }
 
-  player.lastSrc = preferred === null || preferred === void 0 ? void 0 : preferred.src;
+  player.lastSrc = preferred === null || preferred === void 0 ? void 0 : preferred.src; // playlog v2 depends on this event
+
   media.dispatchEvent(new Event('loadstart'));
   const merged = await plugins.reduce(async (loadChain, plugin) => {
     var _plugin$load;
@@ -1009,7 +1038,6 @@ const seek = (media, {
     // set again to reflect instantly
 
     media.currentTime = seekTime;
-    media.dispatchEvent(new Event('seeking'));
     once(media, 'seeked', () => {
       // when seeking to the end it may result in a few seconds earlier
       if (Math.abs(seekTime - media.currentTime) > 0.5) {

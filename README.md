@@ -242,6 +242,11 @@ Start playback when player component is mounted.
 
 Defaults to `false`.
 
+**`loop`**
+
+Loop the current video. Check [HTMLMediaElement.loop](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video#attr-loop)
+
+Defaults to `false`.
 **`videoRef`**
 
 Ref to html video element, use this for custom integrations.
@@ -312,6 +317,10 @@ Defines constraints on what streams/tracks should be selected in ABR, if nothing
 **`volume`**
 
 Defines target volume of the video, the video updates to defined volume when this prop is changed.
+
+**`muted`**
+
+Defines muted state of the video.
 
 **`playbackRate`**
 
@@ -811,9 +820,6 @@ Options:
 - `auto` (default): Automatically start playback session & fetch manifests.
 - `none`: Playback session will be started when `.load()` is called, or when play button is tapped.
 
-When `preload` is set to `none` without `coverImageUrl`, user can tap play button to start playback,
-and in this case autoplay is always enabled, so `load()` calls will start playback even if `autoPlay` is set to `false`.
-
 **`startTime`**
 
 Start playback at specified time (seconds, factorial).
@@ -1110,6 +1116,22 @@ function ContainerComponent(props) {
   const plugins = useMemo(() => [ImaDaiPlugin()], [])
   return <PremiumPlusPlayer plugins={plugins} />
 }
+```
+
+**`requestOptionOverrides`**
+
+Accept an object to overrides the default [StreamRequest](https://developers.google.com/interactive-media-ads/docs/sdks/html5/dai/reference/js/StreamRequest):
+
+```jsx
+const plugins = useMemo(
+  () => [
+    ImaDaiPlugin({
+      requestOptionsOverrides: {adTagParameters: {tfcd: 'tfcd=1'}},
+    }),
+  ],
+  []
+)
+return <PremiumPlusPlayer plugins={plugins} />
 ```
 
 ### Modules
