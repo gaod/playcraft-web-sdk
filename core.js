@@ -347,6 +347,12 @@ const loadShaka = async (videoElement, config = {}) => {
       dash: {
         ignoreSuggestedPresentationDelay: true
       }
+    },
+    streaming: {
+      // To reduce the unseekable range at the start of the manifests.
+      // See: https://github.com/shaka-project/shaka-player/issues/3526
+      safeSeekOffset: 0,
+      rebufferingGoal: 0
     }
   });
   player.configure(config);

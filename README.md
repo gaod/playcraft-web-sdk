@@ -582,6 +582,16 @@ Called when settings UI is open, by default, playback is paused when using mobil
 <PremiumPlayer onOpenSettings={event => event.preventDefault()}>
 ```
 
+**`uiElements`**
+
+Use this props to overrides the default UI elements. See more about [uiElements configuration](#followings-are-the-configurable-ui-elements).
+
+Use fullscreenButton for hiding full-screen button.
+
+```js
+<PremiumPlayer uiElements={{fullscreenButton: false}}>
+```
+
 #### UI Component Composition
 
 **children**
@@ -600,6 +610,18 @@ Internal layout component provides ref to the function bar container, the button
     <MyCustomButton />
   </FunctionBarExtension>
   <MyOverlayUI />
+</PremiumPlayer>
+```
+
+**<TitleBarExtension>**
+
+You can add an empty container with a width of 1 ~ 3rem to shift the title position.
+
+```js
+<PremiumPlayer>
+  <TitleBarExtension>
+    <div style={{width: '2rem'}} />
+  </TitleBarExtension>
 </PremiumPlayer>
 ```
 
@@ -625,6 +647,44 @@ In addition to `quality` prop supported in premium, `quality.getSettingOptions` 
 ```js
 {
   getSettingOptions: fixedQualityOptions // or abrLimitQualityOptions
+}
+```
+
+**`uiElements`**
+
+Use this props to overrides the default UI elements.
+
+```jsx
+// For hiding rewind/forward button
+<PremiumPlusPlayer
+  uiElements={{
+    controlButtons: {
+      rewindButton: false,
+      forwardButton: false
+    }
+  }}
+/>
+```
+
+#### Followings are the configurable UI elements:
+
+```
+{
+  controlButtons: {
+    playButton
+    rewindButton
+    forwardButton
+    nextEpisodeButton
+    previousEpisodeButton
+  }
+  seekbar
+  backButton
+  fullscreenButton
+  volumeControl
+  backItems
+  liveButton,
+  castButton,
+  settingButton
 }
 ```
 
@@ -1126,7 +1186,7 @@ Accept an object to overrides the default [StreamRequest](https://developers.goo
 const plugins = useMemo(
   () => [
     ImaDaiPlugin({
-      requestOptionsOverrides: {adTagParameters: {tfcd: 'tfcd=1'}},
+      requestOptionsOverrides: {adTagParameters: {tfcd: 1}},
     }),
   ],
   []

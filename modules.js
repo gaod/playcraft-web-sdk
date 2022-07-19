@@ -140,7 +140,7 @@ const createApi = ({
 const getStreamInfo = (sources = [], {
   type = '',
   licenseUri,
-  certificateUri,
+  certificateUri = `${licenseUri}/fairplay_cert`,
   licenseHeaders: headers,
   thumbnailEnabled
 } = {}) => {
@@ -184,6 +184,7 @@ const getContentInfo = data => {
   return {
     title: data.title,
     channelTitle: data.subtitle,
+    channelIcon: data.image_url,
     end: data.end,
     section: {
       id: data.section_id,
@@ -608,6 +609,8 @@ const startPlaybackSession = async (playbackApi, options = {}) => {
       state.endTimeoutId = setTimeout(() => {
         if (isFinite(media.duration)) {
           requestNewSession();
+        } else {
+          updateContent();
         }
       }, content.end_time * 1000 - Date.now());
     }
@@ -686,7 +689,7 @@ const modes = {
   videos: 'video',
   lives: 'live'
 };
-const logEventNames = {
+const logEventNames$1 = {
   playbackBegan: 'video_playback_began',
   playbackStarted: 'video_playback_started',
   playbackStopped: 'video_playback_stopped',
@@ -709,7 +712,7 @@ const logEventNames = {
   adPlaybackStopped: 'ad_playback_stopped'
 };
 
-const mapLogEvents = ({
+const mapLogEvents$1 = ({
   video,
   session = video,
   version,
@@ -881,6 +884,238 @@ const mapLogEvents = ({
     emit: (name, {
       currentTime
     }, properties) => {
+      if (name in logEventNames$1) {
+        emitter.emit(name, {
+          current_position: currentTime,
+          ...properties,
+          ...commonProperties()
+        });
+      }
+    },
+    updateContent: content => {
+      state.content = content;
+    },
+    reset: () => registered.forEach(off => off())
+  };
+};
+
+const logEventNames = {
+  playbackBeganLoading: 'playback_began_player_loading',
+  playbackBeganPlayerStartupTime: 'playback_began_player_startup_time',
+  playbackBeganVideoStartupTime: 'playback_began_video_startup_time',
+  playbackVideoStarted: 'playback_video_started',
+  playbackVideoPaused: 'playback_video_paused',
+  playbackVideoBufferingBegan: 'playback_video_buffering_began',
+  playbackVideoBufferingEnded: 'playback_video_buffering_ended',
+  playbackVideoEnded: 'playback_video_ended',
+  playbackSeekingBegan: 'playback_seeking_began',
+  playbackSeekingEnded: 'playback_seeking_ended',
+  playbackError: 'playback_error_occurred',
+  playbackSpeedChange: 'playback_speed_change',
+  playbackAudioVolumeChange: 'playback_audio_volume_change',
+  playbackAudioMuteChange: 'playback_audio_mute_change',
+  playbackStreamingQualityChangeDownload: 'playback_streaming_quality_change_download',
+  playbackStreamingQualityChangeRender: 'playback_streaming_quality_change_render',
+  playing: 'play',
+  paused: 'pause',
+  seek: 'seek',
+  rewind: 'rewind',
+  forward: 'forward',
+  openSettings: 'setting_page_entered',
+  closeSettings: 'setting_page_exited',
+  speedSettingChange: 'speed_setting_change',
+  qualitySettingChange: 'quality_setting_change',
+  audioVolumeSettingChange: 'audio_volume_setting_change',
+  audioMuteSettingChange: 'audio_mute_setting_change'
+};
+const userIdKey = 'userIdKey';
+
+const getUserId = () => {
+  const userId = window.localStorage.getItem(userIdKey);
+
+  if (!userId) {
+    const uuid = uuidv4();
+    window.localStorage.setItem(userIdKey, uuid);
+    return uuid;
+  }
+
+  return userId;
+};
+
+const mapLogEvents = ({
+  video,
+  version,
+  playerName,
+  userId = getUserId(),
+  getPlaybackStatus = () => video
+}) => {
+  const emitter = mitt();
+  const state = {
+    status: 'init',
+    seeking: false,
+    volume: undefined,
+    muted: undefined
+  };
+
+  const commonProperties = () => ({
+    player_name: playerName,
+    playback_module_version: version,
+    system_time: Date.now() / 1000,
+    user_id: userId,
+    // TODO: split properties by videos/lives
+    current_position: state.currentTime,
+    video_total_duration: state.duration // TODO: get name from props, it's a part of P+
+
+  });
+
+  const dispatchStart = () => {
+    if (state.status === 'started') {
+      return;
+    }
+
+    state.status = 'started';
+    emitter.emit('playbackVideoStarted', commonProperties());
+  };
+
+  const dispatchStop = () => {
+    if (state.status !== 'started') {
+      return;
+    }
+
+    state.status = 'stopped';
+    emitter.emit('playbackVideoPaused', commonProperties());
+  };
+
+  const registered = [on(video, 'error', event => {
+    var _event$error, _event$error2, _event$error2$data;
+
+    emitter.emit('playbackError', {
+      module_error_code: ((_event$error = event.error) === null || _event$error === void 0 ? void 0 : _event$error.code) || ((_event$error2 = event.error) === null || _event$error2 === void 0 ? void 0 : (_event$error2$data = _event$error2.data) === null || _event$error2$data === void 0 ? void 0 : _event$error2$data.code),
+      ...commonProperties()
+    });
+  }), on(video, 'durationchange', () => {
+    // duration may change when playing an ad stitched stream, take only initial value
+    if (!state.duration) {
+      state.duration = getPlaybackStatus().duration;
+    }
+  }), once(video, 'playerStarted', () => {
+    /* eslint-disable camelcase */
+    const {
+      player_name,
+      playback_module_version,
+      system_time,
+      user_id
+    } = commonProperties();
+    emitter.emit('playbackBeganLoading', {
+      player_name,
+      playback_module_version,
+      system_time,
+      user_id
+    });
+    /* eslint-enable camelcase */
+  }), once(video, 'loadstart', () => {
+    /* eslint-disable camelcase */
+    const {
+      player_name,
+      playback_module_version,
+      system_time,
+      user_id
+    } = commonProperties();
+    emitter.emit('playbackBeganPlayerStartupTime', {
+      player_name,
+      playback_module_version,
+      system_time,
+      user_id
+    });
+    /* eslint-enable camelcase */
+  }), once(video, 'canplay', () => {
+    state.status = 'began';
+    /* eslint-disable camelcase */
+
+    const {
+      player_name,
+      playback_module_version,
+      system_time,
+      user_id
+    } = commonProperties();
+    emitter.emit('playbackBeganVideoStartupTime', {
+      player_name,
+      playback_module_version,
+      system_time,
+      user_id
+    });
+    /* eslint-enable camelcase */
+    // sync state from video
+
+    state.volume = video.volume;
+    state.muted = video.muted;
+  }), on(video, 'playing', dispatchStart), on(video, 'waiting', () => {
+    if (!state.buffering) {
+      emitter.emit('playbackVideoBufferingBegan', commonProperties());
+      state.buffering = true;
+    }
+  }), on(video, 'timeupdate', () => {
+    state.currentTime = getPlaybackStatus().currentTime;
+
+    if (state.buffering) {
+      emitter.emit('playbackVideoBufferingEnded', { ...commonProperties()
+      });
+      state.buffering = false;
+    }
+  }), on(video, 'pause', dispatchStop), on(video, 'seeking', () => {
+    state.seeking = true;
+    emitter.emit('playbackSeekingBegan', commonProperties());
+  }), on(video, 'seeked', () => {
+    if (state.seeking) {
+      emitter.emit('playbackSeekingEnded', commonProperties());
+    }
+
+    state.seeking = false;
+  }), on(video, 'ratechange', () => {
+    emitter.emit('playbackSpeedChange', {
+      playbackSpeed: video.playbackRate,
+      ...commonProperties()
+    });
+  }), once(video, 'emptied', () => {
+    if (state.status === 'started') {
+      dispatchStop();
+    }
+
+    state.status = 'init';
+    emitter.emit('playbackVideoEnded', commonProperties());
+  }), on(video, 'volumechange', () => {
+    if (video.volume !== state.volume && state.volume !== undefined) {
+      emitter.emit('playbackAudioVolumeChange', {
+        volume: video.volume,
+        ...commonProperties()
+      });
+      state.volume = video.volume;
+    }
+
+    if (video.muted !== state.muted && state.muted !== undefined) {
+      emitter.emit('playbackAudioMuteChange', {
+        muted: video.muted,
+        ...commonProperties()
+      });
+      state.muted = video.muted;
+    }
+  }), on(video, 'downloadQualityChange', event => {
+    emitter.emit('playbackStreamingQualityChangeDownload', { ...event.detail,
+      ...commonProperties()
+    });
+  }), on(video, 'resize', () => {
+    emitter.emit('playbackStreamingQualityChangeRender', {
+      height: video.videoHeight,
+      width: video.videoWidth,
+      ...commonProperties()
+    });
+  })];
+  return {
+    addEventListener: (name, handler) => emitter.on(name, handler),
+    all: handler => emitter.on('*', handler),
+    emit: (name, {
+      currentTime
+    }, properties) => {
       if (name in logEventNames) {
         emitter.emit(name, {
           current_position: currentTime,
@@ -895,6 +1130,12 @@ const mapLogEvents = ({
     reset: () => registered.forEach(off => off())
   };
 };
+
+var playlogv2 = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  mapLogEvents: mapLogEvents,
+  logEventNames: logEventNames
+});
 
 /* eslint-disable no-empty */
 const storageKey = 'playcraft-tab-lock';
@@ -8158,4 +8399,4 @@ const latencyManager = (player, video) => {
   };
 };
 
-export { addSentry, createApi, ensureTabLock, getContentInfo, getStreamInfo, handleIOSHeadphonesDisconnection, latencyManager, logEventNames, mapLogEvents, selectHlsQualities, startPlaybackSession as startSession, validateEnvironment };
+export { addSentry, createApi, ensureTabLock, getContentInfo, getStreamInfo, handleIOSHeadphonesDisconnection, latencyManager, logEventNames$1 as logEventNames, mapLogEvents$1 as mapLogEvents, playlogv2, selectHlsQualities, startPlaybackSession as startSession, validateEnvironment };

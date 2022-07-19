@@ -1,6 +1,6 @@
 {
   "name": "playcraft",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "module": "dist/playcraft.module.js",
   "main": "dist/playcraft.js",
   "types": "dist/index.d.ts",
@@ -98,7 +98,7 @@
     "@emotion/react": "^11.6.0",
     "@juggle/resize-observer": "^3.3.1",
     "axios": "^0.24.0",
-    "bitmovin-player": "^8.75.0",
+    "bitmovin-player": "^8.89.0",
     "classnames": "^2.2.6",
     "clipboard-polyfill": "^3.0.1",
     "core-js": "^3.22.8",
@@ -107,7 +107,7 @@
     "raf": "^3.4.1",
     "react-cool-dimensions": "^2.0.7",
     "react-cool-onclickoutside": "1.7.0",
-    "shaka-player": "^4.0.0",
+    "shaka-player": "^4.1.2",
     "ua-parser-js": "^1.0.2",
     "zustand": "^3.6.5"
   },
