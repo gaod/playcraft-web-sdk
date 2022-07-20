@@ -126,6 +126,8 @@ declare module 'playcraft/react' {
   export const CoverImage: React.FunctionComponent<CoverImageProps>;
 
   export const FunctionBarExtension = React.FunctionComponent;
+  export const InfoBarExtension = React.FunctionComponent;
+  export const TitleBarExtension = React.FunctionComponent;
 }
 
 declare module 'playcraft/modules' {

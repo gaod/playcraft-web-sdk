@@ -600,6 +600,8 @@ All children will be rendered as children of player UI, use `position: absolute`
 
 **<FunctionBarExtension>**
 
+Import with : `import {FunctionBarExtension} from 'playcraft/react'`
+
 In addition to children, you can also attach buttons or custom UI, at right of built-in buttons, or other specific places.
 
 Internal layout component provides ref to the function bar container, the button is rendered at left of settings button, with React portal.
@@ -614,6 +616,8 @@ Internal layout component provides ref to the function bar container, the button
 ```
 
 **<TitleBarExtension>**
+
+Import with : `import {TitleBarExtension} from 'playcraft/react'`
 
 You can add an empty container with a width of 1 ~ 3rem to shift the title position.
 

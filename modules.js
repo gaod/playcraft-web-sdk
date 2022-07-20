@@ -608,8 +608,10 @@ const startPlaybackSession = async (playbackApi, options = {}) => {
       clearTimeout(state.endTimeoutId);
       state.endTimeoutId = setTimeout(() => {
         if (isFinite(media.duration)) {
+          // Request new session for self linear.
           requestNewSession();
         } else {
+          // Request new content for ip linear.
           updateContent();
         }
       }, content.end_time * 1000 - Date.now());
