@@ -343,7 +343,7 @@ const validateEnvironment = (supportEnvironmentList = []) => {
 
     scopes = newScopes;
   }
-}; // IE doesn't support pointer query, assume it always have pointer
+}; // Some touch devices with a mouse can't be distinguished, assume no mouse
 
 /* eslint-disable no-param-reassign */
 const VideoSourceTypeMap = {
@@ -537,7 +537,7 @@ const selectHlsQualities = async (source, restrictions = {}) => {
 
 const SHAKA_LIVE_DURATION = 4294967296;
 
-const isFinite = duration => duration < SHAKA_LIVE_DURATION;
+const isLiveDuration = duration => duration < SHAKA_LIVE_DURATION;
 
 const deepEqual = (current, updated) => JSON.stringify(current) === JSON.stringify(updated);
 
@@ -607,7 +607,7 @@ const startPlaybackSession = async (playbackApi, options = {}) => {
     if (content.end_time && content.end_time === ((_state$content = state.content) === null || _state$content === void 0 ? void 0 : _state$content.end_time)) {
       clearTimeout(state.endTimeoutId);
       state.endTimeoutId = setTimeout(() => {
-        if (isFinite(media.duration)) {
+        if (isLiveDuration(media.duration)) {
           // Request new session for self linear.
           requestNewSession();
         } else {

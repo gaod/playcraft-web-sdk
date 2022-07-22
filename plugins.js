@@ -1,5 +1,7 @@
 import mitt from 'mitt';
 import axios from 'axios';
+import UAParser from 'ua-parser-js';
+import 'core-js/proposals/relative-indexing-method';
 
 /** @param {string} m3u8Manifest */
 const getManifestUrl = ({
@@ -1033,6 +1035,15 @@ const ImaDaiPlugin = ({
   };
 };
 
+/* eslint-disable no-plusplus */
+new UAParser();
+
+/* eslint-disable no-param-reassign */
+
+const SHAKA_LIVE_DURATION = 4294967296;
+
+const isLiveDuration = duration => duration < SHAKA_LIVE_DURATION;
+
 const wallTimeSeconds = () => Date.now() / 1000;
 
 const StallReloadPlugin = ({
@@ -1047,11 +1058,15 @@ const StallReloadPlugin = ({
   const load = (_, {
     player,
     video,
-    source
+    reload
   }) => {
     clearInterval(state.lastTimer);
 
     const checkStall = async () => {
+      if (!isLiveDuration(video.duration)) {
+        return;
+      }
+
       if (video.paused || video.playbackRate === 0 || state.lastVideoTime !== video.currentTime || !(video.currentTime > 0)) {
         state.lastUpdateSeconds = wallTimeSeconds();
         state.lastVideoTime = video.currentTime;
@@ -1060,8 +1075,13 @@ const StallReloadPlugin = ({
 
       if (wallTimeSeconds() - state.lastUpdateSeconds > stallThresholdSeconds) {
         console.warn('Stall detected, reload to resume');
-        await player.load(source);
-        player.play();
+        await reload();
+
+        if (player.play) {
+          player.play();
+        } else {
+          video.play();
+        }
       }
     };
 

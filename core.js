@@ -942,7 +942,7 @@ const getSource = (sourceOptions, {
 
 const SHAKA_LIVE_DURATION = 4294967296;
 
-const isFinite = duration => duration < SHAKA_LIVE_DURATION;
+const isLiveDuration = duration => duration < SHAKA_LIVE_DURATION;
 
 const getMediaTime = (media, plugins = []) => {
   const {
@@ -961,7 +961,7 @@ const getMediaTime = (media, plugins = []) => {
     return (_plugin$getPlaybackSt2 = plugin.getPlaybackStatus) === null || _plugin$getPlaybackSt2 === void 0 ? void 0 : _plugin$getPlaybackSt2.call(plugin);
   }));
   return { ...data,
-    ...((!isFinite(media.initialDuration) || Math.abs(media.duration - media.initialDuration) < 0.1) && {
+    ...((!isLiveDuration(media.initialDuration) || Math.abs(media.duration - media.initialDuration) < 0.1) && {
       duration
     })
   };
@@ -996,7 +996,24 @@ const load = async (media, {
       player,
       source: currentSource,
       startTime,
-      streamFormat: preferManifestType
+      streamFormat: preferManifestType,
+      reload: async () => {
+        // Bitmovin unexpectedly restores muted state, so save to restore
+        const restoreMuted = player.isMuted && {
+          muted: player.isMuted()
+        };
+        player.lastSrc = '';
+        await load(media, {
+          player,
+          startTime,
+          plugins,
+          drm
+        }, source);
+
+        if (restoreMuted) {
+          player[restoreMuted.muted ? 'mute' : 'unmute']();
+        }
+      }
     }));
     return overrides ? { ...currentSource,
       ...(overrides.url && {
@@ -1029,17 +1046,32 @@ const load = async (media, {
   });
 };
 
-const seek = (media, {
+const seek = async (media, {
   player,
   plugins = []
 }, time, issuer) => {
-  // TODO skip seeking to too near point, consider SSAI cases
+  const HAVE_METADATA = 1;
+
+  if (media.readyState < HAVE_METADATA) {
+    await new Promise(resolve => {
+      media.addEventListener('loadedmetadata', resolve, {
+        once: true
+      });
+    });
+  } // TODO skip seeking to too near point, consider SSAI cases
+
+
   const seekPlugin = plugins.find(plugin => typeof plugin.handleSeek === 'function' && plugin.isActive());
 
   const seekInternal = seekTime => {
     var _player$seek;
 
-    // when playing in Bitmovin, must call player.seek to sync internal time
+    // seeking to end video may cause Shaka glich, so move back a little
+    if (seekTime <= media.duration && seekTime >= media.duration - 0.1) {
+      return seekInternal(media.duration - 0.7);
+    } // when playing in Bitmovin, must call player.seek to sync internal time
+
+
     (_player$seek = player.seek) === null || _player$seek === void 0 ? void 0 : _player$seek.call(player, seekTime, issuer); // player.seek sets time after adding segments,
     // set again to reflect instantly
 
