@@ -44,7 +44,7 @@ const getUrlObject = fn => {
  * Copyright 2016 Google LLC
  * SPDX-License-Identifier: Apache-2.0
  */
-let shaka;
+let shaka$1;
 const shakaLog = {
   v1: () => {}
 };
@@ -78,14 +78,14 @@ const makeResponse = (headers, data, status, uri, responseURL, requestType) => {
   let responseText = null;
 
   try {
-    responseText = shaka.util.StringUtils.fromBytesAutoDetect(data); // eslint-disable-next-line no-empty
+    responseText = shaka$1.util.StringUtils.fromBytesAutoDetect(data); // eslint-disable-next-line no-empty
   } catch (exception) {}
 
-  const severity = status == 401 || status == 403 ? shaka.util.Error.Severity.CRITICAL : shaka.util.Error.Severity.RECOVERABLE;
-  throw new shaka.util.Error(severity, shaka.util.Error.Category.NETWORK, shaka.util.Error.Code.BAD_HTTP_STATUS, uri, status, responseText, headers, requestType);
+  const severity = status == 401 || status == 403 ? shaka$1.util.Error.Severity.CRITICAL : shaka$1.util.Error.Severity.RECOVERABLE;
+  throw new shaka$1.util.Error(severity, shaka$1.util.Error.Category.NETWORK, shaka$1.util.Error.Code.BAD_HTTP_STATUS, uri, status, responseText, headers, requestType);
 };
 
-const goog = {
+const goog$1 = {
   asserts: {
     assert: () => {}
   }
@@ -132,7 +132,7 @@ class HttpFetchPlugin {
     const pendingRequest = HttpFetchPlugin.request_(uri, requestType, init, abortStatus, progressUpdated, headersReceived, request.streamDataCallback);
     /** @type {!shaka.util.AbortableOperation} */
 
-    const op = new shaka.util.AbortableOperation(pendingRequest, () => {
+    const op = new shaka$1.util.AbortableOperation(pendingRequest, () => {
       abortStatus.canceled = true;
       controller.abort();
       return Promise.resolve();
@@ -142,7 +142,7 @@ class HttpFetchPlugin {
     const timeoutMs = request.retryParameters.timeout;
 
     if (timeoutMs) {
-      const timer = new shaka.util.Timer(() => {
+      const timer = new shaka$1.util.Timer(() => {
         abortStatus.timedOut = true;
         controller.abort();
       });
@@ -231,7 +231,7 @@ class HttpFetchPlugin {
           }
 
           if (readObj.done) {
-            goog.asserts.assert(!readObj.value, 'readObj should be unset when "done" is true.');
+            goog$1.asserts.assert(!readObj.value, 'readObj should be unset when "done" is true.');
             controller.close();
           } else {
             controller.enqueue(readObj.value);
@@ -253,11 +253,11 @@ class HttpFetchPlugin {
       arrayBuffer = await response.arrayBuffer();
     } catch (error) {
       if (abortStatus.canceled) {
-        throw new shaka.util.Error(shaka.util.Error.Severity.RECOVERABLE, shaka.util.Error.Category.NETWORK, shaka.util.Error.Code.OPERATION_ABORTED, uri, requestType);
+        throw new shaka$1.util.Error(shaka$1.util.Error.Severity.RECOVERABLE, shaka$1.util.Error.Category.NETWORK, shaka$1.util.Error.Code.OPERATION_ABORTED, uri, requestType);
       } else if (abortStatus.timedOut) {
-        throw new shaka.util.Error(shaka.util.Error.Severity.RECOVERABLE, shaka.util.Error.Category.NETWORK, shaka.util.Error.Code.TIMEOUT, uri, requestType);
+        throw new shaka$1.util.Error(shaka$1.util.Error.Severity.RECOVERABLE, shaka$1.util.Error.Category.NETWORK, shaka$1.util.Error.Code.TIMEOUT, uri, requestType);
       } else {
-        throw new shaka.util.Error(shaka.util.Error.Severity.RECOVERABLE, shaka.util.Error.Category.NETWORK, shaka.util.Error.Code.HTTP_ERROR, uri, error, requestType);
+        throw new shaka$1.util.Error(shaka$1.util.Error.Severity.RECOVERABLE, shaka$1.util.Error.Category.NETWORK, shaka$1.util.Error.Code.HTTP_ERROR, uri, error, requestType);
       }
     }
 
@@ -284,7 +284,7 @@ class HttpFetchPlugin {
 }
 
 HttpFetchPlugin.register = shakaNamespace => {
-  shaka = shakaNamespace;
+  shaka$1 = shakaNamespace;
   /**
    * Overridden in unit tests, but compiled out in production.
    *
@@ -317,9 +317,1017 @@ HttpFetchPlugin.register = shakaNamespace => {
    */
 
   HttpFetchPlugin.Headers_ = window.Headers;
-  shaka.net.NetworkingEngine.registerScheme('http', HttpFetchPlugin.parse);
-  shaka.net.NetworkingEngine.registerScheme('https', HttpFetchPlugin.parse);
-  shaka.net.NetworkingEngine.registerScheme('blob', HttpFetchPlugin.parse);
+  shaka$1.net.NetworkingEngine.registerScheme('http', HttpFetchPlugin.parse);
+  shaka$1.net.NetworkingEngine.registerScheme('https', HttpFetchPlugin.parse);
+  shaka$1.net.NetworkingEngine.registerScheme('blob', HttpFetchPlugin.parse);
+};
+
+/* eslint-disable guard-for-in */
+
+/* eslint-disable no-unused-vars */
+const myLog = console;
+const goog = {
+  asserts: {
+    assert: (result, message) => result || console.warn('message')
+  }
+};
+const ALL_EVENTS_ = 'All';
+
+function PublicPromise() {
+  let resolvePromise;
+  let rejectPromise;
+  const promise = new Promise((resolve, reject) => {
+    resolvePromise = resolve;
+    rejectPromise = reject;
+  });
+  this.resolve = resolvePromise;
+  this.reject = rejectPromise;
+
+  this.then = (...args) => promise.then(...args);
+
+  this.catch = (...args) => promise.catch(...args);
+}
+
+class MultiMap {
+  /** */
+  constructor() {
+    /** @private {!Object.<string, !Array.<T>>} */
+    this.map_ = {};
+  }
+  /**
+   * Add a key, value pair to the map.
+   * @param {string} key
+   * @param {T} value
+   */
+
+
+  push(key, value) {
+    // eslint-disable-next-line no-prototype-builtins
+    if (this.map_.hasOwnProperty(key)) {
+      this.map_[key].push(value);
+    } else {
+      this.map_[key] = [value];
+    }
+  }
+  /**
+   * Get a list of values by key.
+   * @param {string} key
+   * @return {Array.<T>} or null if no such key exists.
+   */
+
+
+  get(key) {
+    const list = this.map_[key]; // slice() clones the list so that it and the map can each be modified
+    // without affecting the other.
+
+    return list ? list.slice() : null;
+  }
+  /**
+   * Get a list of all values.
+   * @return {!Array.<T>}
+   */
+
+
+  getAll() {
+    const list = [];
+
+    for (const key in this.map_) {
+      list.push(...this.map_[key]);
+    }
+
+    return list;
+  }
+  /**
+   * Remove a specific value, if it exists.
+   * @param {string} key
+   * @param {T} value
+   */
+
+
+  remove(key, value) {
+    if (!(key in this.map_)) {
+      return;
+    }
+
+    this.map_[key] = this.map_[key].filter(i => i != value);
+
+    if (this.map_[key].length == 0) {
+      // Delete the array if it's empty, so that |get| will reliably return null
+      // "if no such key exists", instead of sometimes returning an empty array.
+      delete this.map_[key];
+    }
+  }
+  /**
+   * Clear all keys and values from the multimap.
+   */
+
+
+  clear() {
+    this.map_ = {};
+  }
+  /**
+   * @param {function(string, !Array.<T>)} callback
+   */
+
+
+  forEach(callback) {
+    for (const key in this.map_) {
+      callback(key, this.map_[key]);
+    }
+  }
+  /**
+   * Returns the number of elements in the multimap.
+   * @return {number}
+   */
+
+
+  size() {
+    return Object.keys(this.map_).length;
+  }
+  /**
+   * Get a list of all the keys.
+   * @return {!Array.<string>}
+   */
+
+
+  keys() {
+    return Object.keys(this.map_);
+  }
+
+}
+
+class FakeEventTarget {
+  /** */
+  constructor() {
+    /**
+     * @private {shaka.util.MultiMap.<shaka.util.FakeEventTarget.ListenerType>}
+     */
+    this.listeners_ = new MultiMap();
+    /**
+     * The target of all dispatched events.  Defaults to |this|.
+     * @type {EventTarget}
+     */
+
+    this.dispatchTarget = this;
+  }
+  /**
+   * Add an event listener to this object.
+   *
+   * @param {string} type The event type to listen for.
+   * @param {shaka.util.FakeEventTarget.ListenerType} listener The callback or
+   *   listener object to invoke.
+   * @param {(!AddEventListenerOptions|boolean)=} options Ignored.
+   * @override
+   * @exportInterface
+   */
+
+
+  addEventListener(type, listener, options) {
+    if (!this.listeners_) {
+      return;
+    }
+
+    this.listeners_.push(type, listener);
+  }
+  /**
+   * Add an event listener to this object that is invoked for all events types
+   * the object fires.
+   *
+   * @param {shaka.util.FakeEventTarget.ListenerType} listener The callback or
+   *   listener object to invoke.
+   * @exportInterface
+   */
+
+
+  listenToAllEvents(listener) {
+    this.addEventListener(ALL_EVENTS_, listener);
+  }
+  /**
+   * Remove an event listener from this object.
+   *
+   * @param {string} type The event type for which you wish to remove a
+   *   listener.
+   * @param {shaka.util.FakeEventTarget.ListenerType} listener The callback or
+   *   listener object to remove.
+   * @param {(EventListenerOptions|boolean)=} options Ignored.
+   * @override
+   * @exportInterface
+   */
+
+
+  removeEventListener(type, listener, options) {
+    if (!this.listeners_) {
+      return;
+    }
+
+    this.listeners_.remove(type, listener);
+  }
+  /**
+   * Dispatch an event from this object.
+   *
+   * @param {!Event} event The event to be dispatched from this object.
+   * @return {boolean} True if the default action was prevented.
+   * @override
+   * @exportInterface
+   */
+
+
+  dispatchEvent(event) {
+    // In many browsers, it is complex to overwrite properties of actual Events.
+    // Here we expect only to dispatch FakeEvents, which are simpler.
+    goog.asserts.assert(event instanceof shaka.util.FakeEvent, 'FakeEventTarget can only dispatch FakeEvents!');
+
+    if (!this.listeners_) {
+      return true;
+    }
+
+    let listeners = this.listeners_.get(event.type) || [];
+    const universalListeners = this.listeners_.get(ALL_EVENTS_);
+
+    if (universalListeners) {
+      listeners = listeners.concat(universalListeners);
+    } // Execute this event on listeners until the event has been stopped or we
+    // run out of listeners.
+
+
+    for (const listener of listeners) {
+      // Do this every time, since events can be re-dispatched from handlers.
+      event.target = this.dispatchTarget;
+      event.currentTarget = this.dispatchTarget;
+
+      try {
+        // Check for the |handleEvent| member to test if this is a
+        // |EventListener| instance or a basic function.
+        if (listener.handleEvent) {
+          listener.handleEvent(event);
+        } else {
+          // eslint-disable-next-line no-restricted-syntax
+          listener.call(this, event);
+        }
+      } catch (exception) {
+        // Exceptions during event handlers should not affect the caller,
+        // but should appear on the console as uncaught, according to MDN:
+        // https://mzl.la/2JXgwRo
+        myLog.error('Uncaught exception in event handler', exception, exception ? exception.message : null, exception ? exception.stack : null);
+      }
+
+      if (event.stopped) {
+        break;
+      }
+    }
+
+    return event.defaultPrevented;
+  }
+  /**
+   * @override
+   * @exportInterface
+   */
+
+
+  release() {
+    this.listeners_ = null;
+  }
+
+}
+
+const waitForReadyState = (mediaElement, readyState, eventManager, callback) => {
+  const READY_STATES_TO_EVENT_NAMES_ = [[window.HTMLMediaElement.HAVE_METADATA, 'loadedmetadata'], [window.HTMLMediaElement.HAVE_CURRENT_DATA, 'loadeddata'], [window.HTMLMediaElement.HAVE_FUTURE_DATA, 'canplay'], [window.HTMLMediaElement.HAVE_ENOUGH_DATA, 'canplaythrough']];
+
+  if (readyState == window.HTMLMediaElement.HAVE_NOTHING || mediaElement.readyState >= readyState) {
+    callback();
+  } else {
+    const eventName = READY_STATES_TO_EVENT_NAMES_.find(x => x[0] === readyState)[1];
+    eventManager.listenOnce(mediaElement, eventName, callback);
+  }
+};
+
+class PatchedMediaKeysApple {
+  /**
+   * Installs the polyfill if needed.
+   * @export
+   */
+  static install(shaka) {
+    if (!window.HTMLVideoElement || !window.WebKitMediaKeys) {
+      // No HTML5 video or no prefixed EME.
+      return;
+    }
+
+    myLog.info('Using Apple-prefixed EME'); // Delete mediaKeys to work around strict mode compatibility issues.
+    // eslint-disable-next-line no-restricted-syntax
+
+    delete window.HTMLMediaElement.prototype.mediaKeys; // Work around read-only declaration for mediaKeys by using a string.
+    // eslint-disable-next-line no-restricted-syntax
+
+    window.HTMLMediaElement.prototype.mediaKeys = null; // eslint-disable-next-line no-restricted-syntax
+
+    window.HTMLMediaElement.prototype.setMediaKeys = PatchedMediaKeysApple.setMediaKeys; // Install patches
+
+    window.MediaKeys = PatchedMediaKeysApple.MediaKeys;
+    window.MediaKeySystemAccess = PatchedMediaKeysApple.MediaKeySystemAccess;
+    navigator.requestMediaKeySystemAccess = PatchedMediaKeysApple.requestMediaKeySystemAccess;
+    window.shakaMediaKeysPolyfill = true;
+
+    const defaultInitDataTransform = (initData, initDataType, drmInfo) => {
+      if (initDataType === 'skd') {
+        const {
+          defaultGetContentId,
+          initDataTransform
+        } = shaka.util.FairPlayUtils;
+        const cert = drmInfo.serverCertificate;
+        const contentId = defaultGetContentId(initData);
+        return initDataTransform(initData, contentId, cert);
+      }
+
+      return initData;
+    };
+
+    const setupPlayer = player => {
+      player.licenseRequestHandler = request => {
+        const base64Payload = btoa(String.fromCharCode(...new Uint8Array(request.body)));
+        request.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+        request.body = `spc=${base64Payload}`;
+      };
+
+      player.configure({
+        drm: {
+          initDataTransform: defaultInitDataTransform
+        }
+      });
+      player.getNetworkingEngine().registerResponseFilter((type, response) => {
+        if (type !== shaka.net.NetworkingEngine.RequestType.LICENSE) {
+          return;
+        }
+
+        const responseText = new TextDecoder('utf-8').decode(response.data).trim();
+
+        if (responseText.slice(0, 5) === '<ckc>' && responseText.slice(-6) === '</ckc>') {
+          response.data = Uint8Array.from(atob(responseText.slice(5, -6)), c => c.charCodeAt(0));
+        }
+      });
+    };
+
+    PatchedMediaKeysApple.setupPlayer = setupPlayer;
+  }
+  /**
+   * An implementation of navigator.requestMediaKeySystemAccess.
+   * Retrieves a MediaKeySystemAccess object.
+   *
+   * @this {!Navigator}
+   * @param {string} keySystem
+   * @param {!Array.<!MediaKeySystemConfiguration>} supportedConfigurations
+   * @return {!Promise.<!MediaKeySystemAccess>}
+   */
+
+
+  static requestMediaKeySystemAccess(keySystem, supportedConfigurations) {
+    myLog.debug('PatchedMediaKeysApple.requestMediaKeySystemAccess');
+    console.info({
+      keySystem,
+      supportedConfigurations
+    });
+    goog.asserts.assert(this == navigator, 'bad "this" for requestMediaKeySystemAccess');
+
+    try {
+      console.info({
+        keySystem,
+        supportedConfigurations
+      });
+      const access = new PatchedMediaKeysApple.MediaKeySystemAccess(keySystem, supportedConfigurations);
+      return Promise.resolve(
+      /** @type {!MediaKeySystemAccess} */
+      access);
+    } catch (exception) {
+      console.error(exception);
+      return Promise.reject(exception);
+    }
+  }
+  /**
+   * An implementation of window.HTMLMediaElement.prototype.setMediaKeys.
+   * Attaches a MediaKeys object to the media element.
+   *
+   * @this {!window.HTMLMediaElement}
+   * @param {MediaKeys} mediaKeys
+   * @return {!Promise}
+   */
+
+
+  static setMediaKeys(mediaKeys) {
+    myLog.debug('PatchedMediaKeysApple.setMediaKeys');
+    goog.asserts.assert(this instanceof window.HTMLMediaElement, 'bad "this" for setMediaKeys');
+    const newMediaKeys =
+    /** @type {window.shaka.polyfill.PatchedMediaKeysApple.MediaKeys} */
+    mediaKeys;
+    const oldMediaKeys =
+    /** @type {window.shaka.polyfill.PatchedMediaKeysApple.MediaKeys} */
+    this.mediaKeys;
+
+    if (oldMediaKeys && oldMediaKeys != newMediaKeys) {
+      goog.asserts.assert(oldMediaKeys instanceof PatchedMediaKeysApple.MediaKeys, 'non-polyfill instance of oldMediaKeys'); // Have the old MediaKeys stop listening to events on the video tag.
+
+      oldMediaKeys.setMedia(null);
+    }
+
+    delete this.mediaKeys; // in case there is an existing getter
+
+    this.mediaKeys = mediaKeys; // work around read-only declaration
+
+    if (newMediaKeys) {
+      goog.asserts.assert(newMediaKeys instanceof PatchedMediaKeysApple.MediaKeys, 'non-polyfill instance of newMediaKeys');
+      return newMediaKeys.setMedia(this);
+    }
+
+    return Promise.resolve();
+  }
+  /**
+   * Handler for the native media elements webkitneedkey event.
+   *
+   * @this {!window.HTMLMediaElement}
+   * @param {!MediaKeyEvent} event
+   * @suppress {constantProperty} We reassign what would be const on a real
+   *   MediaEncryptedEvent, but in our look-alike event.
+   * @private
+   */
+
+
+  static onWebkitNeedKey_(event) {
+    myLog.debug('PatchedMediaKeysApple.onWebkitNeedKey_', event);
+    const {
+      mediaKeys
+    } = this;
+    goog.asserts.assert(mediaKeys instanceof PatchedMediaKeysApple.MediaKeys, 'non-polyfill instance of newMediaKeys');
+    goog.asserts.assert(event.initData != null, 'missing init data!'); // Convert the prefixed init data to match the native 'encrypted' event.
+
+    const uint8 = window.shaka.util.BufferUtils.toUint8(event.initData);
+    const dataview = window.shaka.util.BufferUtils.toDataView(uint8); // The first part is a 4 byte little-endian int, which is the length of
+    // the second part.
+
+    const length = dataview.getUint32(
+    /* position= */
+    0,
+    /* littleEndian= */
+    true);
+
+    if (length + 4 != uint8.byteLength) {
+      throw new RangeError('Malformed FairPlay init data');
+    } // The remainder is a UTF-16 skd URL.  Convert this to UTF-8 and pass on.
+
+
+    const str = window.shaka.util.StringUtils.fromUTF16(uint8.subarray(4),
+    /* littleEndian= */
+    true);
+    const initData = window.shaka.util.StringUtils.toUTF8(str); // NOTE: Because "this" is a real EventTarget, the event we dispatch here
+    // must also be a real Event.
+
+    const event2 = new Event('encrypted');
+    const encryptedEvent =
+    /** @type {!MediaEncryptedEvent} */
+
+    /** @type {?} */
+    event2;
+    encryptedEvent.initDataType = 'skd';
+    encryptedEvent.initData = window.shaka.util.BufferUtils.toArrayBuffer(initData);
+    this.dispatchEvent(event2);
+  }
+
+}
+/**
+ * An implementation of MediaKeySystemAccess.
+ *
+ * @implements {MediaKeySystemAccess}
+ */
+
+
+PatchedMediaKeysApple.MediaKeySystemAccess = class {
+  /**
+   * @param {string} keySystem
+   * @param {!Array.<!MediaKeySystemConfiguration>} supportedConfigurations
+   */
+  constructor(keySystem, supportedConfigurations) {
+    myLog.debug('PatchedMediaKeysApple.MediaKeySystemAccess');
+    /** @type {string} */
+
+    this.keySystem = keySystem;
+    /** @private {!MediaKeySystemConfiguration} */
+
+    this.configuration_; // Optimization: WebKitMediaKeys.isTypeSupported delays responses by a
+    // significant amount of time, possibly to discourage fingerprinting.
+    // Since we know only FairPlay is supported here, let's skip queries for
+    // anything else to speed up the process.
+
+    if (keySystem.startsWith('com.apple.fps')) {
+      for (const cfg of supportedConfigurations) {
+        const newCfg = this.checkConfig_(cfg);
+
+        if (newCfg) {
+          this.configuration_ = newCfg;
+          return;
+        }
+      }
+    } // According to the spec, this should be a DOMException, but there is not a
+    // public constructor for that.  So we make this look-alike instead.
+
+
+    const unsupportedKeySystemError = new Error('Unsupported keySystem');
+    unsupportedKeySystemError.name = 'NotSupportedError';
+    unsupportedKeySystemError.code = DOMException.NOT_SUPPORTED_ERR;
+    throw unsupportedKeySystemError;
+  }
+  /**
+   * Check a single config for MediaKeySystemAccess.
+   *
+   * @param {MediaKeySystemConfiguration} cfg The requested config.
+   * @return {?MediaKeySystemConfiguration} A matching config we can support, or
+   *   null if the input is not supportable.
+   * @private
+   */
+
+
+  checkConfig_(cfg) {
+    if (cfg.persistentState == 'required') {
+      // Not supported by the prefixed API.
+      return null;
+    } // Create a new config object and start adding in the pieces which we find
+    // support for.  We will return this from getConfiguration() later if
+    // asked.
+
+    /** @type {!MediaKeySystemConfiguration} */
+
+
+    const newCfg = {
+      audioCapabilities: [],
+      videoCapabilities: [],
+      // It is technically against spec to return these as optional, but we
+      // don't truly know their values from the prefixed API:
+      persistentState: 'optional',
+      distinctiveIdentifier: 'optional',
+      // Pretend the requested init data types are supported, since we don't
+      // really know that either:
+      initDataTypes: cfg.initDataTypes,
+      sessionTypes: ['temporary'],
+      label: cfg.label
+    }; // PatchedMediaKeysApple tests for key system availability through
+    // WebKitMediaKeys.isTypeSupported.
+
+    let ranAnyTests = false;
+    let success = false;
+
+    if (cfg.audioCapabilities) {
+      for (const cap of cfg.audioCapabilities) {
+        if (cap.contentType) {
+          ranAnyTests = true;
+          const contentType = cap.contentType.split(';')[0];
+
+          if (window.WebKitMediaKeys.isTypeSupported(this.keySystem, contentType)) {
+            newCfg.audioCapabilities.push(cap);
+            success = true;
+          }
+        }
+      }
+    }
+
+    if (cfg.videoCapabilities) {
+      for (const cap of cfg.videoCapabilities) {
+        if (cap.contentType) {
+          ranAnyTests = true;
+          const contentType = cap.contentType.split(';')[0];
+
+          if (window.WebKitMediaKeys.isTypeSupported(this.keySystem, contentType)) {
+            newCfg.videoCapabilities.push(cap);
+            success = true;
+          }
+        }
+      }
+    }
+
+    if (!ranAnyTests) {
+      // If no specific types were requested, we check all common types to
+      // find out if the key system is present at all.
+      success = window.WebKitMediaKeys.isTypeSupported(this.keySystem, 'video/mp4');
+    }
+
+    if (success) {
+      return newCfg;
+    }
+
+    return null;
+  }
+  /** @override */
+
+
+  createMediaKeys() {
+    myLog.debug('PatchedMediaKeysApple.MediaKeySystemAccess.createMediaKeys');
+    const mediaKeys = new PatchedMediaKeysApple.MediaKeys(this.keySystem);
+    return Promise.resolve(
+    /** @type {!MediaKeys} */
+    mediaKeys);
+  }
+  /** @override */
+
+
+  getConfiguration() {
+    myLog.debug('PatchedMediaKeysApple.MediaKeySystemAccess.getConfiguration');
+    return this.configuration_;
+  }
+
+};
+/**
+ * An implementation of MediaKeys.
+ *
+ * @implements {MediaKeys}
+ */
+
+PatchedMediaKeysApple.MediaKeys = class {
+  /** @param {string} keySystem */
+  constructor(keySystem) {
+    myLog.debug('PatchedMediaKeysApple.MediaKeys');
+    /** @private {!WebKitMediaKeys} */
+
+    this.nativeMediaKeys_ = new window.WebKitMediaKeys(keySystem);
+    /** @private {!window.shaka.util.EventManager} */
+
+    this.eventManager_ = new window.shaka.util.EventManager();
+  }
+  /** @override */
+
+
+  createSession(sessionType) {
+    myLog.debug('PatchedMediaKeysApple.MediaKeys.createSession');
+    sessionType = sessionType || 'temporary'; // For now, only the 'temporary' type is supported.
+
+    if (sessionType != 'temporary') {
+      throw new TypeError(`Session type ${sessionType} is unsupported on this platform.`);
+    }
+
+    return new PatchedMediaKeysApple.MediaKeySession(this.nativeMediaKeys_, sessionType);
+  }
+  /** @override */
+
+
+  setServerCertificate(serverCertificate) {
+    myLog.debug('PatchedMediaKeysApple.MediaKeys.setServerCertificate');
+    return Promise.resolve(false);
+  }
+  /**
+   * @param {window.HTMLMediaElement} media
+   * @protected
+   * @return {!Promise}
+   */
+
+
+  setMedia(media) {
+    // Remove any old listeners.
+    this.eventManager_.removeAll(); // It is valid for media to be null; null is used to flag that event
+    // handlers need to be cleaned up.
+
+    if (!media) {
+      return Promise.resolve();
+    } // Intercept and translate these prefixed EME events.
+
+
+    this.eventManager_.listen(media, 'webkitneedkey',
+    /** @type {window.shaka.util.EventManager.ListenerType} */
+    PatchedMediaKeysApple.onWebkitNeedKey_); // Wrap native window.HTMLMediaElement.webkitSetMediaKeys with a Promise.
+
+    try {
+      // Some browsers require that readyState >=1 before mediaKeys can be
+      // set, so check this and wait for loadedmetadata if we are not in the
+      // correct state
+      waitForReadyState(media, window.HTMLMediaElement.HAVE_METADATA, this.eventManager_, () => {
+        media.webkitSetMediaKeys(this.nativeMediaKeys_);
+      });
+      return Promise.resolve();
+    } catch (exception) {
+      return Promise.reject(exception);
+    }
+  }
+
+};
+/**
+ * An implementation of MediaKeySession.
+ *
+ * @implements {MediaKeySession}
+ */
+
+PatchedMediaKeysApple.MediaKeySession = class extends FakeEventTarget {
+  /**
+   * @param {WebKitMediaKeys} nativeMediaKeys
+   * @param {string} sessionType
+   */
+  constructor(nativeMediaKeys, sessionType) {
+    myLog.debug('PatchedMediaKeysApple.MediaKeySession');
+    super();
+    /**
+     * The native MediaKeySession, which will be created in generateRequest.
+     * @private {WebKitMediaKeySession}
+     */
+
+    this.nativeMediaKeySession_ = null;
+    /** @private {WebKitMediaKeys} */
+
+    this.nativeMediaKeys_ = nativeMediaKeys; // Promises that are resolved later
+
+    /** @private {PublicPromise} */
+
+    this.generateRequestPromise_ = null;
+    /** @private {PublicPromise} */
+
+    this.updatePromise_ = null;
+    /** @private {!window.shaka.util.EventManager} */
+
+    this.eventManager_ = new window.shaka.util.EventManager();
+    /** @type {string} */
+
+    this.sessionId = '';
+    /** @type {number} */
+
+    this.expiration = NaN;
+    /** @type {!PublicPromise} */
+
+    this.closed = new PublicPromise();
+    /** @type {!window.shaka.polyfill.PatchedMediaKeysApple.MediaKeyStatusMap} */
+
+    this.keyStatuses = new PatchedMediaKeysApple.MediaKeyStatusMap();
+  }
+  /** @override */
+
+
+  generateRequest(initDataType, initData) {
+    myLog.debug('PatchedMediaKeysApple.MediaKeySession.generateRequest');
+    this.generateRequestPromise_ = new PublicPromise();
+
+    try {
+      // This EME spec version requires a MIME content type as the 1st param to
+      // createSession, but doesn't seem to matter what the value is.
+      // It also only accepts Uint8Array, not ArrayBuffer, so explicitly make
+      // initData into a Uint8Array.
+      const session = this.nativeMediaKeys_.createSession('video/mp4', window.shaka.util.BufferUtils.toUint8(initData));
+      this.nativeMediaKeySession_ = session;
+      this.sessionId = session.sessionId || ''; // Attach session event handlers here.
+
+      this.eventManager_.listen(this.nativeMediaKeySession_, 'webkitkeymessage',
+      /** @type {window.shaka.util.EventManager.ListenerType} */
+      event => this.onWebkitKeyMessage_(event));
+      this.eventManager_.listen(session, 'webkitkeyadded',
+      /** @type {window.shaka.util.EventManager.ListenerType} */
+      event => this.onWebkitKeyAdded_(event));
+      this.eventManager_.listen(session, 'webkitkeyerror',
+      /** @type {window.shaka.util.EventManager.ListenerType} */
+      event => this.onWebkitKeyError_(event));
+      this.updateKeyStatus_('status-pending');
+    } catch (exception) {
+      this.generateRequestPromise_.reject(exception);
+    }
+
+    return this.generateRequestPromise_;
+  }
+  /** @override */
+
+
+  load() {
+    myLog.debug('PatchedMediaKeysApple.MediaKeySession.load');
+    return Promise.reject(new Error('MediaKeySession.load not yet supported'));
+  }
+  /** @override */
+
+
+  update(response) {
+    myLog.debug('PatchedMediaKeysApple.MediaKeySession.update');
+    this.updatePromise_ = new PublicPromise();
+
+    try {
+      // Pass through to the native session.
+      this.nativeMediaKeySession_.update(window.shaka.util.BufferUtils.toUint8(response));
+    } catch (exception) {
+      this.updatePromise_.reject(exception);
+    }
+
+    return this.updatePromise_;
+  }
+  /** @override */
+
+
+  close() {
+    myLog.debug('PatchedMediaKeysApple.MediaKeySession.close');
+
+    try {
+      // Pass through to the native session.
+      this.nativeMediaKeySession_.close();
+      this.closed.resolve();
+      this.eventManager_.removeAll();
+    } catch (exception) {
+      this.closed.reject(exception);
+    }
+
+    return this.closed;
+  }
+  /** @override */
+
+
+  remove() {
+    myLog.debug('PatchedMediaKeysApple.MediaKeySession.remove');
+    return Promise.reject(new Error('MediaKeySession.remove is only applicable for persistent licenses, ' + 'which are not supported on this platform'));
+  }
+  /**
+   * Handler for the native keymessage event on WebKitMediaKeySession.
+   *
+   * @param {!MediaKeyEvent} event
+   * @private
+   */
+
+
+  onWebkitKeyMessage_(event) {
+    myLog.debug('PatchedMediaKeysApple.onWebkitKeyMessage_', event); // We can now resolve this.generateRequestPromise, which should be non-null.
+
+    goog.asserts.assert(this.generateRequestPromise_, 'generateRequestPromise_ should be set before now!');
+
+    if (this.generateRequestPromise_) {
+      this.generateRequestPromise_.resolve();
+      this.generateRequestPromise_ = null;
+    }
+
+    const isNew = this.keyStatuses.getStatus() == undefined;
+    const data = new Map().set('messageType', isNew ? 'license-request' : 'license-renewal').set('message', window.shaka.util.BufferUtils.toArrayBuffer(event.message));
+    const event2 = new window.shaka.util.FakeEvent('message', data);
+    this.dispatchEvent(event2);
+  }
+  /**
+   * Handler for the native keyadded event on WebKitMediaKeySession.
+   *
+   * @param {!MediaKeyEvent} event
+   * @private
+   */
+
+
+  onWebkitKeyAdded_(event) {
+    myLog.debug('PatchedMediaKeysApple.onWebkitKeyAdded_', event); // This shouldn't fire while we're in the middle of generateRequest,
+    // but if it does, we will need to change the logic to account for it.
+
+    goog.asserts.assert(!this.generateRequestPromise_, 'Key added during generate!'); // We can now resolve this.updatePromise, which should be non-null.
+
+    goog.asserts.assert(this.updatePromise_, 'updatePromise_ should be set before now!');
+
+    if (this.updatePromise_) {
+      this.updateKeyStatus_('usable');
+      this.updatePromise_.resolve();
+      this.updatePromise_ = null;
+    }
+  }
+  /**
+   * Handler for the native keyerror event on WebKitMediaKeySession.
+   *
+   * @param {!MediaKeyEvent} event
+   * @private
+   */
+
+
+  onWebkitKeyError_(event) {
+    myLog.debug('PatchedMediaKeysApple.onWebkitKeyError_', event);
+    const error = new Error('EME PatchedMediaKeysApple key error');
+    error.errorCode = this.nativeMediaKeySession_.error;
+
+    if (this.generateRequestPromise_ != null) {
+      this.generateRequestPromise_.reject(error);
+      this.generateRequestPromise_ = null;
+    } else if (this.updatePromise_ != null) {
+      this.updatePromise_.reject(error);
+      this.updatePromise_ = null;
+    } else {
+      // Unexpected error - map native codes to standardised key statuses.
+      // Possible values of this.nativeMediaKeySession_.error.code:
+      // MEDIA_KEYERR_UNKNOWN        = 1
+      // MEDIA_KEYERR_CLIENT         = 2
+      // MEDIA_KEYERR_SERVICE        = 3
+      // MEDIA_KEYERR_OUTPUT         = 4
+      // MEDIA_KEYERR_HARDWARECHANGE = 5
+      // MEDIA_KEYERR_DOMAIN         = 6
+      switch (this.nativeMediaKeySession_.error.code) {
+        case window.WebKitMediaKeyError.MEDIA_KEYERR_OUTPUT:
+        case window.WebKitMediaKeyError.MEDIA_KEYERR_HARDWARECHANGE:
+          this.updateKeyStatus_('output-not-allowed');
+          break;
+
+        default:
+          this.updateKeyStatus_('internal-error');
+          break;
+      }
+    }
+  }
+  /**
+   * Updates key status and dispatch a 'keystatuseschange' event.
+   *
+   * @param {string} status
+   * @private
+   */
+
+
+  updateKeyStatus_(status) {
+    this.keyStatuses.setStatus(status);
+    const event = new window.shaka.util.FakeEvent('keystatuseschange');
+    this.dispatchEvent(event);
+  }
+
+};
+
+const getDummyKeyId = () => new Uint8Array([0]).buffer;
+/**
+ * @summary An implementation of MediaKeyStatusMap.
+ * This fakes a map with a single key ID.
+ *
+ * @todo Consolidate the MediaKeyStatusMap types in these polyfills.
+ * @implements {MediaKeyStatusMap}
+ */
+
+
+PatchedMediaKeysApple.MediaKeyStatusMap = class {
+  /** */
+  constructor() {
+    /**
+     * @type {number}
+     */
+    this.size = 0;
+    /**
+     * @private {string|undefined}
+     */
+
+    this.status_ = undefined;
+  }
+  /**
+   * An internal method used by the session to set key status.
+   * @param {string|undefined} status
+   */
+
+
+  setStatus(status) {
+    this.size = status == undefined ? 0 : 1;
+    this.status_ = status;
+  }
+  /**
+   * An internal method used by the session to get key status.
+   * @return {string|undefined}
+   */
+
+
+  getStatus() {
+    return this.status_;
+  }
+  /** @override */
+
+
+  forEach(fn) {
+    if (this.status_) {
+      fn(this.status_, getDummyKeyId());
+    }
+  }
+  /** @override */
+
+
+  get(keyId) {
+    if (this.has(keyId)) {
+      return this.status_;
+    }
+
+    return undefined;
+  }
+  /** @override */
+
+
+  has(keyId) {
+    const fakeKeyId = getDummyKeyId();
+
+    if (this.status_ && window.shaka.util.BufferUtils.equal(keyId, fakeKeyId)) {
+      return true;
+    }
+
+    return false;
+  }
+  /**
+   * @suppress {missingReturn}
+   * @override
+   */
+
+
+  entries() {
+    goog.asserts.assert(false, 'Not used!  Provided only for the compiler.');
+  }
+  /**
+   * @suppress {missingReturn}
+   * @override
+   */
+
+
+  keys() {
+    goog.asserts.assert(false, 'Not used!  Provided only for the compiler.');
+  }
+  /**
+   * @suppress {missingReturn}
+   * @override
+   */
+
+
+  values() {
+    goog.asserts.assert(false, 'Not used!  Provided only for the compiler.');
+  }
+
 };
 
 /* eslint-disable no-param-reassign */
@@ -341,7 +1349,17 @@ const loadShaka = async (videoElement, config = {}) => {
   const shaka = await import('shaka-player');
   window.shaka = shaka;
   shaka.polyfill.installAll();
+
+  if (window.WebKitMediaKeys) {
+    PatchedMediaKeysApple.install(shaka);
+  }
+
   player = new shaka.Player(videoElement);
+
+  if (window.WebKitMediaKeys) {
+    PatchedMediaKeysApple.setupPlayer(player);
+  }
+
   player.configure({
     manifest: {
       dash: {
@@ -418,11 +1436,12 @@ const loadShaka = async (videoElement, config = {}) => {
   HttpFetchPlugin.register(shaka);
   player.getNetworkingEngine().registerRequestFilter((type, request) => {
     if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
-      var _extensionOptions$drm;
+      var _extensionOptions$drm, _player$licenseReques, _player;
 
       request.headers = { ...request.headers,
         ...((_extensionOptions$drm = extensionOptions.drm[player.drmInfo().keySystem]) === null || _extensionOptions$drm === void 0 ? void 0 : _extensionOptions$drm.headers)
       };
+      (_player$licenseReques = (_player = player).licenseRequestHandler) === null || _player$licenseReques === void 0 ? void 0 : _player$licenseReques.call(_player, request);
     }
   });
   const extensions = {
@@ -452,22 +1471,22 @@ const loadShaka = async (videoElement, config = {}) => {
       enabled: track.active
     })),
     setSubtitleTrack: lang => {
-      var _player2, _player3;
+      var _player3, _player4;
 
       if (lang === 'off') {
-        var _player;
+        var _player2;
 
-        (_player = player) === null || _player === void 0 ? void 0 : _player.setTextTrackVisibility(false);
+        (_player2 = player) === null || _player2 === void 0 ? void 0 : _player2.setTextTrackVisibility(false);
         return;
       }
 
-      (_player2 = player) === null || _player2 === void 0 ? void 0 : _player2.selectTextLanguage(lang);
-      (_player3 = player) === null || _player3 === void 0 ? void 0 : _player3.setTextTrackVisibility(true);
+      (_player3 = player) === null || _player3 === void 0 ? void 0 : _player3.selectTextLanguage(lang);
+      (_player4 = player) === null || _player4 === void 0 ? void 0 : _player4.setTextTrackVisibility(true);
     },
     getAudio: () => {
-      var _player4;
+      var _player5;
 
-      const active = (_player4 = player) === null || _player4 === void 0 ? void 0 : _player4.getVariantTracks().find(track => track.active);
+      const active = (_player5 = player) === null || _player5 === void 0 ? void 0 : _player5.getVariantTracks().find(track => track.active);
       return {
         lang: active === null || active === void 0 ? void 0 : active.language,
         label: active === null || active === void 0 ? void 0 : active.label
@@ -478,10 +1497,10 @@ const loadShaka = async (videoElement, config = {}) => {
       label: track.label
     })),
     setAudioTrack: lang => {
-      var _player5;
+      var _player6;
 
       if (!lang) return;
-      (_player5 = player) === null || _player5 === void 0 ? void 0 : _player5.selectAudioLanguage(lang);
+      (_player6 = player) === null || _player6 === void 0 ? void 0 : _player6.selectAudioLanguage(lang);
     },
     on: player.addEventListener.bind(player)
   };
@@ -961,7 +1980,7 @@ const getMediaTime = (media, plugins = []) => {
     return (_plugin$getPlaybackSt2 = plugin.getPlaybackStatus) === null || _plugin$getPlaybackSt2 === void 0 ? void 0 : _plugin$getPlaybackSt2.call(plugin);
   }));
   return { ...data,
-    ...((!isLiveDuration(media.initialDuration) || Math.abs(media.duration - media.initialDuration) < 0.1) && {
+    ...((!isLiveDuration(media.initialDuration) || Math.abs(media.duration - media.initialDuration) < 0.5) && {
       duration
     })
   };

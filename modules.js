@@ -933,11 +933,15 @@ const logEventNames = {
 const userIdKey = 'userIdKey';
 
 const getUserId = () => {
-  const userId = window.localStorage.getItem(userIdKey);
+  var _window$localStorage;
+
+  const userId = (_window$localStorage = window.localStorage) === null || _window$localStorage === void 0 ? void 0 : _window$localStorage.getItem(userIdKey);
 
   if (!userId) {
+    var _window$localStorage2;
+
     const uuid = uuidv4();
-    window.localStorage.setItem(userIdKey, uuid);
+    (_window$localStorage2 = window.localStorage) === null || _window$localStorage2 === void 0 ? void 0 : _window$localStorage2.setItem(userIdKey, uuid);
     return uuid;
   }
 
