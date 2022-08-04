@@ -2043,9 +2043,7 @@ const load = async (media, {
       })
     } : currentSource;
   }, { ...preferred,
-    options: {
-      startTime
-    }
+    startTime
   });
   media.addEventListener('durationchange', () => {
     // media duration may change when playing VOD to live or SSAI streams, save it here for convenience

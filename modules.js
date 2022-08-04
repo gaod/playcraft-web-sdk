@@ -748,7 +748,8 @@ const mapLogEvents$1 = ({
       }),
       ...(state.content.type === 'lives' && {
         section_id: (_state$content$sectio = state.content.section) === null || _state$content$sectio === void 0 ? void 0 : _state$content$sectio.id,
-        name_2: state.content.channelName
+        name_2: state.content.channelName,
+        live_offset: state.liveOffset || 0
       }),
       SSAI: state.ssaiProvider || 'None'
     };
@@ -816,7 +817,12 @@ const mapLogEvents$1 = ({
       state.bufferingStartTime = Date.now();
     }
   }), on(video, 'timeupdate', () => {
-    state.currentTime = getPlaybackStatus().currentTime;
+    const status = getPlaybackStatus();
+    state.currentTime = status.currentTime;
+
+    if (state.content.type === 'lives') {
+      state.liveOffset = status.liveOffset < 10 ? 0 : status.liveOffset;
+    }
 
     if (state.bufferingStartTime) {
       emitter.emit('bufferingEnded', {
@@ -848,7 +854,7 @@ const mapLogEvents$1 = ({
     dispatchStop();
     state.content = session.getContent();
     dispatchStart();
-  }), once(video, 'emptied', () => {
+  }), once(video, 'ended', () => {
     if (state.status === 'started') {
       dispatchStop();
     }
@@ -1082,7 +1088,7 @@ const mapLogEvents = ({
       playbackSpeed: video.playbackRate,
       ...commonProperties()
     });
-  }), once(video, 'emptied', () => {
+  }), once(video, 'ended', () => {
     if (state.status === 'started') {
       dispatchStop();
     }
