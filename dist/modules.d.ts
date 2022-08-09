@@ -8,7 +8,7 @@ type Playlogv2 = Readonly<{
     getPlaybackStatus,
   }: {
     video: any
-    version: any
+    version?: any
     playerName: any
     userId?: string
     getPlaybackStatus?: () => any

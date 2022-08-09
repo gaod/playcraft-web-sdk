@@ -1,6 +1,6 @@
 {
   "name": "playcraft",
-  "version": "1.15.0",
+  "version": "1.15.1",
   "module": "dist/playcraft.module.js",
   "main": "dist/playcraft.js",
   "types": "dist/index.d.ts",
@@ -98,7 +98,7 @@
     "@emotion/react": "^11.9.3",
     "@juggle/resize-observer": "^3.3.1",
     "axios": "^0.24.0",
-    "bitmovin-player": "^8.89.0",
+    "bitmovin-player": "8.83.0",
     "classnames": "^2.2.6",
     "clipboard-polyfill": "^3.0.1",
     "core-js": "^3.22.8",

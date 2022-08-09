@@ -1682,22 +1682,36 @@ const loadBitmovin = async ({
 
   const originalLoad = player.load;
 
-  player.load = (src, startTime, type) => originalLoad.call(player, {
-    [type === 'application/x-mpegurl' ? 'hls' : 'dash']: src,
-    drm: getDrmConfig({
-      url: ['com.apple.fps.1_0', 'com.widevine.alpha', 'com.microsoft.playready'].map(keySystemName => {
-        var _extensionOptions$drm, _extensionOptions$drm2;
+  player.load = (src, startTime, type) => {
+    const {
+      muted
+    } = videoElement;
+    originalLoad.call(player, {
+      [type === 'application/x-mpegurl' ? 'hls' : 'dash']: src,
+      drm: getDrmConfig({
+        url: ['com.apple.fps.1_0', 'com.widevine.alpha', 'com.microsoft.playready'].map(keySystemName => {
+          var _extensionOptions$drm, _extensionOptions$drm2;
 
-        return (_extensionOptions$drm = extensionOptions.drm) === null || _extensionOptions$drm === void 0 ? void 0 : (_extensionOptions$drm2 = _extensionOptions$drm.servers) === null || _extensionOptions$drm2 === void 0 ? void 0 : _extensionOptions$drm2[keySystemName];
-      }).find(Boolean),
-      headers: extensionOptions.licenseRequestHeaders
-    }),
-    ...(startTime && {
-      options: {
-        startTime
+          return (_extensionOptions$drm = extensionOptions.drm) === null || _extensionOptions$drm === void 0 ? void 0 : (_extensionOptions$drm2 = _extensionOptions$drm.servers) === null || _extensionOptions$drm2 === void 0 ? void 0 : _extensionOptions$drm2[keySystemName];
+        }).find(Boolean),
+        headers: extensionOptions.licenseRequestHeaders
+      }),
+      ...(startTime && {
+        options: {
+          startTime
+        }
+      })
+    }).then(result => {
+      // Bitmovin resets muted state after load, so restore it
+      if (muted) {
+        player.mute();
+      } else {
+        player.unmute();
       }
-    })
-  });
+
+      return result;
+    });
+  };
 
   player.setAdaptationHandler = handler => {
     adaptationHandler = handler;

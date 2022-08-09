@@ -463,6 +463,15 @@ const getSource = (sourceOptions, {
   };
 };
 
+function getVersion() {
+  try {
+    // eslint-disable-next-line no-undef
+    return "1.15.1";
+  } catch (e) {
+    return undefined;
+  }
+}
+
 const matchAll = (input, pattern) => {
   const flags = [pattern.global && 'g', pattern.ignoreCase && 'i', pattern.multiline && 'm'].filter(Boolean).join('');
   const clone = new RegExp(pattern, flags);
@@ -971,7 +980,7 @@ const mapLogEvents = ({
 
   const commonProperties = () => ({
     player_name: playerName,
-    playback_module_version: version,
+    playback_module_version: version || getVersion(),
     system_time: Date.now() / 1000,
     user_id: userId,
     // TODO: split properties by videos/lives
@@ -1088,7 +1097,7 @@ const mapLogEvents = ({
       playbackSpeed: video.playbackRate,
       ...commonProperties()
     });
-  }), once(video, 'ended', () => {
+  }), on(video, 'ended', () => {
     if (state.status === 'started') {
       dispatchStop();
     }
