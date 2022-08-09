@@ -1399,6 +1399,7 @@ const loadShaka = async (videoElement, config = {}) => {
 
     (_window$Sentry = window.Sentry) === null || _window$Sentry === void 0 ? void 0 : _window$Sentry.captureException(error);
   });
+  player.addEventListener('loaded', () => videoElement.dispatchEvent(new CustomEvent('canplay')));
   player.addEventListener('adaptation', event => {
     const {
       videoBandwidth,
@@ -2070,7 +2071,7 @@ const load = async (media, {
     drm: drmOptions
   });
   player.configureExtensions(extensions);
-  return player.unload().then(() => player.load(merged.src, merged.startTime, merged.type)).then(() => media.dispatchEvent(new Event('canplay'))).catch(error => {
+  return player.unload().then(() => player.load(merged.src, merged.startTime, merged.type)).catch(error => {
     media.dispatchEvent(Object.assign(new CustomEvent('error'), {
       error
     }));
