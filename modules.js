@@ -395,7 +395,8 @@ const getDrmOptions = fallbackDrm => {
   return {
     widevine: drmOptions,
     fairplay: { ...drmOptions,
-      certificateUri: `${fallbackDrm.url}/fairplay_cert`
+      certificateUri: `${fallbackDrm.url}/fairplay_cert`,
+      ...fallbackDrm.fairplay
     },
     playready: drmOptions
   };
@@ -466,7 +467,7 @@ const getSource = (sourceOptions, {
 function getVersion() {
   try {
     // eslint-disable-next-line no-undef
-    return "1.15.2";
+    return "1.15.3";
   } catch (e) {
     return undefined;
   }

@@ -643,9 +643,10 @@ class PatchedMediaKeysApple {
 
     const setupPlayer = player => {
       player.licenseRequestHandler = request => {
-        const base64Payload = btoa(String.fromCharCode(...new Uint8Array(request.body)));
+        const base64Payload = encodeURIComponent(btoa(String.fromCharCode(...new Uint8Array(request.body))));
+        const contentId = encodeURIComponent(new TextDecoder('utf-8').decode(request.initData).slice(6));
         request.headers['Content-Type'] = 'application/x-www-form-urlencoded';
-        request.body = `spc=${base64Payload}`;
+        request.body = `spc=${base64Payload}&asset_id=${contentId}`;
       };
 
       player.configure({
@@ -1436,11 +1437,24 @@ const loadShaka = async (videoElement, config = {}) => {
 
   HttpFetchPlugin.register(shaka);
   player.getNetworkingEngine().registerRequestFilter((type, request) => {
-    if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
-      var _extensionOptions$drm, _player$licenseReques, _player;
+    const {
+      LICENSE,
+      SERVER_CERTIFICATE
+    } = shaka.net.NetworkingEngine.RequestType;
+
+    if (type === SERVER_CERTIFICATE) {
+      var _extensionOptions$drm;
 
       request.headers = { ...request.headers,
-        ...((_extensionOptions$drm = extensionOptions.drm[player.drmInfo().keySystem]) === null || _extensionOptions$drm === void 0 ? void 0 : _extensionOptions$drm.headers)
+        ...((_extensionOptions$drm = extensionOptions.drm[player.drmInfo().keySystem]) === null || _extensionOptions$drm === void 0 ? void 0 : _extensionOptions$drm.certificateHeaders)
+      };
+    }
+
+    if (type === LICENSE) {
+      var _extensionOptions$drm2, _player$licenseReques, _player;
+
+      request.headers = { ...request.headers,
+        ...((_extensionOptions$drm2 = extensionOptions.drm[player.drmInfo().keySystem]) === null || _extensionOptions$drm2 === void 0 ? void 0 : _extensionOptions$drm2.headers)
       };
       (_player$licenseReques = (_player = player).licenseRequestHandler) === null || _player$licenseReques === void 0 ? void 0 : _player$licenseReques.call(_player, request);
     }
@@ -1493,9 +1507,9 @@ const loadShaka = async (videoElement, config = {}) => {
         label: active === null || active === void 0 ? void 0 : active.label
       };
     },
-    getAudioList: () => player.getVariantTracks().map(track => ({
-      lang: track.language,
-      label: track.label
+    getAudioList: () => player.getAudioLanguages().map(lang => ({
+      lang,
+      label: lang
     })),
     setAudioTrack: lang => {
       var _player6;
@@ -1551,10 +1565,14 @@ const getDrmOptions$1 = source => {
     advanced: {}
   });
   const extensions = source.drm && Object.entries(source.drm).reduce((result, [keySystemId, options]) => {
-    if (options.headers) {
-      const keySystemName = keySystems[keySystemId] || keySystemId;
+    const keySystemName = keySystems[keySystemId] || keySystemId;
+
+    if (options.headers || options.certificateHeaders) {
       result[keySystemName] = {
-        headers: options.headers
+        headers: options.headers,
+        ...(options.certificateHeaders && {
+          certificateHeaders: options.certificateHeaders
+        })
       };
     }
 
@@ -1594,9 +1612,7 @@ const getDrmConfig = ({
   widevine = {
     level: undefined
   },
-  fairplay = {
-    certificateURL: defaultCertificateUrl(url)
-  }
+  fairplay = {}
 }) => {
   if (!url) {
     return {};
@@ -1615,7 +1631,8 @@ const getDrmConfig = ({
       LA_URL: url,
       withCredentials: false,
       headers,
-      certificateURL: fairplay.certificateURL,
+      certificateURL: fairplay.certificateURL || defaultCertificateUrl(url),
+      certificateHeaders: fairplay.certificateHeaders,
       ...FairplayKeySystem
     },
     playready: {
@@ -1904,7 +1921,8 @@ const getDrmOptions = fallbackDrm => {
   return {
     widevine: drmOptions,
     fairplay: { ...drmOptions,
-      certificateUri: `${fallbackDrm.url}/fairplay_cert`
+      certificateUri: `${fallbackDrm.url}/fairplay_cert`,
+      ...fallbackDrm.fairplay
     },
     playready: drmOptions
   };
