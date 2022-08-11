@@ -1720,7 +1720,7 @@ const loadBitmovin = async ({
         }
       })
     }).then(result => {
-      // Bitmovin resets muted state after load, so restore it
+      // Bitmovin resets muted state after load in Safari, so restore it
       if (muted) {
         player.mute();
       } else {
