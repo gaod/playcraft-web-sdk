@@ -2089,6 +2089,13 @@ const load = async (media, {
     drm: drmOptions
   });
   player.configureExtensions(extensions);
+
+  if (startTime > 0) {
+    once(media, 'loadedmetadata', () => {
+      media.currentTime = merged.startTime;
+    });
+  }
+
   return player.unload().then(() => player.load(merged.src, merged.startTime, merged.type)).catch(error => {
     media.dispatchEvent(Object.assign(new CustomEvent('error'), {
       error
