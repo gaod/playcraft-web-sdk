@@ -2089,14 +2089,17 @@ const load = async (media, {
     drm: drmOptions
   });
   player.configureExtensions(extensions);
+  let loadStartTime;
 
-  if (startTime > 0) {
-    once(media, 'loadedmetadata', () => {
+  if (merged.type !== 'application/x-mpegurl') {
+    loadStartTime = merged.startTime;
+  } else if (merged.startTime > 0) {
+    once(media, 'loadeddata', () => {
       media.currentTime = merged.startTime;
     });
   }
 
-  return player.unload().then(() => player.load(merged.src, merged.startTime, merged.type)).catch(error => {
+  return player.unload().then(() => player.load(merged.src, loadStartTime, merged.type)).catch(error => {
     media.dispatchEvent(Object.assign(new CustomEvent('error'), {
       error
     }));
@@ -2111,7 +2114,7 @@ const seek = async (media, {
 
   if (media.readyState < HAVE_METADATA) {
     await new Promise(resolve => {
-      media.addEventListener('loadedmetadata', resolve, {
+      media.addEventListener('loadeddata', resolve, {
         once: true
       });
     });
