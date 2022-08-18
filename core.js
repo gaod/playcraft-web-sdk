@@ -2094,9 +2094,9 @@ const load = async (media, {
   if (merged.type !== 'application/x-mpegurl') {
     loadStartTime = merged.startTime;
   } else if (merged.startTime > 0) {
-    once(media, 'loadeddata', () => {
+    once(media, 'loadeddata', () => setTimeout(() => {
       media.currentTime = merged.startTime;
-    });
+    }, 66));
   }
 
   return player.unload().then(() => player.load(merged.src, loadStartTime, merged.type)).catch(error => {
