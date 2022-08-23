@@ -467,7 +467,7 @@ const getSource = (sourceOptions, {
 function getVersion() {
   try {
     // eslint-disable-next-line no-undef
-    return "1.15.9";
+    return "1.15.10";
   } catch (e) {
     return undefined;
   }
