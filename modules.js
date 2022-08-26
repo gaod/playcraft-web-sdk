@@ -467,11 +467,43 @@ const getSource = (sourceOptions, {
 function getVersion() {
   try {
     // eslint-disable-next-line no-undef
-    return "1.15.10";
+    return "1.15.11";
   } catch (e) {
     return undefined;
   }
 }
+
+const timeoutError = () => new Error('request timeout');
+/**
+ * @param {URL|RequestInfo} url 
+ * @param {RequestInit} options 
+ * @param {{responseType: 'json'|'text'}}
+ */
+
+
+const retryRequest = (url, options = {}, {
+  responseType = 'json',
+  timeout = 6,
+  retryTimes = 6
+} = {}) => new Promise((resolve, reject) => {
+  setTimeout(() => reject(timeoutError()), timeout * 1000);
+  fetch(url, options).then(response => {
+    var _response$responseTyp;
+
+    return resolve(((_response$responseTyp = response[responseType]) === null || _response$responseTyp === void 0 ? void 0 : _response$responseTyp.call(response)) || response);
+  }).catch(reject);
+}).catch(error => {
+  console.log(error);
+
+  if (retryTimes > 0) {
+    return retryRequest(url, options, {
+      timeout,
+      retryTimes: retryTimes - 1
+    });
+  }
+
+  return error;
+});
 
 const matchAll = (input, pattern) => {
   const flags = [pattern.global && 'g', pattern.ignoreCase && 'i', pattern.multiline && 'm'].filter(Boolean).join('');
@@ -525,7 +557,9 @@ const selectHlsQualities = async (source, restrictions = {}) => {
     return source;
   }
 
-  const filtered = filterHlsManifestQualities((await axios.get(selected.src)).data, items => items.filter(item => meetRestriction(item, restrictions)));
+  const filtered = filterHlsManifestQualities(await retryRequest(selected.src, {}, {
+    responseType: 'text'
+  }), items => items.filter(item => meetRestriction(item, restrictions)));
 
   if (filtered) {
     return { ...selected,

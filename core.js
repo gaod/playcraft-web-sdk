@@ -1,6 +1,5 @@
 import UAParser from 'ua-parser-js';
 import 'core-js/proposals/relative-indexing-method';
-import 'axios';
 
 /* eslint-disable no-param-reassign */
 const loadNative = ({
@@ -1990,6 +1989,67 @@ const getSource = (sourceOptions, {
   };
 };
 
+const timeoutError = () => new Error('request timeout');
+/**
+ * @param {URL|RequestInfo} url 
+ * @param {RequestInit} options 
+ * @param {{responseType: 'json'|'text'}}
+ */
+
+
+const retryRequest = (url, options = {}, {
+  responseType = 'json',
+  timeout = 6,
+  retryTimes = 6
+} = {}) => new Promise((resolve, reject) => {
+  setTimeout(() => reject(timeoutError()), timeout * 1000);
+  fetch(url, options).then(response => {
+    var _response$responseTyp;
+
+    return resolve(((_response$responseTyp = response[responseType]) === null || _response$responseTyp === void 0 ? void 0 : _response$responseTyp.call(response)) || response);
+  }).catch(reject);
+}).catch(error => {
+  console.log(error);
+
+  if (retryTimes > 0) {
+    return retryRequest(url, options, {
+      timeout,
+      retryTimes: retryTimes - 1
+    });
+  }
+
+  return error;
+});
+
+const matchAll = (input, pattern) => {
+  const flags = [pattern.global && 'g', pattern.ignoreCase && 'i', pattern.multiline && 'm'].filter(Boolean).join('');
+  const clone = new RegExp(pattern, flags);
+  return Array.from(function* () {
+    let matched = true;
+
+    while (1) {
+      matched = clone.exec(input);
+
+      if (!matched) {
+        return;
+      }
+
+      yield matched;
+    }
+  }());
+};
+
+const getHlsQualityOptions = async hlsUrl => {
+  const manifest = await retryRequest(hlsUrl, {}, {
+    responseType: 'text'
+  });
+  const resolutionList = matchAll(manifest, /RESOLUTION=\d+x(\d+)/g);
+  return Array.from(new Set(resolutionList.map(([, height]) => ({
+    height: +height
+  })))).sort((a, b) => b.height - a.height);
+};
+ // for unit test
+
 /* eslint-disable no-param-reassign */
 
 const SHAKA_LIVE_DURATION = 4294967296;
@@ -2017,6 +2077,21 @@ const getMediaTime = (media, plugins = []) => {
       duration
     })
   };
+};
+
+const tryPatchHlsVideoQualities = async (player, hlsUrl) => {
+  if (/^data/.test(hlsUrl)) {
+    return;
+  } // filtered manifest comes with data URI and should be ignored
+
+
+  const videoQualities = await getHlsQualityOptions(hlsUrl).catch(e => {
+    console.warn('Failed to get HLS video qualities', e);
+  });
+
+  if (videoQualities) {
+    player.getAvailableVideoQualities = () => videoQualities;
+  }
 };
 
 const load = async (media, {
@@ -2094,9 +2169,16 @@ const load = async (media, {
   if (merged.type !== 'application/x-mpegurl') {
     loadStartTime = merged.startTime;
   } else if (merged.startTime > 0) {
-    once(media, 'loadeddata', () => setTimeout(() => {
-      media.currentTime = merged.startTime;
-    }, 66));
+    once(media, 'loadeddata', event => {
+      event.preventDefault();
+      setTimeout(() => {
+        media.currentTime = merged.startTime;
+      }, 66);
+    });
+  }
+
+  if (merged.type === 'application/x-mpegurl') {
+    await tryPatchHlsVideoQualities(player, merged.src);
   }
 
   return player.unload().then(() => player.load(merged.src, loadStartTime, merged.type)).catch(error => {
