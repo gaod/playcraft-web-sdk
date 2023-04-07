@@ -1,5 +1,7 @@
 import mitt from 'mitt';
 import axios from 'axios';
+import UAParser from 'ua-parser-js';
+import 'core-js/proposals/relative-indexing-method';
 
 /** @param {string} m3u8Manifest */
 const getManifestUrl = ({
@@ -890,7 +892,9 @@ const ensureDaiApi = async () => {
   return window.google.ima.dai.api;
 };
 
-const ImaDaiPlugin = () => {
+const ImaDaiPlugin = ({
+  requestOptionOverrides = {}
+} = {}) => {
   const emitter = mitt();
   const ref = {};
 
@@ -983,7 +987,8 @@ const ImaDaiPlugin = () => {
         contentSourceId: vodOptions === null || vodOptions === void 0 ? void 0 : vodOptions.content_source_id,
         videoId: vodOptions === null || vodOptions === void 0 ? void 0 : vodOptions.video_id,
         assetKey: liveOptions === null || liveOptions === void 0 ? void 0 : liveOptions.asset_key,
-        format: streamFormat
+        format: streamFormat,
+        ...requestOptionOverrides
       };
       const streamRequest = Object.assign(liveOptions ? new daiApi.LiveStreamRequest() : new daiApi.VODStreamRequest(), requestOptions);
       const url = await new Promise(resolve => {
@@ -1030,6 +1035,15 @@ const ImaDaiPlugin = () => {
   };
 };
 
+/* eslint-disable no-plusplus */
+new UAParser();
+
+/* eslint-disable no-param-reassign */
+
+const SHAKA_LIVE_DURATION = 4294967296;
+
+const isLiveDuration = duration => duration < SHAKA_LIVE_DURATION;
+
 const wallTimeSeconds = () => Date.now() / 1000;
 
 const StallReloadPlugin = ({
@@ -1044,11 +1058,15 @@ const StallReloadPlugin = ({
   const load = (_, {
     player,
     video,
-    source
+    reload
   }) => {
     clearInterval(state.lastTimer);
 
     const checkStall = async () => {
+      if (!isLiveDuration(video.duration)) {
+        return;
+      }
+
       if (video.paused || video.playbackRate === 0 || state.lastVideoTime !== video.currentTime || !(video.currentTime > 0)) {
         state.lastUpdateSeconds = wallTimeSeconds();
         state.lastVideoTime = video.currentTime;
@@ -1057,8 +1075,13 @@ const StallReloadPlugin = ({
 
       if (wallTimeSeconds() - state.lastUpdateSeconds > stallThresholdSeconds) {
         console.warn('Stall detected, reload to resume');
-        await player.load(source);
-        player.play();
+        await reload();
+
+        if (player.play) {
+          player.play();
+        } else {
+          video.play();
+        }
       }
     };
 
@@ -1095,6 +1118,363 @@ const goog = {
     }
   }
 };
+
+class SegmentIndex {
+  /**
+   * @param {!Array.<!shaka.media.SegmentReference>} references The list of
+   *   SegmentReferences, which must be sorted first by their start times
+   *   (ascending) and second by their end times (ascending).
+   */
+  constructor(references) {
+    /** @protected {!Array.<!shaka.media.SegmentReference>} */
+
+
+    this.references = references;
+    /** @private {shaka.util.Timer} */
+
+    this.timer_ = null;
+    /**
+     * The number of references that have been removed from the front of the
+     * array.  Used to create stable positions in the find/get APIs.
+     *
+     * @protected {number}
+     */
+
+    this.numEvicted = 0;
+    /** @private {boolean} */
+
+    this.immutable_ = false;
+  }
+  /**
+   * @override
+   * @export
+   */
+
+
+  release() {
+    if (this.immutable_) {
+      return;
+    }
+
+    this.references = [];
+
+    if (this.timer_) {
+      this.timer_.stop();
+    }
+
+    this.timer_ = null;
+  }
+  /**
+   * Finds the position of the segment for the given time, in seconds, relative
+   * to the start of the presentation.  Returns the position of the segment
+   * with the largest end time if more than one segment is known for the given
+   * time.
+   *
+   * @param {number} time
+   * @return {?number} The position of the segment, or null if the position of
+   *   the segment could not be determined.
+   * @export
+   */
+
+
+  find(time) {
+    // For live streams, searching from the end is faster.  For VOD, it balances
+    // out either way.  In both cases, references.length is small enough that
+    // the difference isn't huge.
+    const lastReferenceIndex = this.references.length - 1;
+
+    for (let i = lastReferenceIndex; i >= 0; --i) {
+      const r = this.references[i];
+      const start = r.startTime; // A rounding error can cause /time/ to equal e.endTime or fall in between
+      // the references by a fraction of a second. To account for this, we use
+      // the start of the next segment as /end/, unless this is the last
+      // reference, in which case we use its end time as /end/.
+
+      const end = i < lastReferenceIndex ? this.references[i + 1].startTime : r.endTime; // Note that a segment ends immediately before the end time.
+
+      if (time >= start && time < end) {
+        return i + this.numEvicted;
+      }
+    }
+
+    if (this.references.length && time < this.references[0].startTime) {
+      return this.numEvicted;
+    }
+
+    return null;
+  }
+  /**
+   * Gets the SegmentReference for the segment at the given position.
+   *
+   * @param {number} position The position of the segment as returned by find().
+   * @return {shaka.media.SegmentReference} The SegmentReference, or null if
+   *   no such SegmentReference exists.
+   * @export
+   */
+
+
+  get(position) {
+    if (this.references.length == 0) {
+      return null;
+    }
+
+    const index = position - this.numEvicted;
+
+    if (index < 0 || index >= this.references.length) {
+      return null;
+    }
+
+    return this.references[index];
+  }
+  /**
+   * Offset all segment references by a fixed amount.
+   *
+   * @param {number} offset The amount to add to each segment's start and end
+   *   times.
+   * @export
+   */
+
+
+  offset(offset) {
+    if (!this.immutable_) {
+      for (const ref of this.references) {
+        ref.startTime += offset;
+        ref.endTime += offset;
+        ref.timestampOffset += offset;
+      }
+    }
+  }
+  /**
+   * Merges the given SegmentReferences.  Supports extending the original
+   * references only.  Will replace old references with equivalent new ones, and
+   * keep any unique old ones.
+   *
+   * Used, for example, by the DASH and HLS parser, where manifests may not list
+   * all available references, so we must keep available references in memory to
+   * fill the availability window.
+   *
+   * @param {!Array.<!shaka.media.SegmentReference>} references The list of
+   *   SegmentReferences, which must be sorted first by their start times
+   *   (ascending) and second by their end times (ascending).
+   */
+
+
+  merge(references) {
+
+    if (this.immutable_) {
+      return;
+    }
+
+    if (!references.length) {
+      return;
+    } // Partial segments are used for live edge, and should be removed when they
+    // get older. Remove the old SegmentReferences after the first new
+    // reference's start time.
+
+
+    this.references = this.references.filter(r => r.startTime < references[0].startTime);
+    this.references.push(...references);
+  }
+  /**
+   * Merges the given SegmentReferences and evicts the ones that end before the
+   * given time.  Supports extending the original references only.
+   * Will not replace old references or interleave new ones.
+   * Used, for example, by the DASH and HLS parser, where manifests may not list
+   * all available references, so we must keep available references in memory to
+   * fill the availability window.
+   *
+   * @param {!Array.<!shaka.media.SegmentReference>} references The list of
+   *   SegmentReferences, which must be sorted first by their start times
+   *   (ascending) and second by their end times (ascending).
+   * @param {number} windowStart The start of the availability window to filter
+   *   out the references that are no longer available.
+   * @export
+   */
+
+
+  mergeAndEvict(references, windowStart) {
+    // Filter out the references that are no longer available to avoid
+    // repeatedly evicting them and messing up eviction count.
+    references = references.filter(r => r.endTime > windowStart && (this.references.length == 0 || r.endTime > this.references[0].startTime));
+    const oldFirstRef = this.references[0];
+    this.merge(references);
+    const newFirstRef = this.references[0];
+
+    if (oldFirstRef) {
+      // We don't compare the actual ref, since the object could legitimately be
+      // replaced with an equivalent.  Even the URIs could change due to
+      // load-balancing actions taken by the server.  However, if the time
+      // changes, its not an equivalent reference.
+      goog.asserts.assert(oldFirstRef.startTime == newFirstRef.startTime, 'SegmentIndex.merge should not change the first reference time!');
+    }
+
+    this.evict(windowStart);
+  }
+  /**
+   * Removes all SegmentReferences that end before the given time.
+   *
+   * @param {number} time The time in seconds.
+   * @export
+   */
+
+
+  evict(time) {
+    if (this.immutable_) {
+      return;
+    }
+
+    const oldSize = this.references.length;
+    this.references = this.references.filter(ref => ref.endTime > time);
+    const newSize = this.references.length;
+    const diff = oldSize - newSize; // Tracking the number of evicted refs will keep their "positions" stable
+    // for the caller.
+
+    this.numEvicted += diff;
+  }
+  /**
+   * Drops references that start after windowEnd, or end before windowStart,
+   * and contracts the last reference so that it ends at windowEnd.
+   *
+   * Do not call on the last period of a live presentation (unknown duration).
+   * It is okay to call on the other periods of a live presentation, where the
+   * duration is known and another period has been added.
+   *
+   * @param {number} windowStart
+   * @param {?number} windowEnd
+   * @param {boolean=} isNew Whether this is a new SegmentIndex and we shouldn't
+   *   update the number of evicted elements.
+   * @export
+   */
+
+
+  fit(windowStart, windowEnd, isNew = false) {
+    goog.asserts.assert(windowEnd != null, 'Content duration must be known for static content!');
+    goog.asserts.assert(windowEnd != Infinity, 'Content duration must be finite for static content!');
+
+    if (this.immutable_) {
+      return;
+    } // Trim out references we will never use.
+
+
+    while (this.references.length) {
+      const lastReference = this.references[this.references.length - 1];
+
+      if (lastReference.startTime >= windowEnd) {
+        this.references.pop();
+      } else {
+        break;
+      }
+    }
+
+    while (this.references.length) {
+      const firstReference = this.references[0];
+
+      if (firstReference.endTime <= windowStart) {
+        this.references.shift();
+
+        if (!isNew) {
+          this.numEvicted++;
+        }
+      } else {
+        break;
+      }
+    }
+
+    if (this.references.length == 0) {
+      return;
+    } // Adjust the last SegmentReference.
+
+
+    const lastReference = this.references[this.references.length - 1];
+    this.references[this.references.length - 1] = new shaka.media.SegmentReference(lastReference.startTime,
+    /* endTime= */
+    windowEnd, lastReference.getUrisInner, lastReference.startByte, lastReference.endByte, lastReference.initSegmentReference, lastReference.timestampOffset, lastReference.appendWindowStart, lastReference.appendWindowEnd, lastReference.partialReferences, lastReference.tilesLayout, lastReference.tileDuration, lastReference.syncTime);
+  }
+  /**
+   * Updates the references every so often.  Stops when the references list
+   * returned by the callback is null.
+   *
+   * @param {number} interval The interval in seconds.
+   * @param {function():Array.<shaka.media.SegmentReference>} updateCallback
+   * @export
+   */
+
+
+  updateEvery(interval, updateCallback) {
+    goog.asserts.assert(!this.timer_, 'SegmentIndex timer already started!');
+
+    if (this.immutable_) {
+      return;
+    }
+
+    if (this.timer_) {
+      this.timer_.stop();
+    }
+
+    this.timer_ = new shaka.util.Timer(() => {
+      const references = updateCallback();
+
+      if (references) {
+        this.references.push(...references);
+      } else {
+        this.timer_.stop();
+        this.timer_ = null;
+      }
+    });
+    this.timer_.tickEvery(interval);
+  }
+  /** @return {!shaka.media.SegmentIterator} */
+
+
+  [Symbol.iterator]() {
+    const iter = this.getIteratorForTime(0);
+    goog.asserts.assert(iter != null, 'Iterator for 0 should never be null!');
+    return iter;
+  }
+  /**
+   * @return {boolean}
+   */
+
+
+  isEmpty() {
+    return this.references.length == 0;
+  }
+  /**
+   * Create a SegmentIndex for a single segment of the given start time and
+   * duration at the given URIs.
+   *
+   * @param {number} startTime
+   * @param {number} duration
+   * @param {!Array.<string>} uris
+   * @return {!shaka.media.SegmentIndex}
+   * @export
+   */
+
+
+  static forSingleSegment(startTime, duration, uris) {
+    const reference = new shaka.media.SegmentReference(
+    /* startTime= */
+    startTime,
+    /* endTime= */
+    startTime + duration,
+    /* getUris= */
+    () => uris,
+    /* startByte= */
+    0,
+    /* endByte= */
+    null,
+    /* initSegmentReference= */
+    null,
+    /* presentationTimeOffset= */
+    startTime,
+    /* appendWindowStart= */
+    startTime,
+    /* appendWindowEnd= */
+    startTime + duration);
+    return new SegmentIndex([reference]);
+  }
+
+}
 
 const hasSameElements = (a, b) => {
   if (a.length != b.length) {
@@ -3403,7 +3783,7 @@ class PeriodCombiner {
       id: 0,
       originalId: '',
       createSegmentIndex: () => Promise.resolve(),
-      segmentIndex: new shaka.media.SegmentIndex([]),
+      segmentIndex: new SegmentIndex([]),
       mimeType: '',
       codecs: '',
       encrypted: false,
@@ -4106,7 +4486,7 @@ class SegmentBase {
     // segmentIndex in the map.
 
     goog.asserts.assert(!segmentIndex, 'Should not call generateSegmentIndex twice');
-    segmentIndex = new shaka.media.SegmentIndex(references);
+    segmentIndex = new SegmentIndex(references);
 
     if (fitLast) {
       segmentIndex.fit(appendWindowStart, appendWindowEnd,
@@ -4341,7 +4721,7 @@ class SegmentTemplate {
       if (shouldFit) {
         // Fit the new references before merging them, so that the merge
         // algorithm has a more accurate view of their start and end times.
-        const wrapper = new shaka.media.SegmentIndex(references);
+        const wrapper = new SegmentIndex(references);
         wrapper.fit(periodStart, periodEnd,
         /* isNew= */
         true);
@@ -4349,7 +4729,7 @@ class SegmentTemplate {
 
       segmentIndex.mergeAndEvict(references, context.presentationTimeline.getSegmentAvailabilityStart());
     } else {
-      segmentIndex = new shaka.media.SegmentIndex(references);
+      segmentIndex = new SegmentIndex(references);
     }
 
     context.presentationTimeline.notifySegments(references);
@@ -4597,7 +4977,7 @@ class SegmentTemplate {
     /** @type {shaka.media.SegmentIndex} */
 
 
-    const segmentIndex = new shaka.media.SegmentIndex(references); // If the availability timeline currently ends before the period, we will
+    const segmentIndex = new SegmentIndex(references); // If the availability timeline currently ends before the period, we will
     // need to add references over time.
 
     const willNeedToAddReferences = presentationTimeline.getSegmentAvailabilityEnd() < getPeriodEnd(); // When we start a live stream with a period that ends within the
@@ -4775,7 +5155,7 @@ class SegmentList {
       const start = context.presentationTimeline.getSegmentAvailabilityStart();
       segmentIndex.mergeAndEvict(references, start);
     } else {
-      segmentIndex = new shaka.media.SegmentIndex(references);
+      segmentIndex = new SegmentIndex(references);
     }
 
     context.presentationTimeline.notifySegments(references);
@@ -5330,7 +5710,7 @@ class ContentProtection {
    */
 
 
-  static convertElements_(defaultInit, elements, keySystemsByURI, keyIds) {
+  static convertElements_(defaultInit, elements, keySystemsByURI) {
     const licenseUrlParsers = ContentProtection.licenseUrlParsers_;
     /** @type {!Array.<shaka.extern.DrmInfo>} */
 
@@ -5340,15 +5720,9 @@ class ContentProtection {
       const keySystem = keySystemsByURI[element.schemeUri];
 
       if (keySystem) {
-        goog.asserts.assert(!element.init || element.init.length, 'Init data must be null or non-empty.');
-        const proInitData = ContentProtection.getInitDataFromPro_(element);
-        let clearKeyInitData = null;
+        goog.asserts.assert(!element.init || element.init.length, 'Init data must be null or non-empty.'); // TODO check Playready, clearkey
 
-        if (element.schemeUri === ContentProtection.ClearKeySchemeUri_) {
-          clearKeyInitData = ContentProtection.getInitDataClearKey_(element, keyIds);
-        }
-
-        const initData = element.init || defaultInit || proInitData || clearKeyInitData;
+        const initData = element.init || defaultInit;
         const info = ManifestParserUtils.createDrmInfo(keySystem, initData);
         const licenseParser = licenseUrlParsers.get(keySystem);
 
@@ -5867,7 +6241,7 @@ class DashParser {
 
     this.updatePeriod_ =
     /** @type {number} */
-    Math.max(120, XmlUtils.parseAttr(mpd, 'minimumUpdatePeriod', XmlUtils.parseDuration, -1));
+    Math.max(1, XmlUtils.parseAttr(mpd, 'minimumUpdatePeriod', XmlUtils.parseDuration, -1));
     const presentationStartTime = XmlUtils.parseAttr(mpd, 'availabilityStartTime', XmlUtils.parseDate) - (window.segmentTimestampOffset || 0); // Shaka may keep buffering inifnitely for lower timeShiftBufferDepth
 
     let segmentAvailabilityDuration = Math.max(60, XmlUtils.parseAttr(mpd, 'timeShiftBufferDepth', XmlUtils.parseDuration));
@@ -6649,7 +7023,7 @@ class DashParser {
         } = context.representation;
         const duration = context.periodInfo.duration || 0;
         streamInfo = {
-          generateSegmentIndex: () => Promise.resolve(shaka.media.SegmentIndex.forSingleSegment(periodStart, duration, baseUris))
+          generateSegmentIndex: () => Promise.resolve(SegmentIndex.forSingleSegment(periodStart, duration, baseUris))
         };
       }
     } catch (error) {

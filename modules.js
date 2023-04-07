@@ -140,7 +140,7 @@ const createApi = ({
 const getStreamInfo = (sources = [], {
   type = '',
   licenseUri,
-  certificateUri,
+  certificateUri = `${licenseUri}/fairplay_cert`,
   licenseHeaders: headers,
   thumbnailEnabled
 } = {}) => {
@@ -184,6 +184,7 @@ const getContentInfo = data => {
   return {
     title: data.title,
     channelTitle: data.subtitle,
+    channelIcon: data.image_url,
     end: data.end,
     section: {
       id: data.section_id,
@@ -200,139 +201,6 @@ const getContentInfo = data => {
   };
 };
 
-const deepEqual = (current, updated) => JSON.stringify(current) === JSON.stringify(updated);
-
-const HEARTBEAT_INTERVAL_MS = 10000;
-const UPDATE_INTERVAL_MS = 10000;
-
-const isContentExpired = content => typeof (content === null || content === void 0 ? void 0 : content.end_time) === 'number' && content.end_time * 1000 <= Date.now();
-
-const startPlaybackSession = async (playbackApi, options = {}) => {
-  const emitter = mitt();
-  const {
-    type,
-    id,
-    getCurrentTime,
-    cache
-  } = options;
-  const {
-    onChangeContent,
-    onSourceChange,
-    onInvalidToken,
-    heartbeatTime = HEARTBEAT_INTERVAL_MS,
-    updateTime = UPDATE_INTERVAL_MS
-  } = options;
-  const state = {}; // get last playback time to start playback fast
-  // getContent is not critical, so don't block playback if it hangs or fails(ignored in API logic)
-
-  const loadContent = () => {
-    var _options$cache, _options$cache$get;
-
-    return Promise.race([// eslint-disable-next-line no-use-before-define
-    updateContent((_options$cache = options.cache) === null || _options$cache === void 0 ? void 0 : (_options$cache$get = _options$cache.get(`${type}/${id}`)) === null || _options$cache$get === void 0 ? void 0 : _options$cache$get.content), new Promise(resolve => {
-      setTimeout(resolve, UPDATE_INTERVAL_MS);
-    })]);
-  };
-
-  const getPlaybackInfo = async () => {
-    var _cache$get;
-
-    state.sources = ((cache === null || cache === void 0 ? void 0 : (_cache$get = cache.get(`${type}/${id}`)) === null || _cache$get === void 0 ? void 0 : _cache$get.playbackInfo) || (await playbackApi.getPlaybackInfo({
-      type,
-      id,
-      token: state.token
-    }))).sources;
-    onSourceChange === null || onSourceChange === void 0 ? void 0 : onSourceChange(state.sources);
-  };
-
-  async function updateContent(contentInCache) {
-    var _state$content;
-
-    const content = !contentInCache || isContentExpired(contentInCache) ? await playbackApi.getContent({
-      type,
-      id
-    }) : contentInCache;
-
-    if (!deepEqual(content, state.content)) {
-      state.content = content;
-      onChangeContent === null || onChangeContent === void 0 ? void 0 : onChangeContent({
-        type,
-        ...content,
-        sources: state.sources
-      });
-    }
-
-    if (content.end_time && content.end_time === ((_state$content = state.content) === null || _state$content === void 0 ? void 0 : _state$content.end_time)) {
-      clearTimeout(state.endTimeoutId);
-      state.endTimeoutId = setTimeout(() => {
-        loadContent();
-        getPlaybackInfo();
-      }, content.end_time * 1000 - Date.now());
-    }
-  }
-
-  const waitForContent = loadContent();
-  const sessionInfo = await playbackApi.startPlayback({
-    type,
-    id
-  });
-  const requestParams = {
-    type,
-    id,
-    token: sessionInfo.token
-  };
-  state.token = sessionInfo.token;
-  await getPlaybackInfo();
-  let updateIntervalId;
-
-  if (type === 'lives') {
-    updateIntervalId = setInterval(updateContent, updateTime);
-  }
-
-  let lastPlayedTime;
-
-  const updateLastPlayed = () => {
-    const currentTime = getCurrentTime === null || getCurrentTime === void 0 ? void 0 : getCurrentTime();
-
-    if (currentTime >= 0 && lastPlayedTime !== currentTime) {
-      lastPlayedTime = currentTime;
-      playbackApi.updateLastPlayed({ ...requestParams,
-        time: currentTime
-      });
-    }
-  };
-
-  if (type === 'videos') {
-    updateIntervalId = setInterval(updateLastPlayed, updateTime);
-  }
-
-  const heartbeatIntervalId = setInterval(() => playbackApi.heartbeat(requestParams).catch(error => {
-    var _error$response;
-
-    if (/4\d\d/.test((_error$response = error.response) === null || _error$response === void 0 ? void 0 : _error$response.status)) {
-      clearInterval(heartbeatIntervalId);
-      onInvalidToken === null || onInvalidToken === void 0 ? void 0 : onInvalidToken(error);
-    }
-  }), heartbeatTime);
-
-  const end = () => {
-    updateLastPlayed();
-    clearInterval(updateIntervalId);
-    clearInterval(heartbeatIntervalId);
-    clearTimeout(state.endTimeoutId);
-    emitter.emit('playbackEnded');
-    return playbackApi.endPlayback(requestParams);
-  };
-
-  await waitForContent;
-  return { ...state,
-    token: sessionInfo.token,
-    drmPortalUrl: sessionInfo.drm_portal_url,
-    updateLastPlayed,
-    end
-  };
-};
-
 const on = (target, name, handler) => {
   target.addEventListener(name, handler);
   return () => target.removeEventListener(name, handler);
@@ -346,216 +214,6 @@ const once = (target, name, handler) => {
 
   target.addEventListener(name, oneTime);
   return () => target.removeEventListener(name, oneTime);
-};
-
-/* eslint-disable no-bitwise */
-const uuidv4 = () => {
-  const crypto = window.crypto || window.msCrypto;
-  return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
-};
-
-const modes = {
-  videos: 'video',
-  lives: 'live'
-};
-const logEventNames = {
-  playbackBegan: 'video_playback_began',
-  playbackStarted: 'video_playback_started',
-  playbackStopped: 'video_playback_stopped',
-  playbackEnded: 'video_playback_ended',
-  bufferingStarted: 'video_buffering_started',
-  bufferingEnded: 'video_buffering_ended',
-  seeked: 'video_seeking_ended',
-  playbackError: 'video_playback_error_occurred',
-  playing: 'play',
-  paused: 'pause',
-  rewind: 'rewind',
-  forward: 'forward',
-  previousEpisode: 'previous_episode',
-  nextEpisode: 'next_episode',
-  openSettings: 'setting_page_entered',
-  closeSettings: 'setting_page_exited',
-  adPlaybackStarted: 'ad_playback_started',
-  adPlaybackStopped: 'ad_playback_stopped'
-};
-
-const mapLogEvents = ({
-  video,
-  session = video,
-  version,
-  playerName,
-  getPlaybackStatus = () => video
-}) => {
-  var _session$getContent;
-
-  const emitter = mitt();
-  const state = {
-    status: 'init',
-    seeking: false,
-    playerStartTime: Date.now(),
-    moduleStartTime: Date.now(),
-    content: ((_session$getContent = session.getContent) === null || _session$getContent === void 0 ? void 0 : _session$getContent.call(session)) || {}
-  };
-
-  const commonPropties = () => {
-    var _state$content$sectio;
-
-    return {
-      player_name: playerName,
-      playback_module_version: version,
-      playback_mode: modes[state.content.type],
-      playback_session_id: state.sessionId,
-      id: state.content.id,
-      name: state.content.title,
-      ...(state.content.type === 'videos' && {
-        current_position: state.currentTime,
-        video_total_duration: state.duration
-      }),
-      ...(state.content.type === 'lives' && {
-        section_id: (_state$content$sectio = state.content.section) === null || _state$content$sectio === void 0 ? void 0 : _state$content$sectio.id,
-        name_2: state.content.channelName
-      }),
-      SSAI: state.ssaiProvider || 'None'
-    };
-  };
-
-  const dispatchStart = () => {
-    if (state.status === 'started') {
-      return;
-    }
-
-    state.status = 'started';
-    state.lastStartTime = Date.now();
-    const eventName = state.isPlayingAd ? 'adPlaybackStarted' : 'playbackStarted';
-    emitter.emit(eventName, commonPropties());
-  };
-
-  const dispatchStop = () => {
-    if (state.status !== 'started') {
-      return;
-    }
-
-    state.status = 'stopped';
-    const played = (Date.now() - state.lastStartTime) / 1000;
-
-    if (state.isPlayingAd) {
-      state.adPlayedDuration += played;
-    } else {
-      state.playedDuration += played;
-    }
-
-    const eventName = state.isPlayingAd ? 'adPlaybackStopped' : 'playbackStopped';
-    emitter.emit(eventName, { ...commonPropties(),
-      ...(state.isPlayingAd && {
-        ad_played_duration: played
-      })
-    });
-  };
-
-  const registered = [on(video, 'error', event => {
-    var _event$error, _event$error2, _event$error2$data;
-
-    emitter.emit('playbackError', {
-      module_error_code: ((_event$error = event.error) === null || _event$error === void 0 ? void 0 : _event$error.code) || ((_event$error2 = event.error) === null || _event$error2 === void 0 ? void 0 : (_event$error2$data = _event$error2.data) === null || _event$error2$data === void 0 ? void 0 : _event$error2$data.code),
-      ...commonPropties()
-    });
-  }), once(video, 'playerStarted', () => {
-    state.playerStartTime = Date.now();
-  }), on(video, 'durationchange', () => {
-    // duration may change when playing an ad stitched stream, take only initial value
-    if (!state.duration) {
-      state.duration = getPlaybackStatus().duration;
-    }
-  }), once(video, 'canplay', () => {
-    state.status = 'began';
-    state.sessionId = uuidv4();
-    state.playedDuration = 0;
-    emitter.emit('playbackBegan', {
-      player_startup_time: (state.playerStartTime - state.moduleStartTime) / 1000,
-      video_startup_time: (Date.now() - state.moduleStartTime) / 1000,
-      ...commonPropties()
-    });
-  }), on(video, 'playing', dispatchStart), on(video, 'waiting', () => {
-    if (!state.bufferingStartTime) {
-      emitter.emit('bufferingStarted', commonPropties());
-      state.bufferingStartTime = Date.now();
-    }
-  }), on(video, 'timeupdate', () => {
-    state.currentTime = getPlaybackStatus().currentTime;
-
-    if (state.bufferingStartTime) {
-      emitter.emit('bufferingEnded', {
-        buffering_second: (Date.now() - state.bufferingStartTime) / 1000,
-        ...commonPropties()
-      });
-      state.bufferingStartTime = undefined;
-    }
-  }), on(video, 'pause', dispatchStop), on(video, 'seeking', () => {
-    state.seekingFrom = state.currentTime;
-  }), on(session, 'userSeeking', () => {
-    state.seeking = true;
-  }), on(video, 'seeked', () => {
-    if (state.seeking) {
-      emitter.emit('seeked', {
-        seeking_from: state.seekingFrom,
-        seeking_to: video.currentTime,
-        ...commonPropties()
-      });
-    }
-
-    state.seeking = false;
-  }), on(session, 'sectionChange', () => {
-    dispatchStop();
-    state.content = session.getContent();
-    dispatchStart();
-  }), once(video, 'emptied', () => {
-    if (state.status === 'started') {
-      dispatchStop();
-    }
-
-    state.status = 'init';
-    emitter.emit('playbackEnded', {
-      video_playback_ended_at_percentage: state.currentTime / state.duration,
-      video_total_played_duration: state.playedDuration,
-      ...(state.ssaiProvider && {
-        ad_total_played_duration: state.adPlayedDuration
-      }),
-      ...commonPropties()
-    });
-  }), once(video, 'loadedAdMetadata', event => {
-    state.ssaiProvider = event.data.provider;
-    state.adPlayedDuration = 0;
-  }), on(session, 'adBreakStarted', () => {
-    dispatchStop();
-    state.isPlayingAd = true;
-
-    if (!state.seeking) {
-      dispatchStart();
-    }
-  }), on(session, 'adBreakEnded', () => {
-    dispatchStop();
-    state.isPlayingAd = false;
-
-    if (!state.seeking) {
-      dispatchStart();
-    }
-  })];
-  return {
-    addEventListener: (name, handler) => emitter.on(name, handler),
-    all: handler => emitter.on('*', handler),
-    emit: (name, {
-      currentTime
-    }) => {
-      emitter.emit(name, {
-        current_position: currentTime,
-        ...commonPropties()
-      });
-    },
-    updateContent: content => {
-      state.content = content;
-    },
-    reset: () => registered.forEach(off => off())
-  };
 };
 
 const EnvironmentErrorName = {
@@ -685,7 +343,7 @@ const validateEnvironment = (supportEnvironmentList = []) => {
 
     scopes = newScopes;
   }
-}; // IE doesn't support pointer query, assume it always have pointer
+}; // Some touch devices with a mouse can't be distinguished, assume no mouse
 
 /* eslint-disable no-param-reassign */
 const VideoSourceTypeMap = {
@@ -737,7 +395,8 @@ const getDrmOptions = fallbackDrm => {
   return {
     widevine: drmOptions,
     fairplay: { ...drmOptions,
-      certificateUri: `${fallbackDrm.url}/fairplay_cert`
+      certificateUri: `${fallbackDrm.url}/fairplay_cert`,
+      ...fallbackDrm.fairplay
     },
     playready: drmOptions
   };
@@ -785,9 +444,9 @@ const getSource = (sourceOptions, {
         src: option
       }),
       drm: getDrmOptions(fallbackDrm)
-    }), {
+    })), {
       preferManifestType
-    }));
+    });
   }
 
   const matched = sourceOptions.find(source => !preferManifestType || matchType(source, preferManifestType));
@@ -804,6 +463,47 @@ const getSource = (sourceOptions, {
     type
   };
 };
+
+function getVersion() {
+  try {
+    // eslint-disable-next-line no-undef
+    return "1.15.11";
+  } catch (e) {
+    return undefined;
+  }
+}
+
+const timeoutError = () => new Error('request timeout');
+/**
+ * @param {URL|RequestInfo} url 
+ * @param {RequestInit} options 
+ * @param {{responseType: 'json'|'text'}}
+ */
+
+
+const retryRequest = (url, options = {}, {
+  responseType = 'json',
+  timeout = 6,
+  retryTimes = 6
+} = {}) => new Promise((resolve, reject) => {
+  setTimeout(() => reject(timeoutError()), timeout * 1000);
+  fetch(url, options).then(response => {
+    var _response$responseTyp;
+
+    return resolve(((_response$responseTyp = response[responseType]) === null || _response$responseTyp === void 0 ? void 0 : _response$responseTyp.call(response)) || response);
+  }).catch(reject);
+}).catch(error => {
+  console.log(error);
+
+  if (retryTimes > 0) {
+    return retryRequest(url, options, {
+      timeout,
+      retryTimes: retryTimes - 1
+    });
+  }
+
+  return error;
+});
 
 const matchAll = (input, pattern) => {
   const flags = [pattern.global && 'g', pattern.ignoreCase && 'i', pattern.multiline && 'm'].filter(Boolean).join('');
@@ -857,7 +557,9 @@ const selectHlsQualities = async (source, restrictions = {}) => {
     return source;
   }
 
-  const filtered = filterHlsManifestQualities((await axios.get(selected.src)).data, items => items.filter(item => meetRestriction(item, restrictions)));
+  const filtered = filterHlsManifestQualities(await retryRequest(selected.src, {}, {
+    responseType: 'text'
+  }), items => items.filter(item => meetRestriction(item, restrictions)));
 
   if (filtered) {
     return { ...selected,
@@ -874,6 +576,622 @@ const selectHlsQualities = async (source, restrictions = {}) => {
   return source;
 };
  // for unit test
+
+/* eslint-disable no-param-reassign */
+
+const SHAKA_LIVE_DURATION = 4294967296;
+
+const isLiveDuration = duration => duration < SHAKA_LIVE_DURATION;
+
+const deepEqual = (current, updated) => JSON.stringify(current) === JSON.stringify(updated);
+
+const HEARTBEAT_INTERVAL_MS = 10000;
+const UPDATE_INTERVAL_MS = 10000;
+
+const isContentExpired = content => typeof (content === null || content === void 0 ? void 0 : content.end_time) === 'number' && content.end_time * 1000 <= Date.now();
+
+const startPlaybackSession = async (playbackApi, options = {}) => {
+  const emitter = mitt();
+  const {
+    type,
+    id,
+    getCurrentTime,
+    cache,
+    media
+  } = options;
+  const {
+    onChangeContent,
+    onSourceChange,
+    onInvalidToken,
+    onSessionStart,
+    requestNewSession,
+    heartbeatTime = HEARTBEAT_INTERVAL_MS,
+    updateTime = UPDATE_INTERVAL_MS
+  } = options;
+  const state = {}; // get last playback time to start playback fast
+  // getContent is not critical, so don't block playback if it hangs or fails(ignored in API logic)
+
+  const loadContent = () => {
+    var _options$cache, _options$cache$get;
+
+    return Promise.race([// eslint-disable-next-line no-use-before-define
+    updateContent((_options$cache = options.cache) === null || _options$cache === void 0 ? void 0 : (_options$cache$get = _options$cache.get(`${type}/${id}`)) === null || _options$cache$get === void 0 ? void 0 : _options$cache$get.content), new Promise(resolve => {
+      setTimeout(resolve, UPDATE_INTERVAL_MS);
+    })]);
+  };
+
+  const getPlaybackInfo = async () => {
+    var _cache$get;
+
+    state.sources = ((cache === null || cache === void 0 ? void 0 : (_cache$get = cache.get(`${type}/${id}`)) === null || _cache$get === void 0 ? void 0 : _cache$get.playbackInfo) || (await playbackApi.getPlaybackInfo({
+      type,
+      id,
+      token: state.token
+    }))).sources;
+    onSourceChange === null || onSourceChange === void 0 ? void 0 : onSourceChange(state.sources);
+  };
+
+  async function updateContent(contentInCache) {
+    var _state$content;
+
+    const content = !contentInCache || isContentExpired(contentInCache) ? await playbackApi.getContent({
+      type,
+      id
+    }) : contentInCache;
+
+    if (!deepEqual(content, state.content)) {
+      state.content = content;
+      onChangeContent === null || onChangeContent === void 0 ? void 0 : onChangeContent({
+        type,
+        ...content,
+        sources: state.sources
+      });
+    }
+
+    if (content.end_time && content.end_time === ((_state$content = state.content) === null || _state$content === void 0 ? void 0 : _state$content.end_time)) {
+      clearTimeout(state.endTimeoutId);
+      state.endTimeoutId = setTimeout(() => {
+        if (isLiveDuration(media.duration)) {
+          // Request new session for self linear.
+          requestNewSession();
+        } else {
+          // Request new content for ip linear.
+          updateContent();
+        }
+      }, content.end_time * 1000 - Date.now());
+    }
+  }
+
+  const waitForContent = loadContent();
+  const sessionInfo = await playbackApi.startPlayback({
+    type,
+    id
+  });
+  onSessionStart === null || onSessionStart === void 0 ? void 0 : onSessionStart(sessionInfo);
+  const requestParams = {
+    type,
+    id,
+    token: sessionInfo.token
+  };
+  state.token = sessionInfo.token;
+  await getPlaybackInfo();
+  let updateIntervalId;
+
+  if (type === 'lives') {
+    updateIntervalId = setInterval(updateContent, updateTime);
+  }
+
+  let lastPlayedTime;
+
+  const updateLastPlayed = () => {
+    const currentTime = getCurrentTime === null || getCurrentTime === void 0 ? void 0 : getCurrentTime();
+
+    if (currentTime >= 0 && lastPlayedTime !== currentTime) {
+      lastPlayedTime = currentTime;
+      playbackApi.updateLastPlayed({ ...requestParams,
+        time: currentTime
+      });
+    }
+  };
+
+  if (type === 'videos') {
+    updateIntervalId = setInterval(updateLastPlayed, updateTime);
+  }
+
+  const heartbeatIntervalId = setInterval(() => playbackApi.heartbeat(requestParams).catch(error => {
+    var _error$response;
+
+    if (/4\d\d/.test((_error$response = error.response) === null || _error$response === void 0 ? void 0 : _error$response.status)) {
+      clearInterval(heartbeatIntervalId);
+      onInvalidToken === null || onInvalidToken === void 0 ? void 0 : onInvalidToken(error);
+    }
+  }), heartbeatTime);
+
+  const end = () => {
+    updateLastPlayed();
+    clearInterval(updateIntervalId);
+    clearInterval(heartbeatIntervalId);
+    clearTimeout(state.endTimeoutId);
+    emitter.emit('playbackEnded');
+    return playbackApi.endPlayback(requestParams);
+  };
+
+  await waitForContent;
+  return { ...state,
+    token: sessionInfo.token,
+    drmPortalUrl: sessionInfo.drm_portal_url,
+    updateLastPlayed,
+    end
+  };
+};
+
+/* eslint-disable no-bitwise */
+const uuidv4 = () => {
+  const crypto = window.crypto || window.msCrypto;
+  return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+};
+
+const modes = {
+  videos: 'video',
+  lives: 'live'
+};
+const logEventNames$1 = {
+  playbackBegan: 'video_playback_began',
+  playbackStarted: 'video_playback_started',
+  playbackStopped: 'video_playback_stopped',
+  playbackEnded: 'video_playback_ended',
+  bufferingStarted: 'video_buffering_started',
+  bufferingEnded: 'video_buffering_ended',
+  playbackSpeedChange: 'playback_speed_change',
+  seeked: 'video_seeking_ended',
+  playbackError: 'video_playback_error_occurred',
+  playing: 'play',
+  paused: 'pause',
+  rewind: 'rewind',
+  forward: 'forward',
+  speedSettingChange: 'speed_setting_change',
+  previousEpisode: 'previous_episode',
+  nextEpisode: 'next_episode',
+  openSettings: 'setting_page_entered',
+  closeSettings: 'setting_page_exited',
+  adPlaybackStarted: 'ad_playback_started',
+  adPlaybackStopped: 'ad_playback_stopped'
+};
+
+const mapLogEvents$1 = ({
+  video,
+  session = video,
+  version,
+  playerName,
+  getPlaybackStatus = () => video
+}) => {
+  var _session$getContent;
+
+  const emitter = mitt();
+  const state = {
+    status: 'init',
+    seeking: false,
+    playerStartTime: Date.now(),
+    moduleStartTime: Date.now(),
+    content: ((_session$getContent = session.getContent) === null || _session$getContent === void 0 ? void 0 : _session$getContent.call(session)) || {}
+  };
+
+  const commonProperties = () => {
+    var _state$content$sectio;
+
+    return {
+      player_name: playerName,
+      playback_module_version: version,
+      playback_mode: modes[state.content.type],
+      playback_session_id: state.sessionId,
+      id: state.content.id,
+      name: state.content.title,
+      ...(state.content.type === 'videos' && {
+        current_position: state.currentTime,
+        video_total_duration: state.duration
+      }),
+      ...(state.content.type === 'lives' && {
+        section_id: (_state$content$sectio = state.content.section) === null || _state$content$sectio === void 0 ? void 0 : _state$content$sectio.id,
+        name_2: state.content.channelName,
+        live_offset: state.liveOffset || 0
+      }),
+      SSAI: state.ssaiProvider || 'None'
+    };
+  };
+
+  const dispatchStart = () => {
+    if (state.status === 'started') {
+      return;
+    }
+
+    state.status = 'started';
+    state.lastStartTime = Date.now();
+    const eventName = state.isPlayingAd ? 'adPlaybackStarted' : 'playbackStarted';
+    emitter.emit(eventName, commonProperties());
+  };
+
+  const dispatchStop = () => {
+    if (state.status !== 'started') {
+      return;
+    }
+
+    state.status = 'stopped';
+    const played = (Date.now() - state.lastStartTime) / 1000;
+
+    if (state.isPlayingAd) {
+      state.adPlayedDuration += played;
+    } else {
+      state.playedDuration += played;
+    }
+
+    const eventName = state.isPlayingAd ? 'adPlaybackStopped' : 'playbackStopped';
+    emitter.emit(eventName, { ...commonProperties(),
+      ...(state.isPlayingAd && {
+        ad_played_duration: played
+      })
+    });
+  };
+
+  const registered = [on(video, 'error', event => {
+    var _event$error, _event$error2, _event$error2$data;
+
+    emitter.emit('playbackError', {
+      module_error_code: ((_event$error = event.error) === null || _event$error === void 0 ? void 0 : _event$error.code) || ((_event$error2 = event.error) === null || _event$error2 === void 0 ? void 0 : (_event$error2$data = _event$error2.data) === null || _event$error2$data === void 0 ? void 0 : _event$error2$data.code),
+      ...commonProperties()
+    });
+  }), once(video, 'playerStarted', () => {
+    state.playerStartTime = Date.now();
+  }), on(video, 'durationchange', () => {
+    // duration may change when playing an ad stitched stream, take only initial value
+    if (!state.duration) {
+      state.duration = getPlaybackStatus().duration;
+    }
+  }), once(video, 'canplay', () => {
+    state.status = 'began';
+    state.sessionId = uuidv4();
+    state.playedDuration = 0;
+    emitter.emit('playbackBegan', {
+      player_startup_time: (state.playerStartTime - state.moduleStartTime) / 1000,
+      video_startup_time: (Date.now() - state.moduleStartTime) / 1000,
+      ...commonProperties()
+    });
+  }), on(video, 'playing', dispatchStart), on(video, 'waiting', () => {
+    if (!state.bufferingStartTime) {
+      emitter.emit('bufferingStarted', commonProperties());
+      state.bufferingStartTime = Date.now();
+    }
+  }), on(video, 'timeupdate', () => {
+    const status = getPlaybackStatus();
+    state.currentTime = status.currentTime;
+
+    if (state.content.type === 'lives') {
+      state.liveOffset = status.liveOffset < 10 ? 0 : status.liveOffset;
+    }
+
+    if (state.bufferingStartTime) {
+      emitter.emit('bufferingEnded', {
+        buffering_second: (Date.now() - state.bufferingStartTime) / 1000,
+        ...commonProperties()
+      });
+      state.bufferingStartTime = undefined;
+    }
+  }), on(video, 'pause', dispatchStop), on(video, 'seeking', () => {
+    state.seekingFrom = state.currentTime;
+  }), on(session, 'userSeeking', () => {
+    state.seeking = true;
+  }), on(video, 'seeked', () => {
+    if (state.seeking) {
+      emitter.emit('seeked', {
+        seeking_from: state.seekingFrom,
+        seeking_to: video.currentTime,
+        ...commonProperties()
+      });
+    }
+
+    state.seeking = false;
+  }), on(video, 'ratechange', () => {
+    emitter.emit('playbackSpeedChange', {
+      playbackSpeed: video.playbackRate,
+      ...commonProperties()
+    });
+  }), on(session, 'sectionChange', () => {
+    dispatchStop();
+    state.content = session.getContent();
+    dispatchStart();
+  }), once(video, 'ended', () => {
+    if (state.status === 'started') {
+      dispatchStop();
+    }
+
+    state.status = 'init';
+    emitter.emit('playbackEnded', {
+      video_playback_ended_at_percentage: state.currentTime / state.duration,
+      video_total_played_duration: state.playedDuration,
+      ...(state.ssaiProvider && {
+        ad_total_played_duration: state.adPlayedDuration
+      }),
+      ...commonProperties()
+    });
+  }), once(video, 'loadedAdMetadata', event => {
+    state.ssaiProvider = event.data.provider;
+    state.adPlayedDuration = 0;
+  }), on(session, 'adBreakStarted', () => {
+    dispatchStop();
+    state.isPlayingAd = true;
+
+    if (!state.seeking) {
+      dispatchStart();
+    }
+  }), on(session, 'adBreakEnded', () => {
+    dispatchStop();
+    state.isPlayingAd = false;
+
+    if (!state.seeking) {
+      dispatchStart();
+    }
+  })];
+  return {
+    addEventListener: (name, handler) => emitter.on(name, handler),
+    all: handler => emitter.on('*', handler),
+    emit: (name, {
+      currentTime
+    }, properties) => {
+      if (name in logEventNames$1) {
+        emitter.emit(name, {
+          current_position: currentTime,
+          ...properties,
+          ...commonProperties()
+        });
+      }
+    },
+    updateContent: content => {
+      state.content = content;
+    },
+    reset: () => registered.forEach(off => off())
+  };
+};
+
+const logEventNames = {
+  playbackBeganLoading: 'playback_began_player_loading',
+  playbackBeganPlayerStartupTime: 'playback_began_player_startup_time',
+  playbackBeganVideoStartupTime: 'playback_began_video_startup_time',
+  playbackVideoStarted: 'playback_video_started',
+  playbackVideoPaused: 'playback_video_paused',
+  playbackVideoBufferingBegan: 'playback_video_buffering_began',
+  playbackVideoBufferingEnded: 'playback_video_buffering_ended',
+  playbackVideoEnded: 'playback_video_ended',
+  playbackSeekingBegan: 'playback_seeking_began',
+  playbackSeekingEnded: 'playback_seeking_ended',
+  playbackError: 'playback_error_occurred',
+  playbackSpeedChange: 'playback_speed_change',
+  playbackAudioVolumeChange: 'playback_audio_volume_change',
+  playbackAudioMuteChange: 'playback_audio_mute_change',
+  playbackStreamingQualityChangeDownload: 'playback_streaming_quality_change_download',
+  playbackStreamingQualityChangeRender: 'playback_streaming_quality_change_render',
+  playing: 'play',
+  paused: 'pause',
+  seek: 'seek',
+  rewind: 'rewind',
+  forward: 'forward',
+  openSettings: 'setting_page_entered',
+  closeSettings: 'setting_page_exited',
+  speedSettingChange: 'speed_setting_change',
+  qualitySettingChange: 'quality_setting_change',
+  audioVolumeSettingChange: 'audio_volume_setting_change',
+  audioMuteSettingChange: 'audio_mute_setting_change'
+};
+const userIdKey = 'userIdKey';
+
+const getUserId = () => {
+  var _window$localStorage;
+
+  const userId = (_window$localStorage = window.localStorage) === null || _window$localStorage === void 0 ? void 0 : _window$localStorage.getItem(userIdKey);
+
+  if (!userId) {
+    var _window$localStorage2;
+
+    const uuid = uuidv4();
+    (_window$localStorage2 = window.localStorage) === null || _window$localStorage2 === void 0 ? void 0 : _window$localStorage2.setItem(userIdKey, uuid);
+    return uuid;
+  }
+
+  return userId;
+};
+
+const mapLogEvents = ({
+  video,
+  version,
+  playerName,
+  userId = getUserId(),
+  getPlaybackStatus = () => video
+}) => {
+  const emitter = mitt();
+  const state = {
+    status: 'init',
+    seeking: false,
+    volume: undefined,
+    muted: undefined
+  };
+
+  const commonProperties = () => ({
+    player_name: playerName,
+    playback_module_version: version || getVersion(),
+    system_time: Date.now() / 1000,
+    user_id: userId,
+    // TODO: split properties by videos/lives
+    current_position: state.currentTime,
+    video_total_duration: state.duration // TODO: get name from props, it's a part of P+
+
+  });
+
+  const dispatchStart = () => {
+    if (state.status === 'started') {
+      return;
+    }
+
+    state.status = 'started';
+    emitter.emit('playbackVideoStarted', commonProperties());
+  };
+
+  const dispatchStop = () => {
+    if (state.status !== 'started') {
+      return;
+    }
+
+    state.status = 'stopped';
+    emitter.emit('playbackVideoPaused', commonProperties());
+  };
+
+  const registered = [on(video, 'error', event => {
+    var _event$error, _event$error2, _event$error2$data;
+
+    emitter.emit('playbackError', {
+      module_error_code: ((_event$error = event.error) === null || _event$error === void 0 ? void 0 : _event$error.code) || ((_event$error2 = event.error) === null || _event$error2 === void 0 ? void 0 : (_event$error2$data = _event$error2.data) === null || _event$error2$data === void 0 ? void 0 : _event$error2$data.code),
+      ...commonProperties()
+    });
+  }), on(video, 'durationchange', () => {
+    // duration may change when playing an ad stitched stream, take only initial value
+    if (!state.duration) {
+      state.duration = getPlaybackStatus().duration;
+    }
+  }), once(video, 'playerStarted', () => {
+    /* eslint-disable camelcase */
+    const {
+      player_name,
+      playback_module_version,
+      system_time,
+      user_id
+    } = commonProperties();
+    emitter.emit('playbackBeganLoading', {
+      player_name,
+      playback_module_version,
+      system_time,
+      user_id
+    });
+    /* eslint-enable camelcase */
+  }), once(video, 'loadstart', () => {
+    /* eslint-disable camelcase */
+    const {
+      player_name,
+      playback_module_version,
+      system_time,
+      user_id
+    } = commonProperties();
+    emitter.emit('playbackBeganPlayerStartupTime', {
+      player_name,
+      playback_module_version,
+      system_time,
+      user_id
+    });
+    /* eslint-enable camelcase */
+  }), once(video, 'canplay', () => {
+    state.status = 'began';
+    /* eslint-disable camelcase */
+
+    const {
+      player_name,
+      playback_module_version,
+      system_time,
+      user_id
+    } = commonProperties();
+    emitter.emit('playbackBeganVideoStartupTime', {
+      player_name,
+      playback_module_version,
+      system_time,
+      user_id
+    });
+    /* eslint-enable camelcase */
+    // sync state from video
+
+    state.volume = video.volume;
+    state.muted = video.muted;
+  }), on(video, 'playing', dispatchStart), on(video, 'waiting', () => {
+    if (!state.buffering) {
+      emitter.emit('playbackVideoBufferingBegan', commonProperties());
+      state.buffering = true;
+    }
+  }), on(video, 'timeupdate', () => {
+    state.currentTime = getPlaybackStatus().currentTime;
+
+    if (state.buffering) {
+      emitter.emit('playbackVideoBufferingEnded', { ...commonProperties()
+      });
+      state.buffering = false;
+    }
+  }), on(video, 'pause', dispatchStop), on(video, 'seeking', () => {
+    state.seeking = true;
+    emitter.emit('playbackSeekingBegan', commonProperties());
+  }), on(video, 'seeked', () => {
+    if (state.seeking) {
+      emitter.emit('playbackSeekingEnded', commonProperties());
+    }
+
+    state.seeking = false;
+  }), on(video, 'ratechange', () => {
+    emitter.emit('playbackSpeedChange', {
+      playbackSpeed: video.playbackRate,
+      ...commonProperties()
+    });
+  }), on(video, 'ended', () => {
+    if (state.status === 'started') {
+      dispatchStop();
+    }
+
+    state.status = 'init';
+    emitter.emit('playbackVideoEnded', commonProperties());
+  }), on(video, 'volumechange', () => {
+    if (video.volume !== state.volume && state.volume !== undefined) {
+      emitter.emit('playbackAudioVolumeChange', {
+        volume: video.volume,
+        ...commonProperties()
+      });
+      state.volume = video.volume;
+    }
+
+    if (video.muted !== state.muted && state.muted !== undefined) {
+      emitter.emit('playbackAudioMuteChange', {
+        muted: video.muted,
+        ...commonProperties()
+      });
+      state.muted = video.muted;
+    }
+  }), on(video, 'downloadQualityChange', event => {
+    emitter.emit('playbackStreamingQualityChangeDownload', { ...event.detail,
+      ...commonProperties()
+    });
+  }), on(video, 'resize', () => {
+    emitter.emit('playbackStreamingQualityChangeRender', {
+      height: video.videoHeight,
+      width: video.videoWidth,
+      ...commonProperties()
+    });
+  })];
+  return {
+    addEventListener: (name, handler) => emitter.on(name, handler),
+    all: handler => emitter.on('*', handler),
+    emit: (name, {
+      currentTime
+    }, properties) => {
+      if (name in logEventNames) {
+        emitter.emit(name, {
+          current_position: currentTime,
+          ...properties,
+          ...commonProperties()
+        });
+      }
+    },
+    updateContent: content => {
+      state.content = content;
+    },
+    reset: () => registered.forEach(off => off())
+  };
+};
+
+var playlogv2 = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  mapLogEvents: mapLogEvents,
+  logEventNames: logEventNames
+});
 
 /* eslint-disable no-empty */
 const storageKey = 'playcraft-tab-lock';
@@ -1081,6 +1399,363 @@ const goog = {
     }
   }
 };
+
+class SegmentIndex {
+  /**
+   * @param {!Array.<!shaka.media.SegmentReference>} references The list of
+   *   SegmentReferences, which must be sorted first by their start times
+   *   (ascending) and second by their end times (ascending).
+   */
+  constructor(references) {
+    /** @protected {!Array.<!shaka.media.SegmentReference>} */
+
+
+    this.references = references;
+    /** @private {shaka.util.Timer} */
+
+    this.timer_ = null;
+    /**
+     * The number of references that have been removed from the front of the
+     * array.  Used to create stable positions in the find/get APIs.
+     *
+     * @protected {number}
+     */
+
+    this.numEvicted = 0;
+    /** @private {boolean} */
+
+    this.immutable_ = false;
+  }
+  /**
+   * @override
+   * @export
+   */
+
+
+  release() {
+    if (this.immutable_) {
+      return;
+    }
+
+    this.references = [];
+
+    if (this.timer_) {
+      this.timer_.stop();
+    }
+
+    this.timer_ = null;
+  }
+  /**
+   * Finds the position of the segment for the given time, in seconds, relative
+   * to the start of the presentation.  Returns the position of the segment
+   * with the largest end time if more than one segment is known for the given
+   * time.
+   *
+   * @param {number} time
+   * @return {?number} The position of the segment, or null if the position of
+   *   the segment could not be determined.
+   * @export
+   */
+
+
+  find(time) {
+    // For live streams, searching from the end is faster.  For VOD, it balances
+    // out either way.  In both cases, references.length is small enough that
+    // the difference isn't huge.
+    const lastReferenceIndex = this.references.length - 1;
+
+    for (let i = lastReferenceIndex; i >= 0; --i) {
+      const r = this.references[i];
+      const start = r.startTime; // A rounding error can cause /time/ to equal e.endTime or fall in between
+      // the references by a fraction of a second. To account for this, we use
+      // the start of the next segment as /end/, unless this is the last
+      // reference, in which case we use its end time as /end/.
+
+      const end = i < lastReferenceIndex ? this.references[i + 1].startTime : r.endTime; // Note that a segment ends immediately before the end time.
+
+      if (time >= start && time < end) {
+        return i + this.numEvicted;
+      }
+    }
+
+    if (this.references.length && time < this.references[0].startTime) {
+      return this.numEvicted;
+    }
+
+    return null;
+  }
+  /**
+   * Gets the SegmentReference for the segment at the given position.
+   *
+   * @param {number} position The position of the segment as returned by find().
+   * @return {shaka.media.SegmentReference} The SegmentReference, or null if
+   *   no such SegmentReference exists.
+   * @export
+   */
+
+
+  get(position) {
+    if (this.references.length == 0) {
+      return null;
+    }
+
+    const index = position - this.numEvicted;
+
+    if (index < 0 || index >= this.references.length) {
+      return null;
+    }
+
+    return this.references[index];
+  }
+  /**
+   * Offset all segment references by a fixed amount.
+   *
+   * @param {number} offset The amount to add to each segment's start and end
+   *   times.
+   * @export
+   */
+
+
+  offset(offset) {
+    if (!this.immutable_) {
+      for (const ref of this.references) {
+        ref.startTime += offset;
+        ref.endTime += offset;
+        ref.timestampOffset += offset;
+      }
+    }
+  }
+  /**
+   * Merges the given SegmentReferences.  Supports extending the original
+   * references only.  Will replace old references with equivalent new ones, and
+   * keep any unique old ones.
+   *
+   * Used, for example, by the DASH and HLS parser, where manifests may not list
+   * all available references, so we must keep available references in memory to
+   * fill the availability window.
+   *
+   * @param {!Array.<!shaka.media.SegmentReference>} references The list of
+   *   SegmentReferences, which must be sorted first by their start times
+   *   (ascending) and second by their end times (ascending).
+   */
+
+
+  merge(references) {
+
+    if (this.immutable_) {
+      return;
+    }
+
+    if (!references.length) {
+      return;
+    } // Partial segments are used for live edge, and should be removed when they
+    // get older. Remove the old SegmentReferences after the first new
+    // reference's start time.
+
+
+    this.references = this.references.filter(r => r.startTime < references[0].startTime);
+    this.references.push(...references);
+  }
+  /**
+   * Merges the given SegmentReferences and evicts the ones that end before the
+   * given time.  Supports extending the original references only.
+   * Will not replace old references or interleave new ones.
+   * Used, for example, by the DASH and HLS parser, where manifests may not list
+   * all available references, so we must keep available references in memory to
+   * fill the availability window.
+   *
+   * @param {!Array.<!shaka.media.SegmentReference>} references The list of
+   *   SegmentReferences, which must be sorted first by their start times
+   *   (ascending) and second by their end times (ascending).
+   * @param {number} windowStart The start of the availability window to filter
+   *   out the references that are no longer available.
+   * @export
+   */
+
+
+  mergeAndEvict(references, windowStart) {
+    // Filter out the references that are no longer available to avoid
+    // repeatedly evicting them and messing up eviction count.
+    references = references.filter(r => r.endTime > windowStart && (this.references.length == 0 || r.endTime > this.references[0].startTime));
+    const oldFirstRef = this.references[0];
+    this.merge(references);
+    const newFirstRef = this.references[0];
+
+    if (oldFirstRef) {
+      // We don't compare the actual ref, since the object could legitimately be
+      // replaced with an equivalent.  Even the URIs could change due to
+      // load-balancing actions taken by the server.  However, if the time
+      // changes, its not an equivalent reference.
+      goog.asserts.assert(oldFirstRef.startTime == newFirstRef.startTime, 'SegmentIndex.merge should not change the first reference time!');
+    }
+
+    this.evict(windowStart);
+  }
+  /**
+   * Removes all SegmentReferences that end before the given time.
+   *
+   * @param {number} time The time in seconds.
+   * @export
+   */
+
+
+  evict(time) {
+    if (this.immutable_) {
+      return;
+    }
+
+    const oldSize = this.references.length;
+    this.references = this.references.filter(ref => ref.endTime > time);
+    const newSize = this.references.length;
+    const diff = oldSize - newSize; // Tracking the number of evicted refs will keep their "positions" stable
+    // for the caller.
+
+    this.numEvicted += diff;
+  }
+  /**
+   * Drops references that start after windowEnd, or end before windowStart,
+   * and contracts the last reference so that it ends at windowEnd.
+   *
+   * Do not call on the last period of a live presentation (unknown duration).
+   * It is okay to call on the other periods of a live presentation, where the
+   * duration is known and another period has been added.
+   *
+   * @param {number} windowStart
+   * @param {?number} windowEnd
+   * @param {boolean=} isNew Whether this is a new SegmentIndex and we shouldn't
+   *   update the number of evicted elements.
+   * @export
+   */
+
+
+  fit(windowStart, windowEnd, isNew = false) {
+    goog.asserts.assert(windowEnd != null, 'Content duration must be known for static content!');
+    goog.asserts.assert(windowEnd != Infinity, 'Content duration must be finite for static content!');
+
+    if (this.immutable_) {
+      return;
+    } // Trim out references we will never use.
+
+
+    while (this.references.length) {
+      const lastReference = this.references[this.references.length - 1];
+
+      if (lastReference.startTime >= windowEnd) {
+        this.references.pop();
+      } else {
+        break;
+      }
+    }
+
+    while (this.references.length) {
+      const firstReference = this.references[0];
+
+      if (firstReference.endTime <= windowStart) {
+        this.references.shift();
+
+        if (!isNew) {
+          this.numEvicted++;
+        }
+      } else {
+        break;
+      }
+    }
+
+    if (this.references.length == 0) {
+      return;
+    } // Adjust the last SegmentReference.
+
+
+    const lastReference = this.references[this.references.length - 1];
+    this.references[this.references.length - 1] = new shaka.media.SegmentReference(lastReference.startTime,
+    /* endTime= */
+    windowEnd, lastReference.getUrisInner, lastReference.startByte, lastReference.endByte, lastReference.initSegmentReference, lastReference.timestampOffset, lastReference.appendWindowStart, lastReference.appendWindowEnd, lastReference.partialReferences, lastReference.tilesLayout, lastReference.tileDuration, lastReference.syncTime);
+  }
+  /**
+   * Updates the references every so often.  Stops when the references list
+   * returned by the callback is null.
+   *
+   * @param {number} interval The interval in seconds.
+   * @param {function():Array.<shaka.media.SegmentReference>} updateCallback
+   * @export
+   */
+
+
+  updateEvery(interval, updateCallback) {
+    goog.asserts.assert(!this.timer_, 'SegmentIndex timer already started!');
+
+    if (this.immutable_) {
+      return;
+    }
+
+    if (this.timer_) {
+      this.timer_.stop();
+    }
+
+    this.timer_ = new shaka.util.Timer(() => {
+      const references = updateCallback();
+
+      if (references) {
+        this.references.push(...references);
+      } else {
+        this.timer_.stop();
+        this.timer_ = null;
+      }
+    });
+    this.timer_.tickEvery(interval);
+  }
+  /** @return {!shaka.media.SegmentIterator} */
+
+
+  [Symbol.iterator]() {
+    const iter = this.getIteratorForTime(0);
+    goog.asserts.assert(iter != null, 'Iterator for 0 should never be null!');
+    return iter;
+  }
+  /**
+   * @return {boolean}
+   */
+
+
+  isEmpty() {
+    return this.references.length == 0;
+  }
+  /**
+   * Create a SegmentIndex for a single segment of the given start time and
+   * duration at the given URIs.
+   *
+   * @param {number} startTime
+   * @param {number} duration
+   * @param {!Array.<string>} uris
+   * @return {!shaka.media.SegmentIndex}
+   * @export
+   */
+
+
+  static forSingleSegment(startTime, duration, uris) {
+    const reference = new shaka.media.SegmentReference(
+    /* startTime= */
+    startTime,
+    /* endTime= */
+    startTime + duration,
+    /* getUris= */
+    () => uris,
+    /* startByte= */
+    0,
+    /* endByte= */
+    null,
+    /* initSegmentReference= */
+    null,
+    /* presentationTimeOffset= */
+    startTime,
+    /* appendWindowStart= */
+    startTime,
+    /* appendWindowEnd= */
+    startTime + duration);
+    return new SegmentIndex([reference]);
+  }
+
+}
 
 const hasSameElements = (a, b) => {
   if (a.length != b.length) {
@@ -3389,7 +4064,7 @@ class PeriodCombiner {
       id: 0,
       originalId: '',
       createSegmentIndex: () => Promise.resolve(),
-      segmentIndex: new shaka.media.SegmentIndex([]),
+      segmentIndex: new SegmentIndex([]),
       mimeType: '',
       codecs: '',
       encrypted: false,
@@ -4092,7 +4767,7 @@ class SegmentBase {
     // segmentIndex in the map.
 
     goog.asserts.assert(!segmentIndex, 'Should not call generateSegmentIndex twice');
-    segmentIndex = new shaka.media.SegmentIndex(references);
+    segmentIndex = new SegmentIndex(references);
 
     if (fitLast) {
       segmentIndex.fit(appendWindowStart, appendWindowEnd,
@@ -4327,7 +5002,7 @@ class SegmentTemplate {
       if (shouldFit) {
         // Fit the new references before merging them, so that the merge
         // algorithm has a more accurate view of their start and end times.
-        const wrapper = new shaka.media.SegmentIndex(references);
+        const wrapper = new SegmentIndex(references);
         wrapper.fit(periodStart, periodEnd,
         /* isNew= */
         true);
@@ -4335,7 +5010,7 @@ class SegmentTemplate {
 
       segmentIndex.mergeAndEvict(references, context.presentationTimeline.getSegmentAvailabilityStart());
     } else {
-      segmentIndex = new shaka.media.SegmentIndex(references);
+      segmentIndex = new SegmentIndex(references);
     }
 
     context.presentationTimeline.notifySegments(references);
@@ -4583,7 +5258,7 @@ class SegmentTemplate {
     /** @type {shaka.media.SegmentIndex} */
 
 
-    const segmentIndex = new shaka.media.SegmentIndex(references); // If the availability timeline currently ends before the period, we will
+    const segmentIndex = new SegmentIndex(references); // If the availability timeline currently ends before the period, we will
     // need to add references over time.
 
     const willNeedToAddReferences = presentationTimeline.getSegmentAvailabilityEnd() < getPeriodEnd(); // When we start a live stream with a period that ends within the
@@ -4761,7 +5436,7 @@ class SegmentList {
       const start = context.presentationTimeline.getSegmentAvailabilityStart();
       segmentIndex.mergeAndEvict(references, start);
     } else {
-      segmentIndex = new shaka.media.SegmentIndex(references);
+      segmentIndex = new SegmentIndex(references);
     }
 
     context.presentationTimeline.notifySegments(references);
@@ -5316,7 +5991,7 @@ class ContentProtection {
    */
 
 
-  static convertElements_(defaultInit, elements, keySystemsByURI, keyIds) {
+  static convertElements_(defaultInit, elements, keySystemsByURI) {
     const licenseUrlParsers = ContentProtection.licenseUrlParsers_;
     /** @type {!Array.<shaka.extern.DrmInfo>} */
 
@@ -5326,15 +6001,9 @@ class ContentProtection {
       const keySystem = keySystemsByURI[element.schemeUri];
 
       if (keySystem) {
-        goog.asserts.assert(!element.init || element.init.length, 'Init data must be null or non-empty.');
-        const proInitData = ContentProtection.getInitDataFromPro_(element);
-        let clearKeyInitData = null;
+        goog.asserts.assert(!element.init || element.init.length, 'Init data must be null or non-empty.'); // TODO check Playready, clearkey
 
-        if (element.schemeUri === ContentProtection.ClearKeySchemeUri_) {
-          clearKeyInitData = ContentProtection.getInitDataClearKey_(element, keyIds);
-        }
-
-        const initData = element.init || defaultInit || proInitData || clearKeyInitData;
+        const initData = element.init || defaultInit;
         const info = ManifestParserUtils.createDrmInfo(keySystem, initData);
         const licenseParser = licenseUrlParsers.get(keySystem);
 
@@ -5853,7 +6522,7 @@ class DashParser {
 
     this.updatePeriod_ =
     /** @type {number} */
-    Math.max(120, XmlUtils.parseAttr(mpd, 'minimumUpdatePeriod', XmlUtils.parseDuration, -1));
+    Math.max(1, XmlUtils.parseAttr(mpd, 'minimumUpdatePeriod', XmlUtils.parseDuration, -1));
     const presentationStartTime = XmlUtils.parseAttr(mpd, 'availabilityStartTime', XmlUtils.parseDate) - (window.segmentTimestampOffset || 0); // Shaka may keep buffering inifnitely for lower timeShiftBufferDepth
 
     let segmentAvailabilityDuration = Math.max(60, XmlUtils.parseAttr(mpd, 'timeShiftBufferDepth', XmlUtils.parseDuration));
@@ -6635,7 +7304,7 @@ class DashParser {
         } = context.representation;
         const duration = context.periodInfo.duration || 0;
         streamInfo = {
-          generateSegmentIndex: () => Promise.resolve(shaka.media.SegmentIndex.forSingleSegment(periodStart, duration, baseUris))
+          generateSegmentIndex: () => Promise.resolve(SegmentIndex.forSingleSegment(periodStart, duration, baseUris))
         };
       }
     } catch (error) {
@@ -7672,7 +8341,8 @@ const getBufferedAhead = (mediaSource, video) => {
 const UPDATE_SPEEDUP_INTERVAL = 100;
 
 const latencyManager = (player, video) => {
-  window.segmentTimestampOffset = 0.8;
+  // Custom DashParser offset availabilityStartTime by this to start segment download earlier
+  window.segmentTimestampOffset = 0.5;
   DashParser.register(player.shaka);
   let updateIntervalId;
   const currentOptions = {
@@ -7714,10 +8384,10 @@ const latencyManager = (player, video) => {
         gapDetectionThreshold: 0.001,
         inaccurateManifestTolerance: 1,
         retryParameters: {
-          baseDelay: 100,
-          backoffFactor: 0,
+          baseDelay: 50,
+          backoffFactor: 1.2,
           fuzzFactor: 0,
-          maxAttempts: 77
+          maxAttempts: 13
         }
       }
     });
@@ -7739,10 +8409,26 @@ const latencyManager = (player, video) => {
       (_currentOptions$onUpd2 = currentOptions.onUpdate) === null || _currentOptions$onUpd2 === void 0 ? void 0 : _currentOptions$onUpd2.call(currentOptions, info);
       lastPlaybackTime = video.currentTime;
       const bufferCap = +currentOptions.speedupThreshold * (info.playbackRate > 1 ? 1 : 1.2);
+
+      if (video.currentTime < lastPlaybackTime - 7) {
+        console.info(`seek from ${video.currentTime} to ${lastPlaybackTime}`);
+        video.playbackRate = 1;
+        video.currentTime = lastPlaybackTime;
+        return;
+      }
+
+      lastPlaybackTime = video.currentTime;
+      const bufferedAhead = getBufferedAhead(player.mediaSource, video);
+
+      if (bufferedAhead > 5) {
+        console.info(`Buffer abundant, seek from ${video.currentTime} to ${video.currentTime + bufferedAhead - 2.5}`);
+        video.currentTime = video.currentTime + bufferedAhead - 2.5;
+        return;
+      }
+
       const rate = bufferAverage.getEstimate() > bufferCap && currentOptions.speedup ? +currentOptions.speedup : 0;
 
       if ((video === null || video === void 0 ? void 0 : video.currentTime) > 0) {
-        /* eslint-disable-next-line no-param-reassign */
         video.playbackRate = 1 + rate / 100;
       }
     }, UPDATE_SPEEDUP_INTERVAL);
@@ -7761,6 +8447,7 @@ const latencyManager = (player, video) => {
     }
 
     Object.assign(currentOptions, config);
+    if ('segmentTimestampOffset' in config) window.segmentTimestampOffset = config.segmentTimestampOffset;
   };
 
   return {
@@ -7768,4 +8455,4 @@ const latencyManager = (player, video) => {
   };
 };
 
-export { addSentry, createApi, ensureTabLock, getContentInfo, getStreamInfo, handleIOSHeadphonesDisconnection, latencyManager, logEventNames, mapLogEvents, selectHlsQualities, startPlaybackSession as startSession, validateEnvironment };
+export { addSentry, createApi, ensureTabLock, getContentInfo, getStreamInfo, handleIOSHeadphonesDisconnection, latencyManager, logEventNames$1 as logEventNames, mapLogEvents$1 as mapLogEvents, playlogv2, selectHlsQualities, startPlaybackSession as startSession, validateEnvironment };

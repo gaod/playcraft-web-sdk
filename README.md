@@ -242,6 +242,11 @@ Start playback when player component is mounted.
 
 Defaults to `false`.
 
+**`loop`**
+
+Loop the current video. Check [HTMLMediaElement.loop](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video#attr-loop)
+
+Defaults to `false`.
 **`videoRef`**
 
 Ref to html video element, use this for custom integrations.
@@ -312,6 +317,10 @@ Defines constraints on what streams/tracks should be selected in ABR, if nothing
 **`volume`**
 
 Defines target volume of the video, the video updates to defined volume when this prop is changed.
+
+**`muted`**
+
+Defines muted state of the video.
 
 **`playbackRate`**
 
@@ -573,6 +582,16 @@ Called when settings UI is open, by default, playback is paused when using mobil
 <PremiumPlayer onOpenSettings={event => event.preventDefault()}>
 ```
 
+**`uiElements`**
+
+Use this props to overrides the default UI elements. See more about [uiElements configuration](#followings-are-the-configurable-ui-elements).
+
+Use fullscreenButton for hiding full-screen button.
+
+```js
+<PremiumPlayer uiElements={{fullscreenButton: false}}>
+```
+
 #### UI Component Composition
 
 **children**
@@ -580,6 +599,8 @@ Called when settings UI is open, by default, playback is paused when using mobil
 All children will be rendered as children of player UI, use `position: absolute` to stack custom UI on player UI.
 
 **<FunctionBarExtension>**
+
+Import with : `import {FunctionBarExtension} from 'playcraft/react'`
 
 In addition to children, you can also attach buttons or custom UI, at right of built-in buttons, or other specific places.
 
@@ -591,6 +612,20 @@ Internal layout component provides ref to the function bar container, the button
     <MyCustomButton />
   </FunctionBarExtension>
   <MyOverlayUI />
+</PremiumPlayer>
+```
+
+**<TitleBarExtension>**
+
+Import with : `import {TitleBarExtension} from 'playcraft/react'`
+
+You can add an empty container with a width of 1 ~ 3rem to shift the title position.
+
+```js
+<PremiumPlayer>
+  <TitleBarExtension>
+    <div style={{width: '2rem'}} />
+  </TitleBarExtension>
 </PremiumPlayer>
 ```
 
@@ -616,6 +651,44 @@ In addition to `quality` prop supported in premium, `quality.getSettingOptions` 
 ```js
 {
   getSettingOptions: fixedQualityOptions // or abrLimitQualityOptions
+}
+```
+
+**`uiElements`**
+
+Use this props to overrides the default UI elements.
+
+```jsx
+// For hiding rewind/forward button
+<PremiumPlusPlayer
+  uiElements={{
+    controlButtons: {
+      rewindButton: false,
+      forwardButton: false
+    }
+  }}
+/>
+```
+
+#### Followings are the configurable UI elements:
+
+```
+{
+  controlButtons: {
+    playButton
+    rewindButton
+    forwardButton
+    nextEpisodeButton
+    previousEpisodeButton
+  }
+  seekbar
+  backButton
+  fullscreenButton
+  volumeControl
+  backItems
+  liveButton,
+  castButton,
+  settingButton
 }
 ```
 
@@ -810,9 +883,6 @@ Options:
 
 - `auto` (default): Automatically start playback session & fetch manifests.
 - `none`: Playback session will be started when `.load()` is called, or when play button is tapped.
-
-When `preload` is set to `none` without `coverImageUrl`, user can tap play button to start playback,
-and in this case autoplay is always enabled, so `load()` calls will start playback even if `autoPlay` is set to `false`.
 
 **`startTime`**
 
@@ -1110,6 +1180,22 @@ function ContainerComponent(props) {
   const plugins = useMemo(() => [ImaDaiPlugin()], [])
   return <PremiumPlusPlayer plugins={plugins} />
 }
+```
+
+**`requestOptionOverrides`**
+
+Accept an object to overrides the default [StreamRequest](https://developers.google.com/interactive-media-ads/docs/sdks/html5/dai/reference/js/StreamRequest):
+
+```jsx
+const plugins = useMemo(
+  () => [
+    ImaDaiPlugin({
+      requestOptionsOverrides: {adTagParameters: {tfcd: 1}},
+    }),
+  ],
+  []
+)
+return <PremiumPlusPlayer plugins={plugins} />
 ```
 
 ### Modules
