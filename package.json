@@ -88,7 +88,7 @@
     "react": "17.0.2",
     "react-cool-form": "^0.4.1",
     "react-dom": "17.0.2",
-    "rollup": "^2.60.0",
+    "rollup": "^2.80.0",
     "rollup-plugin-includepaths": "^0.2.4",
     "standard-version": "^9.3.2",
     "xmldom": "^0.6.0"
